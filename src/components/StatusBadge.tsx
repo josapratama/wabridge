@@ -13,6 +13,7 @@ const map: Record<string, string> = {
   received: "bg-cyan-500/15 text-cyan-400 ring-cyan-500/30",
   "meta-cloud": "bg-blue-500/15 text-blue-400 ring-blue-500/30",
   bsp: "bg-orange-500/15 text-orange-400 ring-orange-500/30",
+  baileys: "bg-green-500/15 text-green-400 ring-green-500/30",
   ok: "bg-brand-500/15 text-brand-400 ring-brand-500/30",
   degraded: "bg-yellow-500/15 text-yellow-400 ring-yellow-500/30",
   inbound: "bg-cyan-500/15 text-cyan-400 ring-cyan-500/30",

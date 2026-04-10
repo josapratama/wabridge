@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { providerConfigsApi, ProviderConfig } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
 import EmptyState from "../components/EmptyState";
+import BaileysConnectionModal from "../components/BaileysConnectionModal";
 import {
   Settings2,
   Plus,
@@ -10,6 +11,9 @@ import {
   PowerOff,
   Power,
   RefreshCw,
+  QrCode,
+  Smartphone,
+  HelpCircle,
 } from "lucide-react";
 
 const EMPTY: Partial<ProviderConfig> = {
@@ -29,6 +33,18 @@ export default function ProviderConfigs() {
   const [form, setForm] = useState<Partial<ProviderConfig>>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [qrModal, setQrModal] = useState<{
+    show: boolean;
+    configId: string;
+    qrCode: string | null;
+    pairingCode: string | null;
+  }>({
+    show: false,
+    configId: "",
+    qrCode: null,
+    pairingCode: null,
+  });
+  const [qrLoading, setQrLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -45,7 +61,27 @@ export default function ProviderConfigs() {
     e.preventDefault();
     setSaving(true);
     setError("");
-    const res = await providerConfigsApi.create(form);
+
+    // Clean up the form data - remove empty/undefined fields
+    const cleanedForm: Partial<ProviderConfig> = {
+      providerType: form.providerType,
+      name: form.name,
+    };
+
+    // Only add fields that have values
+    if (form.baseUrl) cleanedForm.baseUrl = form.baseUrl;
+    if (form.apiVersion) cleanedForm.apiVersion = form.apiVersion;
+    if (form.phoneNumberId) cleanedForm.phoneNumberId = form.phoneNumberId;
+    if (form.wabaId) cleanedForm.wabaId = form.wabaId;
+    if (form.verifyToken) cleanedForm.verifyToken = form.verifyToken;
+    if (form.webhookSecret) cleanedForm.webhookSecret = form.webhookSecret;
+
+    // Only add accessToken if not Baileys and has value
+    if (form.providerType !== "baileys" && form.accessToken) {
+      cleanedForm.accessToken = form.accessToken;
+    }
+
+    const res = await providerConfigsApi.create(cleanedForm);
     if (res.success) {
       setShowForm(false);
       setForm(EMPTY);
@@ -61,8 +97,81 @@ export default function ProviderConfigs() {
       await providerConfigsApi.deactivate(cfg.id);
     } else {
       await providerConfigsApi.activate(cfg.id);
+
+      // If Baileys, show QR code modal after activation
+      if (cfg.providerType === "baileys") {
+        await showQrCode(cfg.id);
+      }
     }
     await load();
+  };
+
+  const showQrCode = async (configId: string) => {
+    setQrModal({
+      show: true,
+      configId,
+      qrCode: null,
+      pairingCode: null,
+    });
+    setQrLoading(false); // Don't start loading immediately
+  };
+
+  const generateQrCode = async () => {
+    setQrLoading(true);
+    setQrModal((prev) => ({ ...prev, qrCode: null }));
+
+    // Poll for QR code
+    const pollQr = async () => {
+      const res = await providerConfigsApi.getQrCode(qrModal.configId);
+      if (res.data?.qrCode) {
+        setQrModal((prev) => ({ ...prev, qrCode: res.data?.qrCode || null }));
+        setQrLoading(false);
+      } else {
+        // Keep polling every 2 seconds
+        setTimeout(() => void pollQr(), 2000);
+      }
+    };
+
+    await pollQr();
+  };
+
+  const requestPairingCode = async (phoneNumber: string) => {
+    if (!phoneNumber) {
+      return;
+    }
+
+    setQrLoading(true);
+
+    try {
+      const res = await providerConfigsApi.requestPairingCode(
+        qrModal.configId,
+        phoneNumber,
+      );
+
+      if (res.data?.pairingCode) {
+        setQrModal((prev) => ({
+          ...prev,
+          pairingCode: res.data?.pairingCode || null,
+        }));
+      } else {
+        // No pairing code returned - show error
+        console.error("No pairing code returned from API");
+      }
+    } catch (err) {
+      console.error("Failed to request pairing code:", err);
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
+  const closeQrModal = () => {
+    setQrModal({
+      show: false,
+      configId: "",
+      qrCode: null,
+      pairingCode: null,
+    });
+    setQrLoading(false);
   };
 
   return (
@@ -89,6 +198,18 @@ export default function ProviderConfigs() {
         </div>
       </div>
 
+      {/* Baileys Connection Modal */}
+      <BaileysConnectionModal
+        show={qrModal.show}
+        configId={qrModal.configId}
+        onClose={closeQrModal}
+        onRequestQrCode={generateQrCode}
+        onRequestPairingCode={requestPairingCode}
+        qrCode={qrModal.qrCode}
+        pairingCode={qrModal.pairingCode}
+        loading={qrLoading}
+      />
+
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -97,12 +218,23 @@ export default function ProviderConfigs() {
               <h2 className="text-base font-semibold text-white">
                 New Provider Config
               </h2>
-              <button
-                onClick={() => setShowForm(false)}
-                className="text-gray-500 hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://github.com/yourusername/yourrepo/blob/main/TOKEN_GUIDE.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-gray-300 transition-colors"
+                  title="Token Guide"
+                >
+                  <HelpCircle className="w-5 h-5" />
+                </a>
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="text-gray-500 hover:text-gray-300"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {error && (
@@ -128,6 +260,7 @@ export default function ProviderConfigs() {
                   >
                     <option value="meta-cloud">Meta Cloud API</option>
                     <option value="bsp">BSP / Partner</option>
+                    <option value="baileys">Baileys (WhatsApp Web)</option>
                   </select>
                 </div>
                 <div>
@@ -144,20 +277,57 @@ export default function ProviderConfigs() {
               </div>
 
               <div>
-                <label className="label">Access Token *</label>
+                <label className="label">
+                  Access Token {form.providerType !== "baileys" && "*"}
+                </label>
                 <input
                   className="input"
                   type="password"
-                  placeholder="Bearer token"
-                  required
+                  placeholder={
+                    form.providerType === "baileys"
+                      ? "Not required for Baileys"
+                      : form.providerType === "meta-cloud"
+                        ? "EAAxxxxx... (from Meta for Developers)"
+                        : "API Key from your BSP provider"
+                  }
+                  required={form.providerType !== "baileys"}
+                  disabled={form.providerType === "baileys"}
                   value={form.accessToken ?? ""}
                   onChange={(e) =>
                     setForm({ ...form, accessToken: e.target.value })
                   }
                 />
+                {form.providerType === "meta-cloud" && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Get from: Meta for Developers → Your App → WhatsApp →
+                    Getting Started
+                  </p>
+                )}
+                {form.providerType === "bsp" && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Get from your BSP provider dashboard (Twilio, MessageBird,
+                    etc.)
+                  </p>
+                )}
               </div>
 
-              {form.providerType === "meta-cloud" ? (
+              {form.providerType === "baileys" ? (
+                <div className="px-4 py-3 bg-blue-900/20 border border-blue-800/30 rounded-lg">
+                  <div className="flex gap-3">
+                    <Smartphone className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="text-blue-300 font-medium mb-1">
+                        WhatsApp Web Connection
+                      </p>
+                      <p className="text-blue-400/80 text-xs leading-relaxed">
+                        After creating this config, activate it to generate a QR
+                        code. Scan the QR code with your WhatsApp mobile app to
+                        connect.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : form.providerType === "meta-cloud" ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="label">Phone Number ID</label>
@@ -200,12 +370,23 @@ export default function ProviderConfigs() {
                 <label className="label">Verify Token</label>
                 <input
                   className="input"
-                  placeholder="Webhook verify token"
+                  placeholder={
+                    form.providerType === "baileys"
+                      ? "Not required for Baileys"
+                      : "Create your own random string (e.g., my_token_123)"
+                  }
+                  disabled={form.providerType === "baileys"}
                   value={form.verifyToken ?? ""}
                   onChange={(e) =>
                     setForm({ ...form, verifyToken: e.target.value })
                   }
                 />
+                {form.providerType !== "baileys" && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Create a random string. You'll use this when setting up
+                    webhooks.
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-2 pt-1">
@@ -294,21 +475,36 @@ export default function ProviderConfigs() {
                     {new Date(cfg.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <button
-                      onClick={() => void toggle(cfg)}
-                      className={cfg.isActive ? "btn-danger" : "btn-secondary"}
-                      title={cfg.isActive ? "Deactivate" : "Activate"}
-                    >
-                      {cfg.isActive ? (
-                        <>
-                          <PowerOff className="w-3.5 h-3.5" /> Deactivate
-                        </>
-                      ) : (
-                        <>
-                          <Power className="w-3.5 h-3.5" /> Activate
-                        </>
+                    <div className="flex items-center justify-end gap-2">
+                      {cfg.providerType === "baileys" && cfg.isActive && (
+                        <button
+                          onClick={() => void showQrCode(cfg.id)}
+                          className="btn-secondary text-xs"
+                          title="Show QR Code"
+                        >
+                          <QrCode className="w-3.5 h-3.5" /> QR Code
+                        </button>
                       )}
-                    </button>
+                      <button
+                        onClick={() => void toggle(cfg)}
+                        className={
+                          cfg.isActive
+                            ? "btn-danger text-xs"
+                            : "btn-secondary text-xs"
+                        }
+                        title={cfg.isActive ? "Deactivate" : "Activate"}
+                      >
+                        {cfg.isActive ? (
+                          <>
+                            <PowerOff className="w-3.5 h-3.5" /> Deactivate
+                          </>
+                        ) : (
+                          <>
+                            <Power className="w-3.5 h-3.5" /> Activate
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

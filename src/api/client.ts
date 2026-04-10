@@ -12,9 +12,16 @@ async function request<T>(
   path: string,
   options?: RequestInit,
 ): Promise<ApiResponse<T>> {
+  const headers: Record<string, string> = {};
+
+  // Only set Content-Type if there's a body
+  if (options?.body) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
     ...options,
+    headers: { ...headers, ...options?.headers },
   });
   return res.json() as Promise<ApiResponse<T>>;
 }
@@ -23,7 +30,7 @@ async function request<T>(
 
 export interface ProviderConfig {
   id: string;
-  providerType: "meta-cloud" | "bsp";
+  providerType: "meta-cloud" | "bsp" | "baileys";
   name: string;
   baseUrl?: string;
   apiVersion?: string;
@@ -35,6 +42,14 @@ export interface ProviderConfig {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface QrCodeResponse {
+  qrCode?: string;
+}
+
+export interface PairingCodeResponse {
+  pairingCode?: string;
 }
 
 export const providerConfigsApi = {
@@ -58,6 +73,13 @@ export const providerConfigsApi = {
     request<ProviderConfig>(`/provider-configs/${id}/deactivate`, {
       method: "PATCH",
     }),
+  getQrCode: (id: string) =>
+    request<QrCodeResponse>(`/provider-configs/${id}/qr`),
+  requestPairingCode: (id: string, phoneNumber: string) =>
+    request<PairingCodeResponse>(`/provider-configs/${id}/pairing-code`, {
+      method: "POST",
+      body: JSON.stringify({ phoneNumber }),
+    }),
 };
 
 // ── Sessions ──────────────────────────────────────────────────────────────────
@@ -65,7 +87,7 @@ export const providerConfigsApi = {
 export interface Session {
   id: string;
   name: string;
-  providerType: "meta-cloud" | "bsp";
+  providerType: "meta-cloud" | "bsp" | "baileys";
   providerConfigId: string;
   status: "active" | "inactive";
   metadata: Record<string, unknown>;
@@ -118,7 +140,7 @@ export const messagesApi = {
 export interface ProviderEvent {
   id: string;
   sessionId?: string;
-  providerType: "meta-cloud" | "bsp";
+  providerType: "meta-cloud" | "bsp" | "baileys";
   eventType: string;
   payload: Record<string, unknown>;
   processed: boolean;
