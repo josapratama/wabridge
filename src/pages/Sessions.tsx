@@ -15,7 +15,18 @@ import {
   Power,
   PowerOff,
   RefreshCw,
+  Copy,
 } from "lucide-react";
+
+function useCopy() {
+  const [copied, setCopied] = useState<string | null>(null);
+  const copy = (text: string, key: string) => {
+    void navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  };
+  return { copied, copy };
+}
 
 export default function Sessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -25,6 +36,7 @@ export default function Sessions() {
   const [form, setForm] = useState({ name: "", providerConfigId: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const { copied, copy } = useCopy();
 
   const load = async () => {
     setLoading(true);
@@ -197,6 +209,9 @@ export default function Sessions() {
                   Name
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
+                  Session ID
+                </th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
                   Provider
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
@@ -216,6 +231,24 @@ export default function Sessions() {
                 <tr key={s.id} className="table-row">
                   <td className="px-5 py-3 font-medium text-gray-200">
                     {s.name}
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2">
+                      <code className="text-xs text-gray-400 font-mono bg-gray-800 px-2 py-0.5 rounded">
+                        {s.id}
+                      </code>
+                      <button
+                        onClick={() => copy(s.id, s.id)}
+                        className="text-gray-600 hover:text-gray-400 transition-colors shrink-0"
+                        title="Copy Session ID"
+                      >
+                        {copied === s.id ? (
+                          <Check className="w-3.5 h-3.5 text-brand-400" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
                   </td>
                   <td className="px-5 py-3">
                     <StatusBadge value={s.providerType} />
