@@ -18,6 +18,7 @@ import {
   Users,
   Radio,
   Users2,
+  HeartPulse,
 } from "lucide-react";
 
 const navGroups = [
@@ -33,6 +34,7 @@ const navGroups = [
     items: [
       { to: "/provider-configs", icon: Settings2, label: "Provider Configs" },
       { to: "/sessions", icon: Layers, label: "Sessions" },
+      { to: "/session-health", icon: HeartPulse, label: "Session Health" },
       { to: "/messages", icon: MessageSquare, label: "Messages" },
       { to: "/events", icon: Activity, label: "Events" },
     ],

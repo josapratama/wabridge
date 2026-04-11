@@ -15,6 +15,7 @@ import Analytics from "./pages/Analytics";
 import Contacts from "./pages/Contacts";
 import Broadcast from "./pages/Broadcast";
 import Team from "./pages/Team";
+import SessionHealth from "./pages/SessionHealth";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="analytics" element={<Analytics />} />
           {/* Team */}
           <Route path="team" element={<Team />} />
+          <Route path="session-health" element={<SessionHealth />} />
           {/* Developer */}
           <Route path="api-keys" element={<ApiKeys />} />
           <Route path="docs" element={<Docs />} />
