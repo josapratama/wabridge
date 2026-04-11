@@ -3,3 +3,16 @@ dist/
 .env
 *.log
 .DS_Store
+
+# Lock files (project uses bun)
+package-lock.json
+yarn.lock
+
+# Vite cache
+.vite/
+
+# Test coverage
+coverage/
+
+# OS
+Thumbs.db
