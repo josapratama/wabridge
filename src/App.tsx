@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import ProviderConfigs from "./pages/ProviderConfigs";
 import Sessions from "./pages/Sessions";
@@ -23,33 +24,29 @@ import ProtectedRoute from "./components/ProtectedRoute";
 export default function App() {
   return (
     <Routes>
+      {/* Public */}
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
+      {/* Protected dashboard */}
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          {/* WhatsApp */}
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="provider-configs" element={<ProviderConfigs />} />
           <Route path="sessions" element={<Sessions />} />
+          <Route path="session-health" element={<SessionHealth />} />
           <Route path="messages" element={<Messages />} />
           <Route path="events" element={<Events />} />
-          {/* Messaging */}
-          <Route path="broadcast" element={<Broadcast />} />
-          <Route path="scheduled" element={<ScheduledMessages />} />
-          <Route path="templates" element={<Templates />} />
-          <Route path="auto-reply" element={<AutoReply />} />
-          {/* Contacts */}
-          <Route path="contacts" element={<Contacts />} />
-          {/* Automation */}
-          <Route path="webhooks" element={<Webhooks />} />
-          {/* Analytics */}
-          <Route path="analytics" element={<Analytics />} />
-          {/* Team */}
-          <Route path="team" element={<Team />} />
-          <Route path="session-health" element={<SessionHealth />} />
-          {/* Developer */}
           <Route path="api-keys" element={<ApiKeys />} />
+          <Route path="webhooks" element={<Webhooks />} />
+          <Route path="templates" element={<Templates />} />
+          <Route path="scheduled" element={<ScheduledMessages />} />
+          <Route path="auto-reply" element={<AutoReply />} />
+          <Route path="analytics" element={<Analytics />} />
+          <Route path="contacts" element={<Contacts />} />
+          <Route path="broadcast" element={<Broadcast />} />
+          <Route path="team" element={<Team />} />
           <Route path="docs" element={<Docs />} />
         </Route>
       </Route>

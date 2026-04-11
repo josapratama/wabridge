@@ -19,7 +19,7 @@ export default function Login() {
       if (res.success && res.data) {
         localStorage.setItem("token", res.data.access_token);
         localStorage.setItem("user", JSON.stringify(res.data.user));
-        navigate("/");
+        navigate("/dashboard");
       } else {
         setError(res.message || "Login failed");
       }

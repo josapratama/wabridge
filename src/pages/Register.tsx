@@ -18,7 +18,7 @@ export default function Register() {
     try {
       const res = await authApi.register({ name, email, password });
       if (res.success) {
-        navigate("/login");
+        navigate("/dashboard");
       } else {
         setError(res.message || "Registration failed");
       }
