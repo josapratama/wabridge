@@ -222,7 +222,150 @@ export const healthApi = {
   check: () => request<HealthResult>("/health"),
 };
 
-// ── API Keys ──────────────────────────────────────────────────────────────────
+// ── Webhook Endpoints ─────────────────────────────────────────────────────────
+
+export interface WebhookEndpoint {
+  id: string;
+  name: string;
+  url: string;
+  secret?: string;
+  events: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WebhookLog {
+  id: string;
+  webhookEndpointId: string;
+  eventType: string;
+  payload: Record<string, unknown>;
+  responseStatus?: number;
+  responseBody?: string;
+  durationMs?: number;
+  attempt: number;
+  success: boolean;
+  createdAt: string;
+}
+
+export const webhookEndpointsApi = {
+  list: () => request<WebhookEndpoint[]>("/webhook-endpoints"),
+  create: (body: {
+    name: string;
+    url: string;
+    secret?: string;
+    events: string[];
+  }) =>
+    request<WebhookEndpoint>("/webhook-endpoints", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  update: (id: string, body: Partial<WebhookEndpoint>) =>
+    request<WebhookEndpoint>(`/webhook-endpoints/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) =>
+    request<void>(`/webhook-endpoints/${id}`, { method: "DELETE" }),
+  getLogs: (id: string) =>
+    request<WebhookLog[]>(`/webhook-endpoints/${id}/logs`),
+  getEvents: () => request<string[]>("/webhook-endpoints/events"),
+};
+
+// ── Message Templates ─────────────────────────────────────────────────────────
+
+export interface MessageTemplate {
+  id: string;
+  name: string;
+  content: string;
+  variables: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const messageTemplatesApi = {
+  list: () => request<MessageTemplate[]>("/message-templates"),
+  create: (body: { name: string; content: string }) =>
+    request<MessageTemplate>("/message-templates", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  update: (id: string, body: Partial<{ name: string; content: string }>) =>
+    request<MessageTemplate>(`/message-templates/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) =>
+    request<void>(`/message-templates/${id}`, { method: "DELETE" }),
+  render: (id: string, variables: Record<string, string>) =>
+    request<string>(`/message-templates/${id}/render`, {
+      method: "POST",
+      body: JSON.stringify({ variables }),
+    }),
+};
+
+// ── Scheduled Messages ────────────────────────────────────────────────────────
+
+export interface ScheduledMessage {
+  id: string;
+  sessionId: string;
+  to: string;
+  content: string;
+  scheduledAt: string;
+  status: "pending" | "sent" | "failed" | "cancelled";
+  messageId?: string;
+  errorMessage?: string;
+  createdAt: string;
+}
+
+export const scheduledMessagesApi = {
+  list: () => request<ScheduledMessage[]>("/scheduled-messages"),
+  create: (body: {
+    sessionId: string;
+    to: string;
+    content: string;
+    scheduledAt: string;
+  }) =>
+    request<ScheduledMessage>("/scheduled-messages", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  cancel: (id: string) =>
+    request<ScheduledMessage>(`/scheduled-messages/${id}`, {
+      method: "DELETE",
+    }),
+};
+
+// ── Auto-reply Rules ──────────────────────────────────────────────────────────
+
+export interface AutoReplyRule {
+  id: string;
+  sessionId?: string;
+  name: string;
+  matchType: "contains" | "exact" | "starts_with" | "regex";
+  matchValue: string;
+  replyContent: string;
+  isActive: boolean;
+  priority: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const autoReplyApi = {
+  list: () => request<AutoReplyRule[]>("/auto-reply-rules"),
+  create: (body: Omit<AutoReplyRule, "id" | "createdAt" | "updatedAt">) =>
+    request<AutoReplyRule>("/auto-reply-rules", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  update: (id: string, body: Partial<AutoReplyRule>) =>
+    request<AutoReplyRule>(`/auto-reply-rules/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) =>
+    request<void>(`/auto-reply-rules/${id}`, { method: "DELETE" }),
+};
 
 export interface ApiKey {
   id: string;
