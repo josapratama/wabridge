@@ -1,4 +1,4 @@
-const BASE = "/api";
+const BASE = "http://localhost:3000";
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -12,7 +12,27 @@ async function request<T>(
   path: string,
   options?: RequestInit,
 ): Promise<ApiResponse<T>> {
+  const token = localStorage.getItem("token");
   const headers: Record<string, string> = {};
+
+  // Convert Headers object to plain object if needed
+  if (options?.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+    } else if (Array.isArray(options.headers)) {
+      options.headers.forEach(([key, value]) => {
+        headers[key] = value;
+      });
+    } else {
+      Object.assign(headers, options.headers);
+    }
+  }
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   // Only set Content-Type if there's a body
   if (options?.body) {
@@ -21,10 +41,43 @@ async function request<T>(
 
   const res = await fetch(`${BASE}${path}`, {
     ...options,
-    headers: { ...headers, ...options?.headers },
+    headers,
   });
+
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    window.location.href = "/login";
+  }
+
   return res.json() as Promise<ApiResponse<T>>;
 }
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  user: User;
+}
+
+export const authApi = {
+  login: (body: any) =>
+    request<LoginResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  register: (body: any) =>
+    request<User>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  profile: () => request<User>("/auth/profile"),
+};
 
 // ── Provider Configs ──────────────────────────────────────────────────────────
 
@@ -167,4 +220,28 @@ export interface HealthResult {
 
 export const healthApi = {
   check: () => request<HealthResult>("/health"),
+};
+
+// ── API Keys ──────────────────────────────────────────────────────────────────
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  key?: string; // only present on creation
+  isActive: boolean;
+  lastUsedAt?: string;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+export const apiKeysApi = {
+  list: () => request<ApiKey[]>("/api-keys"),
+  create: (body: { name: string; expiresAt?: string }) =>
+    request<ApiKey>("/api-keys", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  revoke: (id: string) =>
+    request<void>(`/api-keys/${id}`, { method: "DELETE" }),
 };
