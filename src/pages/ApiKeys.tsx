@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiKeysApi, ApiKey } from "../api/client";
+import { apiKeysApi, ipWhitelistApi, ApiKey, IpWhitelist } from "../api/client";
 import EmptyState from "../components/EmptyState";
 import {
   Key,
@@ -10,9 +10,10 @@ import {
   Copy,
   Trash2,
   AlertTriangle,
-  Eye,
-  EyeOff,
   ShieldCheck,
+  Shield,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 function useCopy() {
@@ -25,6 +26,100 @@ function useCopy() {
   return { copied, copy };
 }
 
+function IpWhitelistPanel({ apiKeyId }: { apiKeyId: string }) {
+  const [ips, setIps] = useState<IpWhitelist[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ cidr: "", label: "" });
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const res = await ipWhitelistApi.list(apiKeyId);
+    if (res.data) setIps(res.data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    void load();
+  }, [apiKeyId]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    await ipWhitelistApi.add(apiKeyId, form.cidr, form.label || undefined);
+    setForm({ cidr: "", label: "" });
+    await load();
+    setSaving(false);
+  };
+
+  const handleRemove = async (id: string) => {
+    await ipWhitelistApi.remove(apiKeyId, id);
+    await load();
+  };
+
+  return (
+    <div className="px-5 pb-4 space-y-3 bg-gray-950/50 border-t border-gray-800">
+      <p className="text-xs text-gray-500 pt-3">
+        {ips.length === 0
+          ? "No IP restrictions — all IPs allowed."
+          : `${ips.length} IP rule(s) — only listed IPs can use this key.`}
+      </p>
+      {loading ? (
+        <RefreshCw className="w-3.5 h-3.5 text-gray-600 animate-spin" />
+      ) : (
+        <div className="space-y-1.5">
+          {ips.map((ip) => (
+            <div
+              key={ip.id}
+              className="flex items-center gap-2 bg-gray-800 rounded-lg px-3 py-1.5"
+            >
+              <code className="text-xs text-brand-400 font-mono flex-1">
+                {ip.cidr}
+              </code>
+              {ip.label && (
+                <span className="text-xs text-gray-500">{ip.label}</span>
+              )}
+              <button
+                onClick={() => void handleRemove(ip.id)}
+                className="text-gray-600 hover:text-red-400 transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <form onSubmit={(e) => void handleAdd(e)} className="flex gap-2">
+        <input
+          className="input text-xs flex-1"
+          placeholder="192.168.1.0/24 or 1.2.3.4/32"
+          required
+          value={form.cidr}
+          onChange={(e) => setForm({ ...form, cidr: e.target.value })}
+        />
+        <input
+          className="input text-xs w-28"
+          placeholder="Label (opt)"
+          value={form.label}
+          onChange={(e) => setForm({ ...form, label: e.target.value })}
+        />
+        <button
+          type="submit"
+          className="btn-secondary text-xs shrink-0"
+          disabled={saving}
+        >
+          {saving ? (
+            <RefreshCw className="w-3 h-3 animate-spin" />
+          ) : (
+            <Plus className="w-3 h-3" />
+          )}
+          Add
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function ApiKeys() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,8 +128,8 @@ export default function ApiKeys() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [newKey, setNewKey] = useState<ApiKey | null>(null);
-  const [showNewKey, setShowNewKey] = useState(false);
   const [revokeId, setRevokeId] = useState<string | null>(null);
+  const [expandedIp, setExpandedIp] = useState<string | null>(null);
   const { copied, copy } = useCopy();
 
   const load = async () => {
@@ -58,7 +153,6 @@ export default function ApiKeys() {
     });
     if (res.success && res.data) {
       setNewKey(res.data);
-      setShowNewKey(true);
       setShowForm(false);
       setForm({ name: "", expiresAt: "" });
       await load();
@@ -74,15 +168,13 @@ export default function ApiKeys() {
     await load();
   };
 
-  const formatDate = (iso?: string) =>
+  const fmt = (iso?: string) =>
     iso ? new Date(iso).toLocaleDateString() : "—";
-
   const isExpired = (iso?: string) =>
     iso ? new Date(iso) < new Date() : false;
 
   return (
     <div className="p-6 space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2">
@@ -107,23 +199,23 @@ export default function ApiKeys() {
         </div>
       </div>
 
-      {/* Info banner */}
+      {/* Info */}
       <div className="card p-4 flex gap-3">
         <div className="w-1 rounded-full bg-brand-600 shrink-0" />
         <div className="space-y-1">
           <p className="text-xs font-medium text-gray-300">How to use</p>
           <p className="text-xs text-gray-500">
-            Include your API key in the{" "}
+            Pass your key in the{" "}
             <code className="text-brand-400">X-API-Key</code> header when
             calling{" "}
             <code className="text-brand-400">POST /v1/messages/send</code>. The
-            plain key is shown only once at creation.
+            plain key is shown only once.
           </p>
         </div>
       </div>
 
-      {/* New key revealed modal */}
-      {showNewKey && newKey && (
+      {/* New key modal */}
+      {newKey && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="card w-full max-w-md p-6 space-y-4">
             <div className="flex items-center gap-3">
@@ -139,14 +231,12 @@ export default function ApiKeys() {
                 </p>
               </div>
             </div>
-
             <div className="bg-yellow-900/20 border border-yellow-800/40 rounded-lg px-3 py-2 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
               <p className="text-xs text-yellow-400">
                 Store this key securely. We cannot recover it.
               </p>
             </div>
-
             <div>
               <p className="label">Your API Key</p>
               <div className="relative group">
@@ -165,33 +255,27 @@ export default function ApiKeys() {
                 </button>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
+            <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
                 <p className="text-gray-600">Name</p>
                 <p className="text-gray-300">{newKey.name}</p>
               </div>
               <div>
                 <p className="text-gray-600">Expires</p>
-                <p className="text-gray-300">{formatDate(newKey.expiresAt)}</p>
+                <p className="text-gray-300">{fmt(newKey.expiresAt)}</p>
               </div>
             </div>
-
             <button
-              onClick={() => {
-                setShowNewKey(false);
-                setNewKey(null);
-              }}
+              onClick={() => setNewKey(null)}
               className="btn-primary w-full justify-center"
             >
-              <Check className="w-4 h-4" />
-              I've saved the key
+              <Check className="w-4 h-4" /> I've saved the key
             </button>
           </div>
         </div>
       )}
 
-      {/* Create form modal */}
+      {/* Create form */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="card w-full max-w-sm p-6 space-y-4">
@@ -204,13 +288,11 @@ export default function ApiKeys() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-
             {error && (
               <div className="px-3 py-2 bg-red-900/30 border border-red-800/50 rounded-lg text-xs text-red-300">
                 {error}
               </div>
             )}
-
             <form onSubmit={(e) => void handleCreate(e)} className="space-y-3">
               <div>
                 <label className="label">Key Name *</label>
@@ -264,23 +346,11 @@ export default function ApiKeys() {
         </div>
       )}
 
-      {/* Revoke confirm modal */}
+      {/* Revoke confirm */}
       {revokeId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="card w-full max-w-sm p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-900/30 flex items-center justify-center">
-                <Trash2 className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">
-                  Revoke API Key
-                </p>
-                <p className="text-xs text-gray-500">
-                  This action cannot be undone
-                </p>
-              </div>
-            </div>
+            <p className="text-sm font-semibold text-white">Revoke API Key?</p>
             <p className="text-xs text-gray-400">
               Any application using this key will immediately lose access.
             </p>
@@ -289,7 +359,7 @@ export default function ApiKeys() {
                 onClick={() => void handleRevoke(revokeId)}
                 className="btn-danger flex-1 justify-center"
               >
-                <Trash2 className="w-4 h-4" /> Revoke Key
+                <Trash2 className="w-4 h-4" /> Revoke
               </button>
               <button
                 onClick={() => setRevokeId(null)}
@@ -320,44 +390,22 @@ export default function ApiKeys() {
             }
           />
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-800">
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Name
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Key Prefix
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Status
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Last Used
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Expires
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Created
-                </th>
-                <th className="px-5 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {keys.map((k) => (
-                <tr key={k.id} className="table-row">
-                  <td className="px-5 py-3 font-medium text-gray-200">
-                    {k.name}
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs text-brand-400 font-mono bg-brand-900/20 px-2 py-0.5 rounded">
+          <div className="divide-y divide-gray-800">
+            {keys.map((k) => (
+              <div key={k.id}>
+                {/* Row */}
+                <div className="flex items-center gap-4 px-5 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-200">
+                      {k.name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <code className="text-xs text-brand-400 font-mono bg-brand-900/20 px-1.5 py-0.5 rounded">
                         {k.keyPrefix}…
                       </code>
                       <button
                         onClick={() => copy(k.keyPrefix, k.id)}
-                        className="text-gray-600 hover:text-gray-400 transition-colors"
+                        className="text-gray-600 hover:text-gray-400"
                       >
                         {copied === k.id ? (
                           <Check className="w-3 h-3 text-brand-400" />
@@ -366,11 +414,25 @@ export default function ApiKeys() {
                         )}
                       </button>
                     </div>
-                  </td>
-                  <td className="px-5 py-3">
+                  </div>
+                  <div className="text-xs text-gray-500 hidden sm:block">
+                    Last used: {fmt(k.lastUsedAt)}
+                  </div>
+                  <div className="text-xs hidden sm:block">
+                    <span
+                      className={
+                        isExpired(k.expiresAt)
+                          ? "text-red-400"
+                          : "text-gray-500"
+                      }
+                    >
+                      Exp: {fmt(k.expiresAt)}
+                    </span>
+                  </div>
+                  <div>
                     {k.isActive && !isExpired(k.expiresAt) ? (
                       <span className="inline-flex items-center gap-1 text-xs text-brand-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-brand-400" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-400" />{" "}
                         Active
                       </span>
                     ) : (
@@ -379,25 +441,22 @@ export default function ApiKeys() {
                         {isExpired(k.expiresAt) ? "Expired" : "Revoked"}
                       </span>
                     )}
-                  </td>
-                  <td className="px-5 py-3 text-gray-500 text-xs">
-                    {formatDate(k.lastUsedAt)}
-                  </td>
-                  <td className="px-5 py-3 text-xs">
-                    <span
-                      className={
-                        isExpired(k.expiresAt)
-                          ? "text-red-400"
-                          : "text-gray-500"
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        setExpandedIp(expandedIp === k.id ? null : k.id)
                       }
+                      className="btn-secondary text-xs"
+                      title="IP Whitelist"
                     >
-                      {formatDate(k.expiresAt)}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-gray-500 text-xs">
-                    {formatDate(k.createdAt)}
-                  </td>
-                  <td className="px-5 py-3 text-right">
+                      <Shield className="w-3.5 h-3.5" />
+                      {expandedIp === k.id ? (
+                        <ChevronDown className="w-3 h-3" />
+                      ) : (
+                        <ChevronRight className="w-3 h-3" />
+                      )}
+                    </button>
                     {k.isActive && (
                       <button
                         onClick={() => setRevokeId(k.id)}
@@ -406,11 +465,13 @@ export default function ApiKeys() {
                         <Trash2 className="w-3.5 h-3.5" /> Revoke
                       </button>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+                {/* IP Whitelist panel */}
+                {expandedIp === k.id && <IpWhitelistPanel apiKeyId={k.id} />}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
