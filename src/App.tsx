@@ -11,6 +11,10 @@ import Webhooks from "./pages/Webhooks";
 import Templates from "./pages/Templates";
 import ScheduledMessages from "./pages/ScheduledMessages";
 import AutoReply from "./pages/AutoReply";
+import Analytics from "./pages/Analytics";
+import Contacts from "./pages/Contacts";
+import Broadcast from "./pages/Broadcast";
+import Team from "./pages/Team";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -24,15 +28,26 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
+          {/* WhatsApp */}
           <Route path="provider-configs" element={<ProviderConfigs />} />
           <Route path="sessions" element={<Sessions />} />
           <Route path="messages" element={<Messages />} />
           <Route path="events" element={<Events />} />
-          <Route path="api-keys" element={<ApiKeys />} />
-          <Route path="webhooks" element={<Webhooks />} />
-          <Route path="templates" element={<Templates />} />
+          {/* Messaging */}
+          <Route path="broadcast" element={<Broadcast />} />
           <Route path="scheduled" element={<ScheduledMessages />} />
+          <Route path="templates" element={<Templates />} />
           <Route path="auto-reply" element={<AutoReply />} />
+          {/* Contacts */}
+          <Route path="contacts" element={<Contacts />} />
+          {/* Automation */}
+          <Route path="webhooks" element={<Webhooks />} />
+          {/* Analytics */}
+          <Route path="analytics" element={<Analytics />} />
+          {/* Team */}
+          <Route path="team" element={<Team />} />
+          {/* Developer */}
+          <Route path="api-keys" element={<ApiKeys />} />
           <Route path="docs" element={<Docs />} />
         </Route>
       </Route>

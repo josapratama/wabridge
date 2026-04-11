@@ -14,12 +14,19 @@ import {
   FileText,
   Clock,
   Bot,
+  BarChart2,
+  Users,
+  Radio,
+  Users2,
 } from "lucide-react";
 
 const navGroups = [
   {
     label: "Overview",
-    items: [{ to: "/", icon: LayoutDashboard, label: "Dashboard" }],
+    items: [
+      { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+      { to: "/analytics", icon: BarChart2, label: "Analytics" },
+    ],
   },
   {
     label: "WhatsApp",
@@ -31,13 +38,25 @@ const navGroups = [
     ],
   },
   {
-    label: "Automation",
+    label: "Messaging",
     items: [
-      { to: "/webhooks", icon: Webhook, label: "Webhooks" },
-      { to: "/templates", icon: FileText, label: "Templates" },
+      { to: "/broadcast", icon: Radio, label: "Broadcast" },
       { to: "/scheduled", icon: Clock, label: "Scheduled" },
+      { to: "/templates", icon: FileText, label: "Templates" },
       { to: "/auto-reply", icon: Bot, label: "Auto-reply" },
     ],
+  },
+  {
+    label: "Contacts",
+    items: [{ to: "/contacts", icon: Users, label: "Contacts" }],
+  },
+  {
+    label: "Automation",
+    items: [{ to: "/webhooks", icon: Webhook, label: "Webhooks" }],
+  },
+  {
+    label: "Team",
+    items: [{ to: "/team", icon: Users2, label: "Team" }],
   },
   {
     label: "Developer",
