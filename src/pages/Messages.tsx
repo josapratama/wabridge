@@ -9,17 +9,61 @@ import {
   RefreshCw,
   ArrowDownLeft,
   ArrowUpRight,
+  Download,
+  Search,
+  Image,
+  FileText,
+  Mic,
+  Video,
+  MapPin,
 } from "lucide-react";
+
+const MESSAGE_TYPES = [
+  "text",
+  "image",
+  "document",
+  "audio",
+  "video",
+  "location",
+] as const;
+type MsgType = (typeof MESSAGE_TYPES)[number];
+
+const typeIcon: Record<MsgType, React.ReactNode> = {
+  text: null,
+  image: <Image className="w-3 h-3" />,
+  document: <FileText className="w-3 h-3" />,
+  audio: <Mic className="w-3 h-3" />,
+  video: <Video className="w-3 h-3" />,
+  location: <MapPin className="w-3 h-3" />,
+};
+
+const emptyForm = {
+  sessionId: "",
+  to: "",
+  message: "",
+  type: "text" as MsgType,
+  mediaUrl: "",
+  mediaCaption: "",
+  mediaMimeType: "",
+  latitude: "",
+  longitude: "",
+  locationName: "",
+};
 
 export default function Messages() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ sessionId: "", to: "", message: "" });
+  const [form, setForm] = useState(emptyForm);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Filters
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterDirection, setFilterDirection] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -33,15 +77,45 @@ export default function Messages() {
     void load();
   }, []);
 
+  const filtered = messages.filter((m) => {
+    if (filterStatus && m.status !== filterStatus) return false;
+    if (filterDirection && m.direction !== filterDirection) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (
+        m.content.toLowerCase().includes(q) ||
+        m.from.includes(q) ||
+        m.to.includes(q)
+      );
+    }
+    return true;
+  });
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
     setError("");
     setSuccess("");
-    const res = await messagesApi.send(form);
+    const payload: any = {
+      sessionId: form.sessionId,
+      to: form.to,
+      message: form.message,
+      type: form.type,
+    };
+    if (form.type !== "text" && form.type !== "location") {
+      if (form.mediaUrl) payload.mediaUrl = form.mediaUrl;
+      if (form.mediaCaption) payload.mediaCaption = form.mediaCaption;
+      if (form.mediaMimeType) payload.mediaMimeType = form.mediaMimeType;
+    }
+    if (form.type === "location") {
+      payload.latitude = parseFloat(form.latitude);
+      payload.longitude = parseFloat(form.longitude);
+      payload.locationName = form.locationName;
+    }
+    const res = await messagesApi.send(payload);
     if (res.success) {
-      setSuccess("Message sent successfully!");
-      setForm({ ...form, message: "" });
+      setSuccess("Message sent!");
+      setForm(emptyForm);
       await load();
       setTimeout(() => setSuccess(""), 3000);
     } else {
@@ -50,13 +124,29 @@ export default function Messages() {
     setSending(false);
   };
 
+  const handleExport = (format: "csv" | "json") => {
+    const params = new URLSearchParams({ format });
+    if (filterStatus) params.set("status", filterStatus);
+    if (filterDirection) params.set("direction", filterDirection);
+    const token = localStorage.getItem("token");
+    // Trigger download via anchor
+    const a = document.createElement("a");
+    a.href = `http://localhost:3000/export/messages?${params.toString()}`;
+    // Pass token via query for file download (simple approach)
+    a.href += `&_token=${token}`;
+    a.download = "";
+    a.click();
+  };
+
+  const isMedia = form.type !== "text" && form.type !== "location";
+
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">Messages</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Send and view message history
+            {filtered.length} messages
           </p>
         </div>
         <div className="flex gap-2">
@@ -67,16 +157,71 @@ export default function Messages() {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
+          <div className="relative group">
+            <button className="btn-secondary">
+              <Download className="w-4 h-4" /> Export
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-32 card py-1 hidden group-hover:block z-10">
+              <button
+                onClick={() => handleExport("csv")}
+                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-800"
+              >
+                CSV
+              </button>
+              <button
+                onClick={() => handleExport("json")}
+                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-800"
+              >
+                JSON
+              </button>
+            </div>
+          </div>
           <button onClick={() => setShowForm(true)} className="btn-primary">
             <Send className="w-4 h-4" /> Send Message
           </button>
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+          <input
+            className="input pl-8 text-xs"
+            placeholder="Search by content, from, to…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          className="input w-36 text-xs"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="">All statuses</option>
+          {["queued", "sent", "delivered", "read", "failed", "received"].map(
+            (s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ),
+          )}
+        </select>
+        <select
+          className="input w-36 text-xs"
+          value={filterDirection}
+          onChange={(e) => setFilterDirection(e.target.value)}
+        >
+          <option value="">All directions</option>
+          <option value="inbound">Inbound</option>
+          <option value="outbound">Outbound</option>
+        </select>
+      </div>
+
       {/* Send Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="card w-full max-w-md p-6 space-y-4">
+          <div className="card w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-white">
                 Send Message
@@ -123,10 +268,11 @@ export default function Messages() {
                 </select>
                 {sessions.length === 0 && (
                   <p className="text-xs text-yellow-500 mt-1">
-                    No active sessions. Activate a session first.
+                    No active sessions.
                   </p>
                 )}
               </div>
+
               <div>
                 <label className="label">To (phone number) *</label>
                 <input
@@ -136,27 +282,170 @@ export default function Messages() {
                   value={form.to}
                   onChange={(e) => setForm({ ...form, to: e.target.value })}
                 />
-                <p className="text-xs text-gray-600 mt-1">
-                  Include country code, no + or spaces
-                </p>
               </div>
+
+              {/* Message type selector */}
               <div>
-                <label className="label">Message *</label>
-                <textarea
-                  className="input resize-none"
-                  rows={4}
-                  placeholder="Type your message…"
-                  required
-                  maxLength={4096}
-                  value={form.message}
-                  onChange={(e) =>
-                    setForm({ ...form, message: e.target.value })
-                  }
-                />
-                <p className="text-xs text-gray-600 mt-1 text-right">
-                  {form.message.length}/4096
-                </p>
+                <label className="label">Message Type</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {MESSAGE_TYPES.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setForm({ ...form, type: t })}
+                      className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        form.type === t
+                          ? "bg-brand-600/20 border-brand-700/50 text-brand-300"
+                          : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"
+                      }`}
+                    >
+                      {typeIcon[t]}
+                      {t}
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {/* Text message */}
+              {form.type === "text" && (
+                <div>
+                  <label className="label">Message *</label>
+                  <textarea
+                    className="input resize-none"
+                    rows={4}
+                    required
+                    maxLength={4096}
+                    placeholder="Type your message…"
+                    value={form.message}
+                    onChange={(e) =>
+                      setForm({ ...form, message: e.target.value })
+                    }
+                  />
+                  <p className="text-xs text-gray-600 mt-1 text-right">
+                    {form.message.length}/4096
+                  </p>
+                </div>
+              )}
+
+              {/* Media fields */}
+              {isMedia && (
+                <>
+                  <div>
+                    <label className="label">Media URL *</label>
+                    <input
+                      className="input"
+                      type="url"
+                      required
+                      placeholder="https://example.com/file.jpg"
+                      value={form.mediaUrl}
+                      onChange={(e) =>
+                        setForm({ ...form, mediaUrl: e.target.value })
+                      }
+                    />
+                  </div>
+                  {(form.type === "image" ||
+                    form.type === "document" ||
+                    form.type === "video") && (
+                    <div>
+                      <label className="label">Caption</label>
+                      <input
+                        className="input"
+                        placeholder="Optional caption"
+                        value={form.mediaCaption}
+                        onChange={(e) =>
+                          setForm({ ...form, mediaCaption: e.target.value })
+                        }
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="label">MIME Type</label>
+                    <input
+                      className="input"
+                      placeholder={
+                        form.type === "image"
+                          ? "image/jpeg"
+                          : form.type === "document"
+                            ? "application/pdf"
+                            : form.type === "audio"
+                              ? "audio/mpeg"
+                              : "video/mp4"
+                      }
+                      value={form.mediaMimeType}
+                      onChange={(e) =>
+                        setForm({ ...form, mediaMimeType: e.target.value })
+                      }
+                    />
+                  </div>
+                  {/* Text caption as message for display */}
+                  <div>
+                    <label className="label">Message (for record)</label>
+                    <input
+                      className="input"
+                      placeholder="Description for message log"
+                      value={form.message}
+                      onChange={(e) =>
+                        setForm({ ...form, message: e.target.value })
+                      }
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Location fields */}
+              {form.type === "location" && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label">Latitude *</label>
+                      <input
+                        className="input"
+                        type="number"
+                        step="any"
+                        required
+                        placeholder="-6.2088"
+                        value={form.latitude}
+                        onChange={(e) =>
+                          setForm({ ...form, latitude: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Longitude *</label>
+                      <input
+                        className="input"
+                        type="number"
+                        step="any"
+                        required
+                        placeholder="106.8456"
+                        value={form.longitude}
+                        onChange={(e) =>
+                          setForm({ ...form, longitude: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label">Location Name</label>
+                    <input
+                      className="input"
+                      placeholder="e.g. Jakarta, Indonesia"
+                      value={form.locationName}
+                      onChange={(e) =>
+                        setForm({ ...form, locationName: e.target.value })
+                      }
+                    />
+                  </div>
+                  <input
+                    type="hidden"
+                    value={form.locationName || "Location"}
+                    onChange={(e) =>
+                      setForm({ ...form, message: e.target.value })
+                    }
+                  />
+                </>
+              )}
+
               <div className="flex gap-2 pt-1">
                 <button
                   type="submit"
@@ -192,16 +481,24 @@ export default function Messages() {
           <div className="flex items-center justify-center py-20">
             <RefreshCw className="w-5 h-5 text-gray-500 animate-spin" />
           </div>
-        ) : messages.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <EmptyState
             icon={MessageSquare}
-            title="No messages yet"
-            description="Send your first message or wait for inbound messages via webhook."
+            title="No messages"
+            description={
+              search || filterStatus || filterDirection
+                ? "No messages match your filters."
+                : "Send your first message or wait for inbound messages."
+            }
             action={
-              <button className="btn-primary" onClick={() => setShowForm(true)}>
-                <Send className="w-4 h-4" />
-                Send Message
-              </button>
+              !search && !filterStatus && !filterDirection ? (
+                <button
+                  className="btn-primary"
+                  onClick={() => setShowForm(true)}
+                >
+                  <Send className="w-4 h-4" /> Send Message
+                </button>
+              ) : undefined
             }
           />
         ) : (
@@ -215,6 +512,9 @@ export default function Messages() {
                   From → To
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
+                  Type
+                </th>
+                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
                   Content
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
@@ -226,7 +526,7 @@ export default function Messages() {
               </tr>
             </thead>
             <tbody>
-              {messages.map((m) => (
+              {filtered.map((m) => (
                 <tr key={m.id} className="table-row">
                   <td className="px-5 py-3">
                     {m.direction === "inbound" ? (
@@ -240,8 +540,24 @@ export default function Messages() {
                     <span className="text-gray-600 mx-1">→</span>
                     {m.to}
                   </td>
-                  <td className="px-5 py-3 text-gray-200 max-w-xs truncate">
-                    {m.content}
+                  <td className="px-5 py-3">
+                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                      {typeIcon[m.type as MsgType]}
+                      {m.type}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-gray-200 max-w-xs">
+                    <p className="truncate">{m.content}</p>
+                    {m.mediaUrl && (
+                      <a
+                        href={m.mediaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-brand-400 hover:underline truncate block max-w-[200px]"
+                      >
+                        {m.mediaUrl}
+                      </a>
+                    )}
                   </td>
                   <td className="px-5 py-3">
                     <StatusBadge value={m.status} />

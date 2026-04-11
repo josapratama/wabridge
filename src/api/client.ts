@@ -171,8 +171,11 @@ export interface Message {
   direction: "inbound" | "outbound";
   from: string;
   to: string;
-  type: "text";
+  type: "text" | "image" | "document" | "audio" | "video" | "location";
   content: string;
+  mediaUrl?: string;
+  mediaCaption?: string;
+  mediaMimeType?: string;
   status: "queued" | "sent" | "delivered" | "read" | "failed" | "received";
   createdAt: string;
   updatedAt: string;
@@ -181,7 +184,18 @@ export interface Message {
 export const messagesApi = {
   list: () => request<Message[]>("/messages"),
   get: (id: string) => request<Message>(`/messages/${id}`),
-  send: (body: { sessionId: string; to: string; message: string }) =>
+  send: (body: {
+    sessionId: string;
+    to: string;
+    message: string;
+    type?: string;
+    mediaUrl?: string;
+    mediaCaption?: string;
+    mediaMimeType?: string;
+    latitude?: number;
+    longitude?: number;
+    locationName?: string;
+  }) =>
     request<Message>("/messages/send", {
       method: "POST",
       body: JSON.stringify(body),
