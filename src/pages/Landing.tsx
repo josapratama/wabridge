@@ -206,6 +206,18 @@ export default function Landing() {
               API
             </a>
             <Link
+              to="/pricing"
+              className="text-xs text-gray-400 hover:text-white transition-colors hidden sm:block"
+            >
+              Pricing
+            </Link>
+            <Link
+              to="/public-docs"
+              className="text-xs text-gray-400 hover:text-white transition-colors hidden sm:block"
+            >
+              Docs
+            </Link>
+            <Link
               to="/login"
               className="text-xs text-gray-400 hover:text-white transition-colors"
             >
@@ -244,12 +256,12 @@ export default function Landing() {
           >
             Start for free <ArrowRight className="w-4 h-4" />
           </Link>
-          <a
-            href="#api"
+          <Link
+            to="/public-docs"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium rounded-xl transition-colors text-sm"
           >
             <Code2 className="w-4 h-4" /> View API Docs
-          </a>
+          </Link>
         </div>
 
         {/* Code preview */}

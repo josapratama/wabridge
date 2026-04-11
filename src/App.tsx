@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Landing from "./pages/Landing";
+import PublicDocs from "./pages/PublicDocs";
+import Pricing from "./pages/Pricing";
 import Dashboard from "./pages/Dashboard";
 import ProviderConfigs from "./pages/ProviderConfigs";
 import Sessions from "./pages/Sessions";
@@ -26,6 +28,8 @@ export default function App() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<Landing />} />
+      <Route path="/public-docs" element={<PublicDocs />} />
+      <Route path="/pricing" element={<Pricing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
