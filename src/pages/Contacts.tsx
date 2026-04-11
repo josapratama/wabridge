@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
 import { contactsApi, Contact } from "../api/client";
 import EmptyState from "../components/EmptyState";
-import { Users, Plus, X, Check, RefreshCw, Trash2, Pencil } from "lucide-react";
+import {
+  Users,
+  Plus,
+  X,
+  Check,
+  RefreshCw,
+  Trash2,
+  Pencil,
+  Download,
+} from "lucide-react";
 
 export default function Contacts() {
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -93,6 +102,14 @@ export default function Contacts() {
     await load();
   };
 
+  const handleExport = (format: "csv" | "json") => {
+    const token = localStorage.getItem("token");
+    const a = document.createElement("a");
+    a.href = `http://localhost:3000/export/contacts?format=${format}&_token=${token}`;
+    a.download = "";
+    a.click();
+  };
+
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
@@ -116,6 +133,25 @@ export default function Contacts() {
           <button onClick={openCreate} className="btn-primary">
             <Plus className="w-4 h-4" /> Add Contact
           </button>
+          <div className="relative group">
+            <button className="btn-secondary">
+              <Download className="w-4 h-4" /> Export
+            </button>
+            <div className="absolute right-0 top-full mt-1 w-28 card py-1 hidden group-hover:block z-10">
+              <button
+                onClick={() => handleExport("csv")}
+                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-800"
+              >
+                CSV
+              </button>
+              <button
+                onClick={() => handleExport("json")}
+                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-800"
+              >
+                JSON
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
