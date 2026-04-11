@@ -10,16 +10,42 @@ import {
   User,
   BookOpen,
   Key,
+  Webhook,
+  FileText,
+  Clock,
+  Bot,
 } from "lucide-react";
 
-const nav = [
-  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/provider-configs", icon: Settings2, label: "Provider Configs" },
-  { to: "/sessions", icon: Layers, label: "Sessions" },
-  { to: "/messages", icon: MessageSquare, label: "Messages" },
-  { to: "/events", icon: Activity, label: "Events" },
-  { to: "/api-keys", icon: Key, label: "API Keys" },
-  { to: "/docs", icon: BookOpen, label: "API Docs" },
+const navGroups = [
+  {
+    label: "Overview",
+    items: [{ to: "/", icon: LayoutDashboard, label: "Dashboard" }],
+  },
+  {
+    label: "WhatsApp",
+    items: [
+      { to: "/provider-configs", icon: Settings2, label: "Provider Configs" },
+      { to: "/sessions", icon: Layers, label: "Sessions" },
+      { to: "/messages", icon: MessageSquare, label: "Messages" },
+      { to: "/events", icon: Activity, label: "Events" },
+    ],
+  },
+  {
+    label: "Automation",
+    items: [
+      { to: "/webhooks", icon: Webhook, label: "Webhooks" },
+      { to: "/templates", icon: FileText, label: "Templates" },
+      { to: "/scheduled", icon: Clock, label: "Scheduled" },
+      { to: "/auto-reply", icon: Bot, label: "Auto-reply" },
+    ],
+  },
+  {
+    label: "Developer",
+    items: [
+      { to: "/api-keys", icon: Key, label: "API Keys" },
+      { to: "/docs", icon: BookOpen, label: "API Docs" },
+    ],
+  },
 ];
 
 export default function Sidebar() {
@@ -49,27 +75,36 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {nav.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === "/"}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-brand-600/20 text-brand-400"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-              }`
-            }
-          >
-            <Icon className="w-4 h-4 shrink-0" />
-            {label}
-          </NavLink>
+      <nav className="flex-1 px-3 py-3 space-y-4 overflow-y-auto">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            <p className="px-3 mb-1 text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+              {group.label}
+            </p>
+            <div className="space-y-0.5">
+              {group.items.map(({ to, icon: Icon, label }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === "/"}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-brand-600/20 text-brand-400"
+                        : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                    }`
+                  }
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
-      {/* User Info & Logout */}
+      {/* User & Logout */}
       <div className="px-3 py-4 border-t border-gray-800 space-y-2">
         {user && (
           <div className="flex items-center gap-3 px-3 py-2 text-gray-400">
@@ -91,7 +126,6 @@ export default function Sidebar() {
         </button>
       </div>
 
-      {/* Footer */}
       <div className="px-5 py-2 border-t border-gray-800">
         <p className="text-[10px] text-gray-600">API: localhost:3000</p>
       </div>

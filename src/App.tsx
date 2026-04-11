@@ -7,6 +7,10 @@ import Messages from "./pages/Messages";
 import Events from "./pages/Events";
 import Docs from "./pages/Docs";
 import ApiKeys from "./pages/ApiKeys";
+import Webhooks from "./pages/Webhooks";
+import Templates from "./pages/Templates";
+import ScheduledMessages from "./pages/ScheduledMessages";
+import AutoReply from "./pages/AutoReply";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -14,11 +18,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 export default function App() {
   return (
     <Routes>
-      {/* Public Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* Private Routes */}
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route index element={<Dashboard />} />
@@ -26,8 +28,12 @@ export default function App() {
           <Route path="sessions" element={<Sessions />} />
           <Route path="messages" element={<Messages />} />
           <Route path="events" element={<Events />} />
-          <Route path="docs" element={<Docs />} />
           <Route path="api-keys" element={<ApiKeys />} />
+          <Route path="webhooks" element={<Webhooks />} />
+          <Route path="templates" element={<Templates />} />
+          <Route path="scheduled" element={<ScheduledMessages />} />
+          <Route path="auto-reply" element={<AutoReply />} />
+          <Route path="docs" element={<Docs />} />
         </Route>
       </Route>
     </Routes>
