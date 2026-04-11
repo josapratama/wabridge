@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Zap } from "lucide-react";
+import { Zap, ArrowLeft } from "lucide-react";
 import { authApi } from "../api/client";
 
 export default function Register() {
@@ -32,6 +32,14 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 p-4">
       <div className="w-full max-w-sm">
+        {/* Back button */}
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors mb-6"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to home
+        </Link>
+
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 rounded-xl bg-brand-600 flex items-center justify-center mb-4">

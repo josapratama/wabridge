@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { Zap, Check, ArrowRight, Server, Cloud, Building2 } from "lucide-react";
+import { Check, ArrowRight, Server, Cloud, Building2 } from "lucide-react";
+import PublicNav from "../components/PublicNav";
 
 const plans = [
   {
@@ -111,37 +112,7 @@ const faqs = [
 export default function Pricing() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
-      {/* Navbar */}
-      <nav className="border-b border-gray-800 sticky top-0 z-50 bg-gray-950/90 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="text-sm font-bold text-white">WA Integration</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              to="/public-docs"
-              className="text-xs text-gray-400 hover:text-white transition-colors"
-            >
-              Docs
-            </Link>
-            <Link
-              to="/login"
-              className="text-xs text-gray-400 hover:text-white transition-colors"
-            >
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-lg transition-colors"
-            >
-              Get Started <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <PublicNav />
 
       <div className="max-w-6xl mx-auto px-6 py-20 space-y-20">
         {/* Header */}
