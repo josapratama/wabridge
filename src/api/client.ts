@@ -388,3 +388,170 @@ export const apiKeysApi = {
   revoke: (id: string) =>
     request<void>(`/api-keys/${id}`, { method: "DELETE" }),
 };
+
+// ── Contacts ──────────────────────────────────────────────────────────────────
+
+export interface Contact {
+  id: string;
+  name: string;
+  phone: string;
+  tags: string[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const contactsApi = {
+  list: (tag?: string) =>
+    request<Contact[]>(`/contacts${tag ? `?tag=${tag}` : ""}`),
+  create: (body: {
+    name: string;
+    phone: string;
+    tags?: string[];
+    notes?: string;
+  }) =>
+    request<Contact>("/contacts", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  update: (id: string, body: Partial<Contact>) =>
+    request<Contact>(`/contacts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) =>
+    request<void>(`/contacts/${id}`, { method: "DELETE" }),
+};
+
+// ── Broadcast ─────────────────────────────────────────────────────────────────
+
+export interface BroadcastJob {
+  id: string;
+  name: string;
+  sessionId: string;
+  content: string;
+  recipients: string[];
+  delayMs: number;
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
+  totalCount: number;
+  sentCount: number;
+  failedCount: number;
+  startedAt?: string;
+  completedAt?: string;
+  createdAt: string;
+}
+
+export const broadcastApi = {
+  list: () => request<BroadcastJob[]>("/broadcasts"),
+  create: (body: {
+    name: string;
+    sessionId: string;
+    content: string;
+    recipients: string[];
+    delayMs?: number;
+  }) =>
+    request<BroadcastJob>("/broadcasts", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  start: (id: string) =>
+    request<BroadcastJob>(`/broadcasts/${id}/start`, { method: "POST" }),
+  cancel: (id: string) =>
+    request<BroadcastJob>(`/broadcasts/${id}`, { method: "DELETE" }),
+};
+
+// ── Analytics ─────────────────────────────────────────────────────────────────
+
+export interface AnalyticsSummary {
+  totalSent: number;
+  totalReceived: number;
+  successRate: number;
+  dailyStats: Array<{
+    date: string;
+    sent: number;
+    received: number;
+    failed: number;
+  }>;
+  statusBreakdown: Record<string, number>;
+}
+
+export interface UsageRecord {
+  messagesSent: number;
+  messagesReceived: number;
+  quotaLimit: number;
+  month: string;
+}
+
+export const analyticsApi = {
+  summary: () => request<AnalyticsSummary>("/analytics/summary"),
+  usage: () => request<UsageRecord>("/analytics/usage"),
+};
+
+// ── Team ──────────────────────────────────────────────────────────────────────
+
+export interface TeamMember {
+  id: string;
+  memberId: string;
+  role: "admin" | "operator" | "viewer";
+  invitedAt: string;
+  acceptedAt?: string;
+  memberEmail?: string;
+  memberName?: string;
+}
+
+export const teamApi = {
+  list: () => request<TeamMember[]>("/team"),
+  invite: (email: string, role: string) =>
+    request<TeamMember>("/team/invite", {
+      method: "POST",
+      body: JSON.stringify({ email, role }),
+    }),
+  updateRole: (id: string, role: string) =>
+    request<void>(`/team/${id}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
+  remove: (id: string) => request<void>(`/team/${id}`, { method: "DELETE" }),
+};
+
+// ── Session Health ────────────────────────────────────────────────────────────
+
+export interface SessionHealthLog {
+  id: string;
+  sessionId: string;
+  status: "connected" | "disconnected" | "reconnecting";
+  latencyMs?: number;
+  messagesSentToday: number;
+  messagesReceivedToday: number;
+  checkedAt: string;
+}
+
+export const sessionHealthApi = {
+  all: () => request<SessionHealthLog[]>("/session-health"),
+  forSession: (sessionId: string) =>
+    request<SessionHealthLog>(`/session-health/${sessionId}`),
+};
+
+// ── IP Whitelist ──────────────────────────────────────────────────────────────
+
+export interface IpWhitelist {
+  id: string;
+  apiKeyId: string;
+  cidr: string;
+  label?: string;
+  createdAt: string;
+}
+
+export const ipWhitelistApi = {
+  list: (apiKeyId: string) =>
+    request<IpWhitelist[]>(`/api-keys/${apiKeyId}/ip-whitelist`),
+  add: (apiKeyId: string, cidr: string, label?: string) =>
+    request<IpWhitelist>(`/api-keys/${apiKeyId}/ip-whitelist`, {
+      method: "POST",
+      body: JSON.stringify({ cidr, label }),
+    }),
+  remove: (apiKeyId: string, id: string) =>
+    request<void>(`/api-keys/${apiKeyId}/ip-whitelist/${id}`, {
+      method: "DELETE",
+    }),
+};
