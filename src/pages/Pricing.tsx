@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Check, ArrowRight, Server, Cloud, Building2 } from "lucide-react";
+import { Zap, Check, ArrowRight, Server, Cloud, Building2 } from "lucide-react";
 import PublicNav from "../components/PublicNav";
 
 const plans = [
