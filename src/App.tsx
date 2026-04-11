@@ -5,16 +5,30 @@ import ProviderConfigs from "./pages/ProviderConfigs";
 import Sessions from "./pages/Sessions";
 import Messages from "./pages/Messages";
 import Events from "./pages/Events";
+import Docs from "./pages/Docs";
+import ApiKeys from "./pages/ApiKeys";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="provider-configs" element={<ProviderConfigs />} />
-        <Route path="sessions" element={<Sessions />} />
-        <Route path="messages" element={<Messages />} />
-        <Route path="events" element={<Events />} />
+      {/* Public Routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
+      {/* Private Routes */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="provider-configs" element={<ProviderConfigs />} />
+          <Route path="sessions" element={<Sessions />} />
+          <Route path="messages" element={<Messages />} />
+          <Route path="events" element={<Events />} />
+          <Route path="docs" element={<Docs />} />
+          <Route path="api-keys" element={<ApiKeys />} />
+        </Route>
       </Route>
     </Routes>
   );
