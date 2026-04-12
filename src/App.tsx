@@ -21,16 +21,19 @@ import SessionHealth from "./pages/SessionHealth";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 
 export default function App() {
   return (
     <Routes>
-      {/* Public */}
-      <Route path="/" element={<Landing />} />
-      <Route path="/public-docs" element={<PublicDocs />} />
-      <Route path="/pricing" element={<Pricing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      {/* Public — redirect to /dashboard if already logged in */}
+      <Route element={<PublicRoute />}>
+        <Route path="/" element={<Landing />} />
+        <Route path="/public-docs" element={<PublicDocs />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Route>
 
       {/* Protected dashboard */}
       <Route element={<ProtectedRoute />}>
