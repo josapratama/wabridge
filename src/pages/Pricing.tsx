@@ -219,7 +219,7 @@ export default function Pricing() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              to="/register"
+              to="/login"
               className="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl transition-colors text-sm"
             >
               Create free account <ArrowRight className="w-4 h-4" />

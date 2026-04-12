@@ -198,7 +198,7 @@ export default function Landing() {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            to="/register"
+            to="/login"
             className="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl transition-colors text-sm"
           >
             Start for free <ArrowRight className="w-4 h-4" />
@@ -345,7 +345,7 @@ export default function Landing() {
             </ul>
             <div className="flex gap-3">
               <Link
-                to="/register"
+                to="/login"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-lg transition-colors"
               >
                 Get API Key <ArrowRight className="w-3.5 h-3.5" />
@@ -432,7 +432,7 @@ export default function Landing() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              to="/register"
+              to="/login"
               className="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl transition-colors text-sm"
             >
               Create free account <ArrowRight className="w-4 h-4" />
@@ -466,7 +466,7 @@ export default function Landing() {
               Login
             </Link>
             <Link
-              to="/register"
+              to="/login"
               className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
             >
               Register

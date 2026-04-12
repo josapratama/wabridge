@@ -55,12 +55,6 @@ export default function PublicNav() {
           )}
           <Link
             to="/login"
-            className="text-xs text-gray-400 hover:text-white transition-colors"
-          >
-            Login
-          </Link>
-          <Link
-            to="/register"
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-lg transition-colors"
           >
             Get Started <ArrowRight className="w-3 h-3" />
