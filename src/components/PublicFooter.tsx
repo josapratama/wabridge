@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 import {
   Zap,
+  ArrowRight,
   MessageSquare,
   Shield,
   Globe,
   Code2,
-  ArrowRight,
 } from "lucide-react";
 
 const scrollTop = () => window.scrollTo({ top: 0, behavior: "instant" });
@@ -38,10 +38,10 @@ const stats = [
   { value: "∞", label: "Messages" },
 ];
 
-export default function LandingFooter() {
+export default function PublicFooter() {
   return (
     <footer className="border-t border-gray-800">
-      {/* Stats bar */}
+      {/* Stats */}
       <div className="border-b border-gray-800 bg-gray-900/30">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
@@ -55,7 +55,7 @@ export default function LandingFooter() {
         </div>
       </div>
 
-      {/* Main footer */}
+      {/* Main */}
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
@@ -77,7 +77,6 @@ export default function LandingFooter() {
               send any message type, automate replies — all through a simple
               REST API.
             </p>
-            {/* Feature pills */}
             <div className="flex flex-wrap gap-2">
               {[
                 { icon: MessageSquare, label: "Messaging" },
@@ -94,7 +93,6 @@ export default function LandingFooter() {
                 </div>
               ))}
             </div>
-            {/* CTA */}
             <Link
               to="/login"
               onClick={scrollTop}
@@ -136,7 +134,7 @@ export default function LandingFooter() {
           ))}
         </div>
 
-        {/* Bottom bar */}
+        {/* Bottom */}
         <div className="pt-8 border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-md bg-brand-600 flex items-center justify-center">

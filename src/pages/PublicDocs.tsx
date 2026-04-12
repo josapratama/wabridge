@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Search } from "lucide-react";
 import PublicNav from "../components/PublicNav";
-import DocsFooter from "../docs/DocsFooter";
+import PublicFooter from "../components/PublicFooter";
 
 // Sections
 import Introduction from "../docs/sections/Introduction";
@@ -302,7 +302,7 @@ export default function PublicDocs() {
         </main>
       </div>
 
-      <DocsFooter />
+      <PublicFooter />
     </div>
   );
 }

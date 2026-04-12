@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Zap, Check, ArrowRight, Server, Cloud, Building2 } from "lucide-react";
+import { Check, ArrowRight, Server, Cloud, Building2 } from "lucide-react";
 import PublicNav from "../components/PublicNav";
+import PublicFooter from "../components/PublicFooter";
 
 const plans = [
   {
@@ -234,37 +235,7 @@ export default function Pricing() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-800">
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-brand-600 flex items-center justify-center">
-              <Zap className="w-3 h-3 text-white" />
-            </div>
-            <span className="text-xs text-gray-500">WA Integration</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link
-              to="/"
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              Home
-            </Link>
-            <Link
-              to="/public-docs"
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              Docs
-            </Link>
-            <Link
-              to="/login"
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              Login
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

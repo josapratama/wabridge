@@ -6,7 +6,7 @@ import LandingHowItWorks from "../landing/LandingHowItWorks";
 import LandingAPI from "../landing/LandingAPI";
 import LandingDashboard from "../landing/LandingDashboard";
 import LandingCTA from "../landing/LandingCTA";
-import LandingFooter from "../landing/LandingFooter";
+import PublicFooter from "../components/PublicFooter";
 
 export default function Landing() {
   return (
@@ -19,7 +19,7 @@ export default function Landing() {
       <LandingAPI />
       <LandingDashboard />
       <LandingCTA />
-      <LandingFooter />
+      <PublicFooter />
     </div>
   );
 }
