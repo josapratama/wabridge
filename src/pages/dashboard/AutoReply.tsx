@@ -4,8 +4,8 @@ import {
   sessionsApi,
   AutoReplyRule,
   Session,
-} from "../api/client";
-import EmptyState from "../components/EmptyState";
+} from "../../api/client";
+import EmptyState from "../../components/EmptyState";
 import {
   Bot,
   Plus,

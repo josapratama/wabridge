@@ -6,9 +6,9 @@ import {
   BroadcastJob,
   Session,
   Contact,
-} from "../api/client";
-import EmptyState from "../components/EmptyState";
-import { Radio, Plus, X, Check, RefreshCw, Play, Ban } from "lucide-react";
+} from "../../api/client";
+import EmptyState from "../../components/EmptyState";
+import { Radio, Plus, X, RefreshCw, Play, Ban } from "lucide-react";
 
 const statusColor: Record<string, string> = {
   pending: "text-yellow-400",

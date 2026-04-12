@@ -4,9 +4,8 @@ import {
   sessionsApi,
   ScheduledMessage,
   Session,
-} from "../api/client";
-import EmptyState from "../components/EmptyState";
-import StatusBadge from "../components/StatusBadge";
+} from "../../api/client";
+import EmptyState from "../../components/EmptyState";
 import { Clock, Plus, X, Check, RefreshCw, Ban } from "lucide-react";
 
 export default function ScheduledMessages() {

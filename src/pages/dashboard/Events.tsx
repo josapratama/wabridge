@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { eventsApi, ProviderEvent } from "../api/client";
-import StatusBadge from "../components/StatusBadge";
-import EmptyState from "../components/EmptyState";
+import { eventsApi, ProviderEvent } from "../../api/client";
+import StatusBadge from "../../components/StatusBadge";
+import EmptyState from "../../components/EmptyState";
 import { Activity, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
 
 function EventRow({ event }: { event: ProviderEvent }) {

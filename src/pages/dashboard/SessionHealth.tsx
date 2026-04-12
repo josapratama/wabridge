@@ -4,7 +4,7 @@ import {
   sessionsApi,
   SessionHealthLog,
   Session,
-} from "../api/client";
+} from "../../api/client";
 import { Activity, RefreshCw, Wifi, WifiOff, Loader2 } from "lucide-react";
 
 const statusColor: Record<string, string> = {

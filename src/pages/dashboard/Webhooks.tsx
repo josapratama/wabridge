@@ -3,9 +3,9 @@ import {
   webhookEndpointsApi,
   WebhookEndpoint,
   WebhookLog,
-} from "../api/client";
-import EmptyState from "../components/EmptyState";
-import StatusBadge from "../components/StatusBadge";
+} from "../../api/client";
+import EmptyState from "../../components/EmptyState";
+import StatusBadge from "../../components/StatusBadge";
 import {
   Webhook,
   Plus,

@@ -4,9 +4,9 @@ import {
   Session,
   providerConfigsApi,
   ProviderConfig,
-} from "../api/client";
-import StatusBadge from "../components/StatusBadge";
-import EmptyState from "../components/EmptyState";
+} from "../../api/client";
+import StatusBadge from "../../components/StatusBadge";
+import EmptyState from "../../components/EmptyState";
 import {
   Layers,
   Plus,

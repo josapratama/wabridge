@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { providerConfigsApi, ProviderConfig } from "../api/client";
-import StatusBadge from "../components/StatusBadge";
-import EmptyState from "../components/EmptyState";
-import BaileysConnectionModal from "../components/BaileysConnectionModal";
+import { providerConfigsApi, ProviderConfig } from "../../api/client";
+import StatusBadge from "../../components/StatusBadge";
+import EmptyState from "../../components/EmptyState";
+import BaileysConnectionModal from "../../components/BaileysConnectionModal";
 import {
   Settings2,
   Plus,

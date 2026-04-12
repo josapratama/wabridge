@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { teamApi, TeamMember } from "../api/client";
-import EmptyState from "../components/EmptyState";
+import { teamApi, TeamMember } from "../../api/client";
+import EmptyState from "../../components/EmptyState";
 import {
   Users2,
   Plus,
