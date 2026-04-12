@@ -8,6 +8,8 @@ const links = [
   { to: "/public-docs", label: "Docs", external: false },
 ];
 
+const scrollTop = () => window.scrollTo({ top: 0, behavior: "instant" });
+
 export default function PublicNav() {
   const { pathname } = useLocation();
 
@@ -15,7 +17,7 @@ export default function PublicNav() {
     <nav className="border-b border-gray-800 sticky top-0 z-50 bg-gray-950/90 backdrop-blur-sm">
       <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5">
+        <Link to="/" onClick={scrollTop} className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
             <Zap className="w-3.5 h-3.5 text-white" />
           </div>
@@ -43,6 +45,7 @@ export default function PublicNav() {
               <Link
                 key={link.to}
                 to={link.to}
+                onClick={scrollTop}
                 className={`text-xs transition-colors hidden sm:block ${
                   pathname === link.to
                     ? "text-white font-medium"
@@ -55,6 +58,7 @@ export default function PublicNav() {
           )}
           <Link
             to="/login"
+            onClick={scrollTop}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-lg transition-colors"
           >
             Get Started <ArrowRight className="w-3 h-3" />
