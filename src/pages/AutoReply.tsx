@@ -91,7 +91,15 @@ export default function AutoReply() {
     e.preventDefault();
     setSaving(true);
     setError("");
-    const payload = { ...form, sessionId: form.sessionId || undefined };
+    // Only send fields that UpdateAutoReplyDto accepts
+    const payload = {
+      name: form.name,
+      matchType: form.matchType,
+      matchValue: form.matchValue,
+      replyContent: form.replyContent,
+      priority: form.priority,
+      sessionId: form.sessionId || undefined,
+    };
     if (editing) {
       const res = await autoReplyApi.update(editing.id, payload);
       if (res.success) {
