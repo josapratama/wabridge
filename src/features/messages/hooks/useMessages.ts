@@ -25,30 +25,29 @@ export function useMessages() {
   }, []);
 
   const send = async (form: SendForm) => {
-    const payload: Record<string, unknown> = {
+    const payload = {
       sessionId: form.sessionId,
       to: form.to,
       message: form.message,
       type: form.type,
+      ...(form.type !== "text" &&
+        form.type !== "location" && {
+          mediaUrl: form.mediaUrl || undefined,
+          mediaCaption: form.mediaCaption || undefined,
+          mediaMimeType: form.mediaMimeType || undefined,
+        }),
+      ...(form.type === "location" && {
+        latitude: parseFloat(form.latitude),
+        longitude: parseFloat(form.longitude),
+        locationName: form.locationName,
+      }),
     };
-    if (form.type !== "text" && form.type !== "location") {
-      if (form.mediaUrl) payload.mediaUrl = form.mediaUrl;
-      if (form.mediaCaption) payload.mediaCaption = form.mediaCaption;
-      if (form.mediaMimeType) payload.mediaMimeType = form.mediaMimeType;
-    }
-    if (form.type === "location") {
-      payload.latitude = parseFloat(form.latitude);
-      payload.longitude = parseFloat(form.longitude);
-      payload.locationName = form.locationName;
-    }
-    const res = await messagesApi.send(
-      payload as Parameters<typeof messagesApi.send>[0],
-    );
+    const res = await messagesApi.send(payload);
     if (res.success) await load();
     return res;
   };
 
-  const exportMessages = (
+  const exportMessages = async (
     format: "csv" | "json",
     filters: { status?: string; direction?: string },
   ) => {
@@ -56,10 +55,19 @@ export function useMessages() {
     if (filters.status) params.set("status", filters.status);
     if (filters.direction) params.set("direction", filters.direction);
     const token = localStorage.getItem("token");
+    const res = await fetch(
+      `http://localhost:3000/export/messages?${params.toString()}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = `http://localhost:3000/export/messages?${params.toString()}&_token=${token}`;
-    a.download = "";
+    a.href = url;
+    a.download = `messages_${new Date().toISOString().slice(0, 10)}.${format}`;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   const filter = (

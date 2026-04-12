@@ -62,12 +62,21 @@ export function useContacts() {
     await load();
   };
 
-  const exportContacts = (format: "csv" | "json") => {
+  const exportContacts = async (format: "csv" | "json") => {
     const token = localStorage.getItem("token");
+    const res = await fetch(
+      `http://localhost:3000/export/contacts?format=${format}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = `http://localhost:3000/export/contacts?format=${format}&_token=${token}`;
-    a.download = "";
+    a.href = url;
+    a.download = `contacts_${new Date().toISOString().slice(0, 10)}.${format}`;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   const allTags = [...new Set(contacts.flatMap((c) => c.tags))].sort();
