@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Bell } from "lucide-react";
-import PublicNav from "../components/PublicNav";
-import PublicFooter from "../components/PublicFooter";
-import PricingPlans from "../pricing/PricingPlans";
-import PricingFAQ from "../pricing/PricingFAQ";
+import PublicNav from "../../components/PublicNav";
+import PublicFooter from "../../components/PublicFooter";
+import PricingPlans from "../../pricing/PricingPlans";
+import PricingFAQ from "../../pricing/PricingFAQ";
 
 export default function Pricing() {
   return (

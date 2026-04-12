@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { apiKeysApi, ipWhitelistApi, ApiKey, IpWhitelist } from "../api/client";
-import EmptyState from "../components/EmptyState";
+import {
+  apiKeysApi,
+  ipWhitelistApi,
+  ApiKey,
+  IpWhitelist,
+} from "../../api/client";
+import EmptyState from "../../components/EmptyState";
 import {
   Key,
   Plus,

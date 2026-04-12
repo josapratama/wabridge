@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CodeBlock, Badge, Field, Note, H2, H3, P } from "../shared";
+import { CodeBlock, Badge, Field, Note, H2, H3, P } from "../components/shared";
 
 const BASE = "https://your-domain.com";
 

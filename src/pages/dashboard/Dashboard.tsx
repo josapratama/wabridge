@@ -8,7 +8,7 @@ import {
   Message,
   eventsApi,
   ProviderEvent,
-} from "../api/client";
+} from "../../api/client";
 import {
   Activity,
   Layers,
@@ -17,7 +17,7 @@ import {
   WifiOff,
   RefreshCw,
 } from "lucide-react";
-import StatusBadge from "../components/StatusBadge";
+import StatusBadge from "../../components/StatusBadge";
 
 function StatCard({
   label,

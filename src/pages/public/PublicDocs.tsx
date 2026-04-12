@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Search } from "lucide-react";
-import PublicNav from "../components/PublicNav";
-import PublicFooter from "../components/PublicFooter";
+import PublicNav from "../../components/PublicNav";
+import PublicFooter from "../../components/PublicFooter";
 
 // Sections
-import Introduction from "../docs/sections/Introduction";
-import Quickstart from "../docs/sections/Quickstart";
-import Authentication from "../docs/sections/Authentication";
-import SessionsDocs from "../docs/sections/Sessions";
-import SendMessage from "../docs/sections/SendMessage";
-import MediaMessages from "../docs/sections/MediaMessages";
-import BroadcastDocs from "../docs/sections/BroadcastDocs";
-import SandboxMode from "../docs/sections/SandboxMode";
-import WebhooksDocs from "../docs/sections/Webhooks";
-import AutoReplyDocs from "../docs/sections/AutoReplyDocs";
-import TemplatesDocs from "../docs/sections/Templates";
-import ContactsDocs from "../docs/sections/ContactsDocs";
-import RateLimits from "../docs/sections/RateLimits";
-import ErrorReference from "../docs/sections/ErrorReference";
+import Introduction from "../../docs/sections/Introduction";
+import Quickstart from "../../docs/sections/Quickstart";
+import Authentication from "../../docs/sections/Authentication";
+import SessionsDocs from "../../docs/sections/Sessions";
+import SendMessage from "../../docs/sections/SendMessage";
+import MediaMessages from "../../docs/sections/MediaMessages";
+import BroadcastDocs from "../../docs/sections/BroadcastDocs";
+import SandboxMode from "../../docs/sections/SandboxMode";
+import WebhooksDocs from "../../docs/sections/Webhooks";
+import AutoReplyDocs from "../../docs/sections/AutoReplyDocs";
+import TemplatesDocs from "../../docs/sections/Templates";
+import ContactsDocs from "../../docs/sections/ContactsDocs";
+import RateLimits from "../../docs/sections/RateLimits";
+import ErrorReference from "../../docs/sections/ErrorReference";
 
 const navGroups = [
   {

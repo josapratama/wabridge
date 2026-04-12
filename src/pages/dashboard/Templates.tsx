@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { messageTemplatesApi, MessageTemplate } from "../api/client";
-import EmptyState from "../components/EmptyState";
+import { messageTemplatesApi, MessageTemplate } from "../../api/client";
+import EmptyState from "../../components/EmptyState";
 import {
   FileText,
   Plus,

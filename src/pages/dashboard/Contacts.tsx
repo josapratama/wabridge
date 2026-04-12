@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { contactsApi, Contact } from "../api/client";
-import EmptyState from "../components/EmptyState";
+import { contactsApi, Contact } from "../../api/client";
+import EmptyState from "../../components/EmptyState";
 import {
   Users,
   Plus,

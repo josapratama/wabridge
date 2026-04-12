@@ -1,4 +1,4 @@
-import { CodeBlock, H2, P } from "../shared";
+import { CodeBlock, H2, P } from "../components/shared";
 
 const errors = [
   {

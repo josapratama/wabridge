@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { analyticsApi, AnalyticsSummary, UsageRecord } from "../api/client";
+import { analyticsApi, AnalyticsSummary, UsageRecord } from "../../api/client";
 import { BarChart2, TrendingUp, RefreshCw, AlertCircle } from "lucide-react";
 
 function StatCard({

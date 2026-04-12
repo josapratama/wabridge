@@ -1,4 +1,4 @@
-import { CodeBlock, Note, H2, H3, P } from "../shared";
+import { CodeBlock, Note, H2, H3, P } from "../components/shared";
 
 export default function MediaMessages() {
   return (

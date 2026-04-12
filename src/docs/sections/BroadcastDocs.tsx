@@ -1,4 +1,4 @@
-import { CodeBlock, Badge, Field, Note, H2, P } from "../shared";
+import { CodeBlock, Badge, Field, Note, H2, P } from "../components/shared";
 
 const BASE = "https://your-domain.com";
 

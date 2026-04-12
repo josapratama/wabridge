@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Zap, Shield, Globe, Code2 } from "lucide-react";
-import { CodeBlock, Note, H2, H3, P } from "../shared";
+import { CodeBlock, Note, H2, H3, P } from "../components/shared";
 
 const BASE = "https://your-domain.com";
 

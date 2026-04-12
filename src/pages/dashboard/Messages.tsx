@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { messagesApi, Message, sessionsApi, Session } from "../api/client";
-import StatusBadge from "../components/StatusBadge";
-import EmptyState from "../components/EmptyState";
+import { messagesApi, Message, sessionsApi, Session } from "../../api/client";
+import StatusBadge from "../../components/StatusBadge";
+import EmptyState from "../../components/EmptyState";
 import {
   MessageSquare,
   Send,
