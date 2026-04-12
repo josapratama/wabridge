@@ -8,7 +8,6 @@ import ProviderConfigs from "./pages/ProviderConfigs";
 import Sessions from "./pages/Sessions";
 import Messages from "./pages/Messages";
 import Events from "./pages/Events";
-import Docs from "./pages/Docs";
 import ApiKeys from "./pages/ApiKeys";
 import Webhooks from "./pages/Webhooks";
 import Templates from "./pages/Templates";
@@ -51,7 +50,6 @@ export default function App() {
           <Route path="contacts" element={<Contacts />} />
           <Route path="broadcast" element={<Broadcast />} />
           <Route path="team" element={<Team />} />
-          <Route path="docs" element={<Docs />} />
         </Route>
       </Route>
     </Routes>

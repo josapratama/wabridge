@@ -8,7 +8,6 @@ import {
   Zap,
   LogOut,
   User,
-  BookOpen,
   Key,
   Webhook,
   FileText,
@@ -62,10 +61,7 @@ const navGroups = [
   },
   {
     label: "Developer",
-    items: [
-      { to: "/api-keys", icon: Key, label: "API Keys" },
-      { to: "/docs", icon: BookOpen, label: "API Docs" },
-    ],
+    items: [{ to: "/api-keys", icon: Key, label: "API Keys" }],
   },
 ];
 
