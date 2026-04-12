@@ -6,7 +6,7 @@ import {
   Session,
 } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
-import { Clock, Plus, X, Check, RefreshCw, Ban } from "lucide-react";
+import { Clock, Plus, X, RefreshCw, Ban } from "lucide-react";
 
 export default function ScheduledMessages() {
   const [messages, setMessages] = useState<ScheduledMessage[]>([]);

@@ -1,15 +1,7 @@
 import { useEffect, useState } from "react";
 import { teamApi, TeamMember } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
-import {
-  Users2,
-  Plus,
-  X,
-  Check,
-  RefreshCw,
-  Trash2,
-  Shield,
-} from "lucide-react";
+import { Users2, Plus, X, Check, RefreshCw, Trash2 } from "lucide-react";
 
 const ROLES = ["admin", "operator", "viewer"] as const;
 const roleColor: Record<string, string> = {

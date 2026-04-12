@@ -43,9 +43,6 @@ export default function SessionHealth() {
     return () => clearInterval(interval);
   }, []);
 
-  const sessionName = (id: string) =>
-    sessions.find((s) => s.id === id)?.name ?? id.slice(0, 8) + "…";
-
   // Merge sessions with health data
   const rows = sessions.map((s) => ({
     session: s,
