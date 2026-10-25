@@ -43,7 +43,20 @@ export const webhookEndpointsApi = {
     }),
   delete: (id: string) =>
     request<void>(`/webhook-endpoints/${id}`, { method: "DELETE" }),
+  test: (id: string) =>
+    request<{
+      success: boolean;
+      statusCode?: number;
+      latencyMs: number;
+      error?: string;
+    }>(`/webhook-endpoints/${id}/test`, { method: "POST" }),
   getLogs: (id: string) =>
     request<WebhookLog[]>(`/webhook-endpoints/${id}/logs`),
+  getAllLogs: () => request<WebhookLog[]>("/webhook-endpoints/logs/all"),
+  retryLog: (logId: string) =>
+    request<{ success: boolean; message: string }>(
+      `/webhook-endpoints/logs/${logId}/retry`,
+      { method: "POST" },
+    ),
   getEvents: () => request<string[]>("/webhook-endpoints/events"),
 };
