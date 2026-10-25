@@ -62,6 +62,12 @@ export function useContacts() {
     await load();
   };
 
+  const syncWhatsApp = async (sessionId?: string) => {
+    const res = await contactsApi.sync(sessionId);
+    if (res.success) await load();
+    return res;
+  };
+
   const exportContacts = async (format: "csv" | "json") => {
     const token = localStorage.getItem("token");
     const res = await fetch(
@@ -88,6 +94,7 @@ export function useContacts() {
     create,
     update,
     remove,
+    syncWhatsApp,
     exportContacts,
     allTags,
   };

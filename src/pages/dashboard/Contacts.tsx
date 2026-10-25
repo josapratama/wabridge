@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Contact } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
-import { Users, Plus, RefreshCw, Download, Trash2 } from "lucide-react";
+import { Users, Plus, RefreshCw, Download, Trash2, Upload, FileText, X, CheckCircle2 } from "lucide-react";
 import {
   useContacts,
   ContactForm as FormType,
@@ -18,10 +18,36 @@ export default function Contacts() {
     create,
     update,
     remove,
+    syncWhatsApp,
     exportContacts,
     allTags,
   } = useContacts();
   const [showForm, setShowForm] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSyncWhatsApp = async () => {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const res = await syncWhatsApp();
+      if (res.success && res.data) {
+        setSyncMsg(`Berhasil sinkronisasi ${res.data.synced} kontak baru dari WhatsApp!`);
+      } else {
+        setSyncMsg("Sinkronisasi kontak WhatsApp selesai.");
+      }
+    } catch {
+      setSyncMsg("Gagal sinkronisasi kontak WhatsApp.");
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMsg(null), 5000);
+    }
+  };
   const [editing, setEditing] = useState<Contact | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterTag, setFilterTag] = useState("");
@@ -54,19 +80,63 @@ export default function Contacts() {
     setDeleteId(null);
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImportText(reader.result as string);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleRunImport = async () => {
+    if (!importText.trim()) return;
+    setImporting(true);
+    setImportResult(null);
+
+    const lines = importText.split("\n").map((l) => l.trim()).filter(Boolean);
+    let successCount = 0;
+
+    for (const line of lines) {
+      if (line.toLowerCase().includes("phone") || line.toLowerCase().includes("nama")) continue;
+      const parts = line.split(/[,;\t]/).map((p) => p.trim());
+      if (parts.length >= 2) {
+        const name = parts[0];
+        const phone = parts[1].replace(/\D/g, "");
+        const tags = parts[2]
+          ? parts[2].replace(/[|;]/g, ",")
+          : "imported";
+        if (phone.length >= 6) {
+          try {
+            await create({ name, phone, tags, notes: "Imported via CSV" });
+            successCount++;
+          } catch (e) {
+            console.error("Row import error", e);
+          }
+        }
+      }
+    }
+
+    setImporting(false);
+    setImportResult(`Successfully imported ${successCount} contacts!`);
+    void load();
+    setTimeout(() => {
+      if (successCount > 0) {
+        setShowImport(false);
+        setImportText("");
+        setImportResult(null);
+      }
+    }, 2000);
+  };
+
   return (
     <div className="p-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <Users className="w-5 h-5 text-brand-400" />
-            Contacts
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {contacts.length} contacts
-          </p>
-        </div>
+      {/* Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-gray-400">
+          Total <span className="font-semibold text-gray-200">{contacts.length}</span> WhatsApp contacts recorded
+        </p>
         <div className="flex gap-2">
           <button
             onClick={() => void load()}
@@ -74,6 +144,22 @@ export default function Contacts() {
             disabled={loading}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
+          <button
+            onClick={handleSyncWhatsApp}
+            disabled={syncing}
+            className="btn-secondary flex items-center gap-1.5 border-emerald-500/40 text-emerald-400 hover:bg-emerald-950/40 hover:text-emerald-300 transition-colors"
+            title="Import all contacts from connected WhatsApp groups & chats"
+          >
+            <Users className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+            <span>{syncing ? "Syncing..." : "Sync WhatsApp"}</span>
+          </button>
+          <button
+            onClick={() => setShowImport(true)}
+            className="btn-secondary flex items-center gap-1.5"
+          >
+            <Upload className="w-4 h-4 text-brand-400" />
+            <span>Import CSV</span>
           </button>
           <button onClick={openCreate} className="btn-primary">
             <Plus className="w-4 h-4" /> Add Contact
@@ -99,6 +185,13 @@ export default function Contacts() {
           </div>
         </div>
       </div>
+
+      {syncMsg && (
+        <div className="p-3 bg-emerald-950/60 border border-emerald-800/80 rounded-xl text-xs text-emerald-300 flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{syncMsg}</span>
+        </div>
+      )}
 
       {/* Tag filter */}
       <ContactTagFilter
@@ -164,6 +257,95 @@ export default function Contacts() {
           />
         )}
       </div>
+
+      {/* Import CSV Modal */}
+      {showImport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="card w-full max-w-lg p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-800">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Upload className="w-5 h-5 text-brand-400" />
+                Import Contacts via CSV / Text
+              </h3>
+              <button
+                onClick={() => {
+                  setShowImport(false);
+                  setImportResult(null);
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-400">
+              Upload a .csv file or paste contact lines below using format:
+              <br />
+              <code className="text-brand-300 font-mono bg-black/40 px-1 py-0.5 rounded mt-1 inline-block">
+                Name, PhoneNumber, Tags
+              </code>
+            </p>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".csv,.txt"
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="btn-secondary text-xs flex items-center gap-1.5"
+              >
+                <FileText className="w-4 h-4 text-brand-400" />
+                <span>Upload .CSV File</span>
+              </button>
+              <span className="text-[11px] text-gray-500">
+                or paste raw lines directly below:
+              </span>
+            </div>
+
+            <textarea
+              rows={6}
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              placeholder={"Budi Santoso, 628123456789, VIP;Leads\nSiti Aminah, 628987654321, Reseller\n..."}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-brand-500 resize-none"
+            />
+
+            {importResult && (
+              <div className="p-2.5 rounded-lg bg-brand-950/60 border border-brand-800/60 text-xs text-brand-300 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{importResult}</span>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowImport(false);
+                  setImportResult(null);
+                }}
+                className="btn-secondary"
+                disabled={importing}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRunImport()}
+                disabled={importing || !importText.trim()}
+                className="btn-primary"
+              >
+                {importing ? "Importing..." : "Process Import"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

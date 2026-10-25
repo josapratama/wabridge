@@ -23,6 +23,11 @@ export const contactsApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  sync: (sessionId?: string) =>
+    request<{ synced: number; total: number }>("/contacts/sync", {
+      method: "POST",
+      body: JSON.stringify({ sessionId }),
+    }),
   update: (id: string, body: Partial<Contact>) =>
     request<Contact>(`/contacts/${id}`, {
       method: "PATCH",
