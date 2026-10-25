@@ -132,6 +132,9 @@ export default function BroadcastForm({
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
             />
+            <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1.5">
+              <span>💡 <strong className="text-brand-400">Anti-Ban & Variabel:</strong> Didukung Spintax <code className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">{"{Halo|Hai}"}</code> &amp; variabel <code className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">{"{{name}}"}</code></span>
+            </p>
           </div>
 
           {/* Recipients */}
@@ -183,17 +186,42 @@ export default function BroadcastForm({
           </div>
 
           <div>
-            <label className="label">Delay between messages (ms)</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label mb-0">Smart Anti-Ban Delay (ms)</label>
+              <span className="text-[10px] text-brand-400 font-semibold flex items-center gap-1">
+                🛡️ Anti-Ban Protected
+              </span>
+            </div>
+            <div className="flex gap-2 mb-2">
+              {[
+                { label: "Normal (2s)", val: "2000" },
+                { label: "Safe (5s)", val: "5000" },
+                { label: "Ultra Safe (8s)", val: "8000" },
+              ].map((preset) => (
+                <button
+                  key={preset.val}
+                  type="button"
+                  onClick={() => setForm({ ...form, delayMs: preset.val })}
+                  className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-colors ${
+                    form.delayMs === preset.val
+                      ? "bg-brand-600/20 border-brand-500/40 text-brand-300"
+                      : "bg-gray-800 border-gray-700 text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
             <input
               type="number"
               className="input"
-              min={500}
-              max={30000}
+              min={1000}
+              max={60000}
               value={form.delayMs}
               onChange={(e) => setForm({ ...form, delayMs: e.target.value })}
             />
-            <p className="text-xs text-gray-600 mt-1">
-              Min 500ms recommended to avoid ban
+            <p className="text-xs text-gray-500 mt-1">
+              Estimated campaign duration: ~{Math.ceil(((recipientCount || 1) * parseInt(form.delayMs || "2000")) / 60000)} minutes. Natural jitter will be applied automatically.
             </p>
           </div>
 

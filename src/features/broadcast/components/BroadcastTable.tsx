@@ -1,13 +1,14 @@
 import { BroadcastJob } from "../../../api/client";
 import { STATUS_COLORS } from "../constants";
-import { Ban } from "lucide-react";
+import { Ban, Play } from "lucide-react";
 
 interface Props {
   jobs: BroadcastJob[];
+  onStart?: (id: string) => void;
   onCancel: (id: string) => void;
 }
 
-export default function BroadcastTable({ jobs, onCancel }: Props) {
+export default function BroadcastTable({ jobs, onStart, onCancel }: Props) {
   return (
     <table className="w-full text-sm">
       <thead>
@@ -62,14 +63,27 @@ export default function BroadcastTable({ jobs, onCancel }: Props) {
                 {new Date(job.createdAt).toLocaleString()}
               </td>
               <td className="px-5 py-3 text-right">
-                {(job.status === "running" || job.status === "pending") && (
-                  <button
-                    onClick={() => onCancel(job.id)}
-                    className="btn-danger text-xs"
-                  >
-                    <Ban className="w-3.5 h-3.5" /> Cancel
-                  </button>
-                )}
+                <div className="flex items-center justify-end gap-2">
+                  {onStart &&
+                    (job.status === "pending" ||
+                      job.status === "failed" ||
+                      job.status === "cancelled") && (
+                      <button
+                        onClick={() => onStart(job.id)}
+                        className="btn-primary text-xs py-1 px-2.5 flex items-center gap-1"
+                      >
+                        <Play className="w-3.5 h-3.5" /> Start
+                      </button>
+                    )}
+                  {(job.status === "running" || job.status === "pending") && (
+                    <button
+                      onClick={() => onCancel(job.id)}
+                      className="btn-danger text-xs py-1 px-2.5 flex items-center gap-1"
+                    >
+                      <Ban className="w-3.5 h-3.5" /> Cancel
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           );

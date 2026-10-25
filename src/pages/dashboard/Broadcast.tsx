@@ -6,7 +6,7 @@ import BroadcastForm from "../../features/broadcast/components/BroadcastForm";
 import BroadcastTable from "../../features/broadcast/components/BroadcastTable";
 
 export default function Broadcast() {
-  const { jobs, sessions, contacts, loading, load, create, cancel, allTags } =
+  const { jobs, sessions, contacts, loading, load, create, start, cancel, allTags } =
     useBroadcast();
   const [showForm, setShowForm] = useState(false);
 
@@ -25,16 +25,10 @@ export default function Broadcast() {
   return (
     <div className="p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <Radio className="w-5 h-5 text-brand-400" />
-            Broadcast
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Send messages to multiple recipients
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-gray-400">
+          Send announcements and bulk messages to multiple recipients
+        </p>
         <div className="flex gap-2">
           <button
             onClick={() => void load()}
@@ -78,7 +72,11 @@ export default function Broadcast() {
             }
           />
         ) : (
-          <BroadcastTable jobs={jobs} onCancel={(id) => void cancel(id)} />
+          <BroadcastTable
+            jobs={jobs}
+            onStart={(id) => void start(id)}
+            onCancel={(id) => void cancel(id)}
+          />
         )}
       </div>
     </div>

@@ -46,6 +46,11 @@ export function useBroadcast() {
     return res;
   };
 
+  const start = async (id: string) => {
+    await broadcastApi.start(id);
+    await load();
+  };
+
   const cancel = async (id: string) => {
     await broadcastApi.cancel(id);
     await load();
@@ -53,5 +58,15 @@ export function useBroadcast() {
 
   const allTags = [...new Set(contacts.flatMap((c) => c.tags))];
 
-  return { jobs, sessions, contacts, loading, load, create, cancel, allTags };
+  return {
+    jobs,
+    sessions,
+    contacts,
+    loading,
+    load,
+    create,
+    start,
+    cancel,
+    allTags,
+  };
 }
