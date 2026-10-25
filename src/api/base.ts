@@ -1,4 +1,5 @@
-export const BASE = "http://localhost:3000";
+export const BASE =
+  (import.meta as any).env?.VITE_API_URL || "http://localhost:3000";
 
 export interface ApiResponse<T = unknown> {
   success: boolean;

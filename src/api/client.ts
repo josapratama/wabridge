@@ -17,7 +17,7 @@ export type {
 } from "./provider-configs";
 
 export { sessionsApi } from "./sessions";
-export type { Session } from "./sessions";
+export type { Session, WhatsAppGroup } from "./sessions";
 
 export { messagesApi } from "./messages";
 export type { Message, SendMessageBody } from "./messages";
@@ -35,6 +35,9 @@ export type {
   ScheduledMessage,
   AutoReplyRule,
 } from "./automation";
+
+export { aiBotApi } from "./ai-bot";
+export type { AiBotConfig } from "./ai-bot";
 
 export { contactsApi, broadcastApi } from "./contacts";
 export type { Contact, BroadcastJob } from "./contacts";

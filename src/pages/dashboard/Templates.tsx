@@ -42,16 +42,10 @@ export default function Templates() {
   return (
     <div className="p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-brand-400" />
-            Message Templates
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Reusable messages with {"{{variable}}"} placeholders
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-gray-400">
+          Reusable message templates with {"{{variable}}"} placeholders
+        </p>
         <div className="flex gap-2">
           <button
             onClick={() => void load()}

@@ -51,22 +51,17 @@ export default function SessionHealth() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <Activity className="w-5 h-5 text-brand-400" />
-            Session Health
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Real-time connection status · auto-refreshes every 30s
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-gray-400">
+          Real-time connection status · auto-refreshes every 30s
+        </p>
         <button
           onClick={() => void load()}
-          className="btn-secondary"
+          className="btn-secondary self-start sm:self-auto"
           disabled={loading}
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          <span>Refresh</span>
         </button>
       </div>
 

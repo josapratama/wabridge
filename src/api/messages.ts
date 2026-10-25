@@ -38,4 +38,12 @@ export const messagesApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  uploadMedia: (body: { base64: string; filename: string; mimeType: string }) =>
+    request<{ success: boolean; url: string; filename: string; mimeType: string }>(
+      "/messages/upload",
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      },
+    ),
 };

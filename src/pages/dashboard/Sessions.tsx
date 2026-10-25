@@ -16,7 +16,9 @@ import {
   PowerOff,
   RefreshCw,
   Copy,
+  QrCode,
 } from "lucide-react";
+import BaileysConnectionModal from "../../components/BaileysConnectionModal";
 
 function useCopy() {
   const [copied, setCopied] = useState<string | null>(null);
@@ -37,6 +39,62 @@ export default function Sessions() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const { copied, copy } = useCopy();
+
+  const [qrModal, setQrModal] = useState<{
+    show: boolean;
+    configId: string;
+    qrCode: string | null;
+    pairingCode: string | null;
+  }>({ show: false, configId: "", qrCode: null, pairingCode: null });
+  const [qrLoading, setQrLoading] = useState(false);
+
+  const openQrModal = (configId: string) => {
+    setQrModal({ show: true, configId, qrCode: null, pairingCode: null });
+    void generateQrCode(configId);
+  };
+
+  const closeQrModal = () => {
+    setQrModal({ show: false, configId: "", qrCode: null, pairingCode: null });
+    setQrLoading(false);
+    void load();
+  };
+
+  const generateQrCode = async (configId?: string) => {
+    const cId = configId || qrModal.configId;
+    if (!cId) return;
+    setQrLoading(true);
+    setQrModal((prev) => ({ ...prev, qrCode: null }));
+
+    const poll = async () => {
+      const res = await providerConfigsApi.getQrCode(cId);
+      if (res.data?.qrCode) {
+        setQrModal((prev) => ({ ...prev, qrCode: res.data?.qrCode ?? null }));
+        setQrLoading(false);
+      } else {
+        setTimeout(() => void poll(), 2000);
+      }
+    };
+    await poll();
+  };
+
+  const requestPairingCode = async (phoneNumber: string) => {
+    if (!phoneNumber || !qrModal.configId) return;
+    setQrLoading(true);
+    try {
+      const res = await providerConfigsApi.requestPairingCode(
+        qrModal.configId,
+        phoneNumber,
+      );
+      if (res.data?.pairingCode) {
+        setQrModal((prev) => ({
+          ...prev,
+          pairingCode: res.data?.pairingCode ?? null,
+        }));
+      }
+    } finally {
+      setQrLoading(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -79,14 +137,22 @@ export default function Sessions() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white">Sessions</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            WhatsApp account sessions
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <BaileysConnectionModal
+        show={qrModal.show}
+        configId={qrModal.configId}
+        onClose={closeQrModal}
+        onRequestQrCode={() => generateQrCode()}
+        onRequestPairingCode={requestPairingCode}
+        qrCode={qrModal.qrCode}
+        pairingCode={qrModal.pairingCode}
+        loading={qrLoading}
+      />
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-gray-400">
+          Active and configured WhatsApp account sessions
+        </p>
+        <div className="flex items-center gap-2">
           <button
             onClick={() => void load()}
             className="btn-secondary"
@@ -263,22 +329,33 @@ export default function Sessions() {
                     {new Date(s.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <button
-                      onClick={() => void toggle(s)}
-                      className={
-                        s.status === "active" ? "btn-danger" : "btn-secondary"
-                      }
-                    >
-                      {s.status === "active" ? (
-                        <>
-                          <PowerOff className="w-3.5 h-3.5" /> Deactivate
-                        </>
-                      ) : (
-                        <>
-                          <Power className="w-3.5 h-3.5" /> Activate
-                        </>
+                    <div className="flex items-center justify-end gap-2">
+                      {s.providerType === "baileys" && (
+                        <button
+                          onClick={() => openQrModal(s.providerConfigId)}
+                          className="btn-secondary text-xs"
+                          title="Connect WhatsApp / Scan QR"
+                        >
+                          <QrCode className="w-3.5 h-3.5" /> QR Code
+                        </button>
                       )}
-                    </button>
+                      <button
+                        onClick={() => void toggle(s)}
+                        className={
+                          s.status === "active" ? "btn-danger" : "btn-secondary"
+                        }
+                      >
+                        {s.status === "active" ? (
+                          <>
+                            <PowerOff className="w-3.5 h-3.5" /> Deactivate
+                          </>
+                        ) : (
+                          <>
+                            <Power className="w-3.5 h-3.5" /> Activate
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

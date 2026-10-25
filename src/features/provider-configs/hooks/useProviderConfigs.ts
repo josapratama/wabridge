@@ -64,7 +64,7 @@ export function useProviderConfigs() {
 
   const openQrModal = (configId: string) => {
     setQrModal({ show: true, configId, qrCode: null, pairingCode: null });
-    setQrLoading(false);
+    void generateQrCode(configId);
   };
 
   const closeQrModal = () => {
@@ -72,17 +72,19 @@ export function useProviderConfigs() {
     setQrLoading(false);
   };
 
-  const generateQrCode = async () => {
+  const generateQrCode = async (configId?: string) => {
+    const targetId = configId || qrModal.configId;
+    if (!targetId) return;
     setQrLoading(true);
     setQrModal((prev) => ({ ...prev, qrCode: null }));
 
     const poll = async () => {
-      const res = await providerConfigsApi.getQrCode(qrModal.configId);
+      const res = await providerConfigsApi.getQrCode(targetId);
       if (res.data?.qrCode) {
         setQrModal((prev) => ({ ...prev, qrCode: res.data?.qrCode ?? null }));
         setQrLoading(false);
       } else {
-        setTimeout(() => void poll(), 2000);
+        setTimeout(() => void poll(), 1500);
       }
     };
     await poll();

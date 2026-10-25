@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   QrCode,
@@ -32,6 +32,12 @@ export default function BaileysConnectionModal({
   const [mode, setMode] = useState<"qr" | "pairing">("qr");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (show && mode === "qr" && !qrCode && !loading) {
+      void onRequestQrCode();
+    }
+  }, [show, mode]);
 
   if (!show) return null;
 

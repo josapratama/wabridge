@@ -11,6 +11,14 @@ export interface Session {
   updatedAt: string;
 }
 
+export interface WhatsAppGroup {
+  id: string;
+  subject: string;
+  participantsCount: number;
+  creation?: number;
+  owner?: string;
+}
+
 export const sessionsApi = {
   list: () => request<Session[]>("/sessions"),
   get: (id: string) => request<Session>(`/sessions/${id}`),
@@ -23,4 +31,6 @@ export const sessionsApi = {
     request<Session>(`/sessions/${id}/activate`, { method: "PATCH" }),
   deactivate: (id: string) =>
     request<Session>(`/sessions/${id}/deactivate`, { method: "PATCH" }),
+  getGroups: (id: string) =>
+    request<WhatsAppGroup[]>(`/sessions/${id}/groups`),
 };

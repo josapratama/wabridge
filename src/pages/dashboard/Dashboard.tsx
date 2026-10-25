@@ -76,14 +76,11 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
+      {/* Subtitle / Action Bar */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Overview of your WhatsApp integration
-          </p>
-        </div>
+        <p className="text-sm text-gray-400">
+          Overview and real-time status of your WhatsApp integration
+        </p>
         <button
           onClick={() => void load()}
           className="btn-secondary"

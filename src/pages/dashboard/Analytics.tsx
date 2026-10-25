@@ -74,16 +74,10 @@ export default function Analytics() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <BarChart2 className="w-5 h-5 text-brand-400" />
-            Analytics
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Message statistics and usage
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-gray-400">
+          Message traffic statistics, delivery trends, and quota usage
+        </p>
         <button
           onClick={() => void load()}
           className="btn-secondary"

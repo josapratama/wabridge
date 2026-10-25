@@ -80,16 +80,13 @@ export default function Events() {
 
   return (
     <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white">Events</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            All provider events log — click a row to inspect payload
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-gray-400">
+          All provider events log — click a row to inspect payload
+        </p>
         <button
           onClick={() => void load()}
-          className="btn-secondary"
+          className="btn-secondary self-start sm:self-auto"
           disabled={loading}
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />

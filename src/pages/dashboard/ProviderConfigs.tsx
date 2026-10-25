@@ -31,15 +31,12 @@ export default function ProviderConfigs() {
 
   return (
     <div className="p-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white">Provider Configs</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Manage WhatsApp provider connections
-          </p>
-        </div>
-        <div className="flex gap-2">
+      {/* Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p className="text-sm text-gray-400">
+          Manage WhatsApp provider connections and credentials
+        </p>
+        <div className="flex items-center gap-2">
           <button
             onClick={() => void load()}
             className="btn-secondary"
