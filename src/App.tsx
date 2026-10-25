@@ -18,6 +18,8 @@ import Contacts from "./pages/dashboard/Contacts";
 import Broadcast from "./pages/dashboard/Broadcast";
 import Team from "./pages/dashboard/Team";
 import SessionHealth from "./pages/dashboard/SessionHealth";
+import LiveChat from "./pages/dashboard/LiveChat";
+import Groups from "./pages/dashboard/Groups";
 import Login from "./pages/public/Login";
 import Register from "./pages/public/Register";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -26,11 +28,14 @@ import PublicRoute from "./components/PublicRoute";
 export default function App() {
   return (
     <Routes>
-      {/* Public — redirect to /dashboard if already logged in */}
+      {/* Public pages accessible to everyone (guests and logged-in users) */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/public-docs" element={<PublicDocs />} />
+      <Route path="/docs" element={<PublicDocs />} />
+      <Route path="/pricing" element={<Pricing />} />
+
+      {/* Guest only — redirect to /dashboard if already logged in */}
       <Route element={<PublicRoute />}>
-        <Route path="/" element={<Landing />} />
-        <Route path="/public-docs" element={<PublicDocs />} />
-        <Route path="/pricing" element={<Pricing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Route>
@@ -39,8 +44,10 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="inbox" element={<LiveChat />} />
           <Route path="provider-configs" element={<ProviderConfigs />} />
           <Route path="sessions" element={<Sessions />} />
+          <Route path="groups" element={<Groups />} />
           <Route path="session-health" element={<SessionHealth />} />
           <Route path="messages" element={<Messages />} />
           <Route path="events" element={<Events />} />

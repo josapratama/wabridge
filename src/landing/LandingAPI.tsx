@@ -22,12 +22,14 @@ POST https://your-app.com/webhook
 }`;
 
 const capabilities = [
-  "Text, image, document, audio, video, location",
-  "Broadcast to 1000+ recipients with delay",
-  "Sandbox mode for safe testing",
-  "Rate limiting: 60 req/min, 1000 req/hour",
-  "IP whitelist per API key",
-  "Standard JSON response envelope",
+  "Multi-session Baileys engine (run multiple numbers simultaneously)",
+  "Text, image, document, audio, video, and location messages",
+  "Anti-ban broadcast engine with Spintax {A|B} & variable {{name}} replacement",
+  "AI Chatbot with custom knowledge base & human handover (#agent)",
+  "Direct WhatsApp Contact Sync from device phonebooks",
+  "Programmatic session discovery via GET /v1/sessions",
+  "Sandbox mode for safe testing without sending real messages",
+  "Sliding window rate limiting & CIDR/IP whitelisting per API key",
 ];
 
 export default function LandingAPI() {

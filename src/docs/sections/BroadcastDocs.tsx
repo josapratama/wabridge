@@ -110,6 +110,31 @@ export default function BroadcastDocs() {
         recommended delay is 2 seconds.
       </Note>
 
+      <H2>Anti-Ban: Spintax & Dynamic Variables</H2>
+      <P>
+        The broadcast engine features automatic Spintax spinning and recipient
+        variable replacement so that each recipient receives a uniquely phrased message:
+      </P>
+      <CodeBlock
+        id="broadcast-spintax"
+        code={`{Halo|Hai|Selamat pagi} Kak {{name}}! Pesanan Anda dengan ID {{phone}} sudah kami terima. Terima kasih!`}
+      />
+      <div className="bg-gray-950 border border-gray-800 rounded-xl p-4 my-3 text-xs space-y-2">
+        <p className="text-gray-300">
+          <strong className="text-brand-400">Spintax:</strong> Format{" "}
+          <code className="text-brand-300">{"{Pilihan 1|Pilihan 2|Pilihan 3}"}</code>{" "}
+          akan dipilih secara acak untuk setiap nomor penerima.
+        </p>
+        <p className="text-gray-300">
+          <strong className="text-brand-400">Variables:</strong>{" "}
+          <code className="text-brand-300">{"{{name}}"}</code> akan diganti dengan nama kontak, dan{" "}
+          <code className="text-brand-300">{"{{phone}}"}</code> akan diganti dengan nomor telepon.
+        </p>
+        <p className="text-gray-300">
+          <strong className="text-brand-400">Jitter Delay:</strong> Delay interval otomatis diberikan variasi acak (±20% jitter) agar pola pengiriman tampak seperti manusia alami.
+        </p>
+      </div>
+
       <H2>Using Contact Tags</H2>
       <P>
         From the dashboard, you can broadcast to a group of contacts filtered by

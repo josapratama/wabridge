@@ -29,6 +29,7 @@ export default function WebhooksDocs() {
           "Set a name and URL",
           "Choose which events to subscribe to",
           "Set an optional HMAC-SHA256 signing secret for payload verification",
+          "Test connectivity immediately with the Test Ping button",
         ].map((item) => (
           <li key={item} className="flex gap-2 text-xs text-gray-400">
             <span className="text-brand-400 shrink-0">•</span>
@@ -36,6 +37,25 @@ export default function WebhooksDocs() {
           </li>
         ))}
       </ul>
+
+      <H2>Testing Webhooks (Test Ping)</H2>
+      <P>
+        You can test your webhook endpoint at any time without triggering a real WhatsApp message. Click <strong className="text-white">Test Ping</strong> on any endpoint in the Webhooks table, or call:
+      </P>
+      <CodeBlock
+        id="webhook-test-ping"
+        code={`POST /webhook-endpoints/:id/test
+Authorization: Bearer YOUR_TOKEN
+
+Response:
+{
+  "success": true,
+  "data": {
+    "statusCode": 200,
+    "message": "Webhook test delivered successfully"
+  }
+}`}
+      />
 
       <H2>Available Events</H2>
       <div className="space-y-1.5 my-3">

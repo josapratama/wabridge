@@ -58,6 +58,27 @@ export default function ContactsDocs() {
 // Dashboard → Broadcast → New Broadcast → From Contacts → Select "vip"`}
       />
 
+      <H2>WhatsApp Contact Sync</H2>
+      <P>
+        You can sync contacts directly from your connected WhatsApp phonebook. In the
+        dashboard under <strong className="text-white">Contacts</strong>, click the{" "}
+        <strong className="text-white">Sync from WhatsApp</strong> button, or call the API:
+      </P>
+      <CodeBlock
+        id="contacts-sync-api"
+        code={`POST /contacts/sync
+Authorization: Bearer YOUR_TOKEN
+
+Response:
+{
+  "success": true,
+  "data": {
+    "synced": 48,
+    "message": "Successfully synced 48 contacts from WhatsApp"
+  }
+}`}
+      />
+
       <H2>Export Contacts</H2>
       <P>
         Export your contact list as CSV or JSON from the Contacts page using the
@@ -71,8 +92,8 @@ abc123,John Doe,628123456789,customer;vip,,2026-04-11T00:00:00.000Z`}
       />
 
       <Note type="tip">
-        Import contacts in bulk by using the dashboard's contact creation form
-        or by calling the contacts API endpoint directly.
+        Import contacts in bulk by using the dashboard's contact creation form, syncing
+        directly from WhatsApp, or by calling the contacts API endpoint.
       </Note>
     </div>
   );

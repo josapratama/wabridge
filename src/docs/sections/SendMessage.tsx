@@ -67,9 +67,13 @@ export default function SendMessage() {
         document, audio, video, and location.
       </P>
 
-      <div className="flex items-center gap-2 my-4">
+      <div className="flex items-center gap-2 my-4 flex-wrap">
         <Badge method="POST" />
         <code className="text-sm text-gray-300 font-mono">
+          /v1/messages
+        </code>
+        <span className="text-xs text-gray-500">or</span>
+        <code className="text-sm text-gray-400 font-mono">
           /v1/messages/send
         </code>
       </div>

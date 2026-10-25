@@ -100,6 +100,14 @@ POST /v1/messages/send
         <strong className="text-white">Sessions</strong>. Click the copy icon
         next to the ID in the table.
       </P>
+      <P>
+        Alternatively, developers can fetch available sessions programmatically using:
+      </P>
+      <CodeBlock
+        id="sessions-get-api"
+        code={`curl -X GET https://your-domain.com/v1/sessions \\
+  -H "X-API-Key: wai_live_YOUR_KEY"`}
+      />
 
       <Note type="info">
         Session IDs are UUIDs like{" "}

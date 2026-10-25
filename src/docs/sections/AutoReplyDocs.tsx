@@ -83,6 +83,21 @@ replyContent: "Thanks for your message! We'll reply during business hours (9am-5
         auto-reply rules.
       </Note>
 
+      <H2>AI Bot Knowledge Base & Human Handover</H2>
+      <P>
+        In addition to keyword rules, you can enable an intelligent AI Bot powered by
+        a custom knowledge base. The bot reads your FAQ / product docs to answer customer
+        questions automatically.
+      </P>
+      <div className="bg-gray-950 border border-gray-800 rounded-xl p-4 my-3 text-xs space-y-2">
+        <p className="text-gray-300">
+          <strong className="text-brand-400">Knowledge Base:</strong> Masukkan informasi produk, FAQ, jam operasional, atau harga pada tab AI Bot di menu Auto-Reply.
+        </p>
+        <p className="text-gray-300">
+          <strong className="text-brand-400">Human Handover (#agent):</strong> Ketika customer mengetik kata kunci eskalasi seperti <code className="text-brand-300">#agent</code>, <code className="text-brand-300">#human</code>, atau <code className="text-brand-300">bantuan admin</code>, AI bot akan otomatis nonaktif untuk nomor tersebut dan mengalihkan obrolan ke customer service manusia di menu <strong>Live Chat</strong>.
+        </p>
+      </div>
+
       <H2>Managing Rules</H2>
       <P>
         Rules are managed from the{" "}
@@ -91,7 +106,8 @@ replyContent: "Thanks for your message! We'll reply during business hours (9am-5
       </P>
       <ul className="space-y-1.5 my-3 ml-4">
         {[
-          "Create, edit, and delete rules",
+          "Create, edit, and delete keyword rules",
+          "Configure AI Bot prompt and knowledge base",
           "Toggle rules on/off without deleting them",
           "Set priority to control evaluation order",
           "Scope rules to a specific session",
