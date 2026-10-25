@@ -9,6 +9,7 @@ import {
   CreateKeyModal,
   RevokeModal,
 } from "../../features/api-keys/components/ApiKeyModals";
+import DeveloperUsageGuide from "../../features/api-keys/components/DeveloperUsageGuide";
 
 export default function ApiKeys() {
   const { keys, loading, load, create, revoke, fmt, isExpired } = useApiKeys();
@@ -31,16 +32,13 @@ export default function ApiKeys() {
   };
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-brand-400" />
-            API Keys
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Manage keys for accessing the public API
+          <h1 className="text-lg font-bold text-white">API Keys & Integrasi</h1>
+          <p className="text-xs sm:text-sm text-gray-400">
+            Kelola token autentikasi untuk mengakses REST API WhatsApp Gateway secara programatik
           </p>
         </div>
         <div className="flex gap-2">
@@ -57,20 +55,8 @@ export default function ApiKeys() {
         </div>
       </div>
 
-      {/* Info banner */}
-      <div className="card p-4 flex gap-3">
-        <div className="w-1 rounded-full bg-brand-600 shrink-0" />
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-gray-300">How to use</p>
-          <p className="text-xs text-gray-500">
-            Pass your key in the{" "}
-            <code className="text-brand-400">X-API-Key</code> header when
-            calling{" "}
-            <code className="text-brand-400">POST /v1/messages/send</code>. The
-            plain key is shown only once.
-          </p>
-        </div>
-      </div>
+      {/* Developer Interactive Code Snippets & Quickstart */}
+      <DeveloperUsageGuide keys={keys} />
 
       {/* Modals */}
       {newKey && (
