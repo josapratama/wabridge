@@ -16,7 +16,7 @@ export default function Introduction() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         {[
           {
             icon: Zap,
@@ -41,11 +41,13 @@ export default function Introduction() {
         ].map((item) => (
           <div
             key={item.label}
-            className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-1.5"
+            className="bg-gray-900/60 hover:bg-gray-900 border border-gray-800/80 hover:border-brand-500/30 rounded-xl p-3.5 space-y-1 transition-all"
           >
-            <item.icon className="w-4 h-4 text-brand-400" />
+            <div className="w-7 h-7 rounded-lg bg-brand-950 border border-brand-800/60 flex items-center justify-center mb-1">
+              <item.icon className="w-3.5 h-3.5 text-brand-400" />
+            </div>
             <p className="text-xs font-semibold text-white">{item.label}</p>
-            <p className="text-[11px] text-gray-500">{item.desc}</p>
+            <p className="text-[11px] text-gray-400 leading-tight">{item.desc}</p>
           </div>
         ))}
       </div>

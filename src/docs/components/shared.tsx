@@ -28,7 +28,8 @@ export function CodeBlock({
       </pre>
       <button
         onClick={() => copy(code, id)}
-        className="absolute top-2 right-2 p-1.5 rounded-md bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 opacity-0 group-hover:opacity-100 transition-all"
+        className="absolute top-2 right-2 p-1.5 rounded-md bg-gray-800/90 hover:bg-gray-700 text-gray-400 hover:text-gray-200 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-all shadow-sm"
+        title="Copy code"
       >
         {copied === id ? (
           <Check className="w-3.5 h-3.5 text-brand-400" />

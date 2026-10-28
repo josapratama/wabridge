@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, Search, BookOpen, ChevronDown, Check, Menu, X } from "lucide-react";
 import PublicNav from "../../components/PublicNav";
 import PublicFooter from "../../components/PublicFooter";
+import { useI18n } from "../../context/I18nContext";
 
 // Sections
 import Introduction from "../../docs/sections/Introduction";
@@ -77,8 +78,10 @@ const sectionMap: Record<string, React.ReactNode> = {
 const allItems = navGroups.flatMap((g) => g.items);
 
 export default function PublicDocs() {
+  const { t } = useI18n();
   const [active, setActive] = useState("introduction");
   const [search, setSearch] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const filtered = search.trim()
     ? allItems.filter((i) =>
@@ -202,44 +205,93 @@ export default function PublicDocs() {
         <main className="flex-1 min-w-0 py-8 lg:pl-10">
           {/* Mobile nav */}
           <div className="lg:hidden mb-6 space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
-              <input
-                type="text"
-                placeholder="Search docs..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+                <input
+                  type="text"
+                  placeholder={t("common.search", "Search docs...")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-9 pr-3 py-2 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-brand-500"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="px-3 py-2 bg-gray-900 border border-gray-800 hover:border-brand-500/50 rounded-xl text-xs font-medium text-gray-200 flex items-center gap-1.5 shrink-0 transition-colors"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-brand-400" />
+                <span className="truncate max-w-[130px] sm:max-w-none">
+                  {allItems.find((i) => i.id === active)?.label}
+                </span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-gray-400 transition-transform ${
+                    mobileMenuOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
             </div>
-            {filtered ? (
-              <div className="bg-gray-900 border border-gray-800 rounded-lg divide-y divide-gray-800">
-                {filtered.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => navigate(item.id)}
-                    className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:text-brand-400"
-                  >
-                    {item.label}
-                  </button>
+
+            {/* Mobile search results */}
+            {filtered && (
+              <div className="bg-gray-900 border border-gray-800 rounded-xl divide-y divide-gray-800/60 overflow-hidden shadow-lg">
+                {filtered.length === 0 ? (
+                  <p className="text-xs text-gray-500 p-3 text-center">
+                    {t("common.empty", "No results found")}
+                  </p>
+                ) : (
+                  filtered.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        navigate(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-800 hover:text-brand-400 flex items-center justify-between"
+                    >
+                      <span>{item.label}</span>
+                      {active === item.id && (
+                        <Check className="w-3.5 h-3.5 text-brand-400" />
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* Mobile chapter picker drawer */}
+            {mobileMenuOpen && !filtered && (
+              <div className="bg-gray-900/95 border border-gray-800 rounded-2xl p-3.5 space-y-4 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2">
+                {navGroups.map((group) => (
+                  <div key={group.label} className="space-y-1">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-2">
+                      {group.label}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                      {group.items.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            navigate(item.id);
+                            setMobileMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                            active === item.id
+                              ? "bg-brand-600/20 text-brand-300 font-semibold"
+                              : "text-gray-400 hover:text-white hover:bg-gray-800"
+                          }`}
+                        >
+                          <span>{item.label}</span>
+                          {active === item.id && (
+                            <Check className="w-3 h-3 text-brand-400" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
-            ) : (
-              <select
-                value={active}
-                onChange={(e) => navigate(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200"
-              >
-                {navGroups.map((group) => (
-                  <optgroup key={group.label} label={group.label}>
-                    {group.items.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
             )}
           </div>
 

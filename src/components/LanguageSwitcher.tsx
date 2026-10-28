@@ -71,3 +71,4 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   );
 }
 export default LanguageSwitcher;
+
