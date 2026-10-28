@@ -11,6 +11,7 @@ import {
   HealthResult,
   BASE,
 } from "../../api/client";
+import { useI18n } from "../../context/I18nContext";
 import BaileysConnectionModal from "../../components/BaileysConnectionModal";
 import {
   Search,
@@ -47,6 +48,7 @@ interface Conversation {
 }
 
 export default function LiveChat() {
+  const { t } = useI18n();
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -473,7 +475,7 @@ export default function LiveChat() {
           <div className="p-3 border-b border-gray-800 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Conversations ({filteredConversations.length})
+                {t("nav.live_chat")} ({filteredConversations.length})
               </span>
               <button
                 onClick={() => void loadData()}
@@ -490,7 +492,7 @@ export default function LiveChat() {
               <Search className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Search contact or phone..."
+                placeholder={t("livechat.search_placeholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-gray-800/80 border border-gray-700/60 rounded-lg pl-9 pr-3 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-brand-500"
@@ -502,7 +504,7 @@ export default function LiveChat() {
           <div className="flex-1 overflow-y-auto divide-y divide-gray-800/40">
             {filteredConversations.length === 0 ? (
               <div className="p-8 text-center text-gray-500 text-xs">
-                {loading ? "Loading chats..." : "No conversation found"}
+                {loading ? t("common.loading", "Loading chats...") : t("livechat.no_conversations")}
               </div>
             ) : (
               filteredConversations.map((c) => {
@@ -572,7 +574,7 @@ export default function LiveChat() {
                     onClick={() => setSelectedJid(null)}
                     className="md:hidden text-gray-400 hover:text-white p-1"
                   >
-                    ← Back
+                    ← {t("actions.back", "Back")}
                   </button>
                   <div className="w-9 h-9 rounded-full bg-brand-600/30 border border-brand-500/40 flex items-center justify-center text-brand-300 font-semibold text-sm">
                     {activeConv.isGroup ? (
@@ -606,7 +608,7 @@ export default function LiveChat() {
                         isSessionReady ? "text-emerald-400" : "text-amber-400"
                       }`}
                     >
-                      {isSessionReady ? "Connected" : "Disconnected"}
+                      {isSessionReady ? t("livechat.connected") : t("livechat.disconnected")}
                     </span>
                   </div>
 
@@ -614,15 +616,15 @@ export default function LiveChat() {
                     <button
                       onClick={() => openQrModal(currentSession.providerConfigId)}
                       className="btn-secondary text-[11px] py-1 px-2.5 flex items-center gap-1 border-amber-800/60 text-amber-300 hover:bg-amber-950/40"
-                      title="Scan QR to connect WhatsApp"
+                      title={t("livechat.reconnect_qr")}
                     >
-                      <QrCode className="w-3.5 h-3.5" /> Connect
+                      <QrCode className="w-3.5 h-3.5" /> {t("livechat.reconnect_qr")}
                     </button>
                   )}
 
                   <div className="flex items-center gap-1.5">
                     <label className="text-xs text-gray-400 hidden lg:inline">
-                      Reply via:
+                      {t("livechat.reply_via")}
                     </label>
                     <select
                       value={selectedSessionId}
@@ -645,7 +647,7 @@ export default function LiveChat() {
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
                     <span>
-                      Session <strong>{currentSession?.name || "WhatsApp"}</strong> is currently offline. Outbound messages will fail until re-linked.
+                      {t("livechat.offline_banner", { name: currentSession?.name || "WhatsApp" })}
                     </span>
                   </div>
                   {currentSession?.providerType === "baileys" && (
@@ -653,7 +655,7 @@ export default function LiveChat() {
                       onClick={() => openQrModal(currentSession.providerConfigId)}
                       className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-medium text-xs flex items-center gap-1 shrink-0 ml-3 transition-colors"
                     >
-                      <QrCode className="w-3.5 h-3.5" /> Scan QR Code
+                      <QrCode className="w-3.5 h-3.5" /> {t("livechat.reconnect_qr")}
                     </button>
                   )}
                 </div>
@@ -708,7 +710,7 @@ export default function LiveChat() {
                           >
                             <FileText className="w-5 h-5 text-brand-300" />
                             <span className="truncate max-w-[200px]">
-                              {m.mediaCaption || "Download Document"}
+                              {m.mediaCaption || t("livechat.download_document")}
                             </span>
                             <Download className="w-3.5 h-3.5 ml-auto opacity-70" />
                           </a>
@@ -746,10 +748,10 @@ export default function LiveChat() {
                                     void handleSendMessage(m.content);
                                   }}
                                   className="flex items-center gap-1 text-red-300 hover:text-white font-medium cursor-pointer transition-colors"
-                                  title="Sending failed. Click to retry."
+                                  title={t("livechat.failed_retry")}
                                 >
                                   <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                                  <span className="text-[10px] underline">Failed (Retry)</span>
+                                  <span className="text-[10px] underline">{t("actions.retry", "Retry")}</span>
                                 </button>
                               ) : m.status === "read" || m.status === "delivered" ? (
                                 <span title={m.status === "read" ? "Read" : "Delivered"}>
@@ -817,7 +819,7 @@ export default function LiveChat() {
                 <div className="p-3 bg-gray-900 border-t border-gray-800 animate-in slide-in-from-bottom-2">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-semibold text-gray-400 flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-amber-400" /> Canned Quick Replies
+                      <Zap className="w-3.5 h-3.5 text-amber-400" /> {t("livechat.quick_replies")}
                     </span>
                     <button
                       onClick={() => setShowQuickReplies(false)}
@@ -854,13 +856,13 @@ export default function LiveChat() {
                 <div className="px-4 py-2 bg-red-950/80 border-t border-red-800/60 flex items-center justify-between text-xs text-red-200 animate-pulse">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                    <span>Merekam Voice Note... Klik tombol mikrofon merah untuk mengirim ke WhatsApp</span>
+                    <span>{t("livechat.recording")}</span>
                   </div>
                   <button
                     onClick={stopVoiceRecording}
                     className="btn-danger py-0.5 px-2 text-[10px]"
                   >
-                    Kirim Audio
+                    {t("livechat.stop_recording")}
                   </button>
                 </div>
               )}
@@ -879,7 +881,7 @@ export default function LiveChat() {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                   className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-                  title="Attach file or image"
+                  title={t("livechat.attach_file")}
                 >
                   <Paperclip
                     className={`w-5 h-5 ${uploading ? "animate-spin" : ""}`}
@@ -894,7 +896,7 @@ export default function LiveChat() {
                       ? "bg-amber-950/60 text-amber-300 border border-amber-600/40"
                       : "text-gray-400 hover:text-white hover:bg-gray-800"
                   }`}
-                  title="Quick Replies (Template Pesan Cepat)"
+                  title={t("livechat.quick_replies")}
                 >
                   <Zap className="w-4 h-4 text-amber-400" />
                 </button>
@@ -907,11 +909,7 @@ export default function LiveChat() {
                       ? "bg-red-600 text-white animate-pulse"
                       : "text-gray-400 hover:text-white hover:bg-gray-800"
                   }`}
-                  title={
-                    recording
-                      ? "Klik untuk berhenti & kirim Voice Note"
-                      : "Rekam Pesan Suara (Voice Note)"
-                  }
+                  title={t("livechat.voice_note")}
                 >
                   {recording ? (
                     <MicOff className="w-4 h-4 text-white" />
@@ -933,7 +931,7 @@ export default function LiveChat() {
                     }
                   }}
                   rows={1}
-                  placeholder="Type a message... (Press Enter to send)"
+                  placeholder={t("livechat.input_placeholder")}
                   className="flex-1 bg-gray-800/80 border border-gray-700/60 rounded-xl px-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 resize-none max-h-28"
                 />
 
@@ -943,6 +941,7 @@ export default function LiveChat() {
                     sending || (!inputText.trim() && !attachment) || !selectedSessionId
                   }
                   className="btn-primary px-3 py-2 shrink-0"
+                  title={t("livechat.send")}
                 >
                   <Send
                     className={`w-4 h-4 ${sending ? "animate-spin" : ""}`}
@@ -956,10 +955,10 @@ export default function LiveChat() {
                 <MessageSquare className="w-8 h-8 text-brand-400" />
               </div>
               <h3 className="text-sm font-semibold text-gray-300">
-                Customer Live Chat Inbox
+                {t("nav.live_chat")}
               </h3>
               <p className="text-xs text-gray-500 mt-1 max-w-sm">
-                Select a conversation from the left to start viewing real-time message history and reply directly.
+                {t("livechat.select_conversation")}
               </p>
             </div>
           )}

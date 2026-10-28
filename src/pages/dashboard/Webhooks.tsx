@@ -13,6 +13,7 @@ import {
   AlertCircle,
   X,
 } from "lucide-react";
+import { useI18n } from "../../context/I18nContext";
 import { useWebhooks } from "../../features/webhooks/hooks/useWebhooks";
 import WebhookForm from "../../features/webhooks/components/WebhookForm";
 import WebhookLogsModal from "../../features/webhooks/components/WebhookLogsModal";
@@ -20,6 +21,7 @@ import WebhookTable from "../../features/webhooks/components/WebhookTable";
 import { webhookEndpointsApi, WebhookLog } from "../../api/client";
 
 export default function Webhooks() {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"endpoints" | "logs">("endpoints");
 
   const {
@@ -69,14 +71,14 @@ export default function Webhooks() {
     try {
       const res = await webhookEndpointsApi.retryLog(logId);
       if (res.data) {
-        setRetryMessage("Webhook redelivery attempt dispatched!");
+        setRetryMessage(t("webhooks.dispatched_success"));
         setTimeout(() => {
           void loadAllLogs();
           setRetryMessage(null);
         }, 1500);
       }
     } catch (err: unknown) {
-      setRetryMessage("Failed to retry webhook.");
+      setRetryMessage(t("webhooks.retry_failed"));
     } finally {
       setRetryingId(null);
     }
@@ -118,7 +120,7 @@ export default function Webhooks() {
             }`}
           >
             <Webhook className="w-4 h-4" />
-            <span>Webhook Endpoints ({endpoints.length})</span>
+            <span>{t("webhooks.endpoints_tab", { count: endpoints.length })}</span>
           </button>
           <button
             onClick={() => setActiveTab("logs")}
@@ -129,7 +131,7 @@ export default function Webhooks() {
             }`}
           >
             <Activity className="w-4 h-4" />
-            <span>Delivery Logs & Dead-Letter</span>
+            <span>{t("webhooks.logs_tab")}</span>
           </button>
         </div>
 
@@ -148,7 +150,7 @@ export default function Webhooks() {
           </button>
           {activeTab === "endpoints" && (
             <button onClick={() => setShowForm(true)} className="btn-primary">
-              <Plus className="w-4 h-4" /> New Endpoint
+              <Plus className="w-4 h-4" /> {t("webhooks.new_endpoint")}
             </button>
           )}
         </div>
@@ -175,22 +177,22 @@ export default function Webhooks() {
           {deleteId && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
               <div className="card w-full max-w-sm p-6 space-y-4">
-                <p className="text-sm font-semibold text-white">Delete Webhook?</p>
+                <p className="text-sm font-semibold text-white">{t("webhooks.delete_confirm_title")}</p>
                 <p className="text-xs text-gray-400">
-                  This will also delete all logs for this endpoint.
+                  {t("webhooks.delete_confirm_desc")}
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => void handleDelete(deleteId)}
                     className="btn-danger flex-1 justify-center"
                   >
-                    <Trash2 className="w-4 h-4" /> Delete
+                    <Trash2 className="w-4 h-4" /> {t("actions.delete", "Delete")}
                   </button>
                   <button
                     onClick={() => setDeleteId(null)}
                     className="btn-secondary flex-1 justify-center"
                   >
-                    Cancel
+                    {t("actions.cancel", "Cancel")}
                   </button>
                 </div>
               </div>
@@ -206,14 +208,14 @@ export default function Webhooks() {
             ) : endpoints.length === 0 ? (
               <EmptyState
                 icon={Webhook}
-                title="No webhook endpoints"
-                description="Add an endpoint to receive real-time events from your WhatsApp sessions."
+                title={t("webhooks.empty_title")}
+                description={t("webhooks.empty_desc")}
                 action={
                   <button
                     className="btn-primary"
                     onClick={() => setShowForm(true)}
                   >
-                    <Plus className="w-4 h-4" /> New Endpoint
+                    <Plus className="w-4 h-4" /> {t("webhooks.new_endpoint")}
                   </button>
                 }
               />
@@ -251,20 +253,20 @@ export default function Webhooks() {
               </div>
             ) : allLogs.length === 0 ? (
               <div className="p-12 text-center text-gray-500 text-xs">
-                No delivery logs recorded yet. Events will show here as they are dispatched.
+                {t("webhooks.no_logs")}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">
                   <thead className="bg-gray-900 border-b border-gray-800 text-gray-400 font-semibold uppercase text-[10px] tracking-wider">
                     <tr>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Event Type</th>
-                      <th className="px-4 py-3">Response Code</th>
-                      <th className="px-4 py-3">Duration</th>
-                      <th className="px-4 py-3">Attempt</th>
-                      <th className="px-4 py-3">Timestamp</th>
-                      <th className="px-4 py-3 text-right">Action</th>
+                      <th className="px-4 py-3">{t("webhooks.status")}</th>
+                      <th className="px-4 py-3">{t("webhooks.event_type")}</th>
+                      <th className="px-4 py-3">{t("webhooks.response_code")}</th>
+                      <th className="px-4 py-3">{t("webhooks.duration")}</th>
+                      <th className="px-4 py-3">{t("webhooks.attempt")}</th>
+                      <th className="px-4 py-3">{t("webhooks.timestamp")}</th>
+                      <th className="px-4 py-3 text-right">{t("webhooks.action")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
@@ -273,11 +275,11 @@ export default function Webhooks() {
                         <td className="px-4 py-3">
                           {log.success ? (
                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-950 border border-brand-800 text-brand-400">
-                              <CheckCircle2 className="w-3 h-3" /> 2xx Delivered
+                              <CheckCircle2 className="w-3 h-3" /> {t("webhooks.delivered")}
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-950 border border-red-800 text-red-400">
-                              <XCircle className="w-3 h-3" /> Failed
+                              <XCircle className="w-3 h-3" /> {t("webhooks.failed")}
                             </span>
                           )}
                         </td>
@@ -296,7 +298,7 @@ export default function Webhooks() {
                               {log.responseStatus}
                             </span>
                           ) : (
-                            <span className="text-gray-500">Timeout / Error</span>
+                            <span className="text-gray-500">{t("webhooks.no_response")}</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-gray-400 font-mono">
@@ -315,7 +317,7 @@ export default function Webhooks() {
                               className="btn-secondary text-[10px] py-1 px-2 flex items-center gap-1"
                               title="Inspect payload"
                             >
-                              <Eye className="w-3 h-3" /> Inspect
+                              <Eye className="w-3 h-3" /> {t("webhooks.inspect")}
                             </button>
                             {!log.success && (
                               <button
@@ -329,7 +331,7 @@ export default function Webhooks() {
                                     retryingId === log.id ? "animate-spin" : ""
                                   }`}
                                 />
-                                <span>Retry</span>
+                                <span>{t("webhooks.retry")}</span>
                               </button>
                             )}
                           </div>
@@ -352,7 +354,7 @@ export default function Webhooks() {
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Activity className="w-4 h-4 text-brand-400" />
-                  Webhook Payload & Response
+                  {t("webhooks.modal_title")}
                 </h3>
                 <p className="text-[11px] text-gray-400 font-mono mt-0.5">
                   Event: {viewLogDetail.eventType} (Log ID: {viewLogDetail.id})
@@ -369,7 +371,7 @@ export default function Webhooks() {
             <div className="space-y-3">
               <div>
                 <p className="text-xs font-semibold text-gray-300 mb-1">
-                  Dispatched Payload (JSON)
+                  {t("webhooks.payload_json")}
                 </p>
                 <pre className="p-3 rounded-lg bg-gray-950 border border-gray-800 text-[11px] font-mono text-brand-300 max-h-48 overflow-y-auto">
                   {JSON.stringify(viewLogDetail.payload, null, 2)}
@@ -378,7 +380,7 @@ export default function Webhooks() {
 
               <div>
                 <p className="text-xs font-semibold text-gray-300 mb-1">
-                  Server Response ({viewLogDetail.responseStatus || "No response"})
+                  {t("webhooks.server_response", { status: viewLogDetail.responseStatus || t("webhooks.no_response") })}
                 </p>
                 <pre className="p-3 rounded-lg bg-gray-950 border border-gray-800 text-[11px] font-mono text-gray-300 max-h-36 overflow-y-auto">
                   {viewLogDetail.responseBody || "(empty)"}
@@ -396,7 +398,7 @@ export default function Webhooks() {
                   className="btn-primary text-xs flex items-center gap-1.5"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Retry Delivery Now</span>
+                  <span>{t("webhooks.retry_now")}</span>
                 </button>
               ) : (
                 <div />
@@ -405,7 +407,7 @@ export default function Webhooks() {
                 onClick={() => setViewLogDetail(null)}
                 className="btn-secondary"
               >
-                Close
+                {t("actions.close", "Close")}
               </button>
             </div>
           </div>

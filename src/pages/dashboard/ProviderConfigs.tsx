@@ -3,11 +3,13 @@ import { ProviderConfig } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import BaileysConnectionModal from "../../components/BaileysConnectionModal";
 import { Settings2, Plus, RefreshCw } from "lucide-react";
+import { useI18n } from "../../context/I18nContext";
 import { useProviderConfigs } from "../../features/provider-configs/hooks/useProviderConfigs";
 import ProviderConfigForm from "../../features/provider-configs/components/ProviderConfigForm";
 import ProviderConfigTable from "../../features/provider-configs/components/ProviderConfigTable";
 
 export default function ProviderConfigs() {
+  const { t } = useI18n();
   const {
     configs,
     loading,
@@ -34,7 +36,7 @@ export default function ProviderConfigs() {
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          Manage WhatsApp provider connections and credentials
+          {t("provider_configs.subtitle")}
         </p>
         <div className="flex items-center gap-2">
           <button
@@ -45,7 +47,7 @@ export default function ProviderConfigs() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button onClick={() => setShowForm(true)} className="btn-primary">
-            <Plus className="w-4 h-4" /> New Config
+            <Plus className="w-4 h-4" /> {t("provider_configs.new")}
           </button>
         </div>
       </div>
@@ -79,11 +81,11 @@ export default function ProviderConfigs() {
         ) : configs.length === 0 ? (
           <EmptyState
             icon={Settings2}
-            title="No provider configs"
-            description="Create your first provider config to start sending messages."
+            title={t("provider_configs.empty_title")}
+            description={t("provider_configs.empty_desc")}
             action={
               <button className="btn-primary" onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4" /> New Config
+                <Plus className="w-4 h-4" /> {t("provider_configs.new")}
               </button>
             }
           />

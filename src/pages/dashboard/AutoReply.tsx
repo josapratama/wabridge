@@ -5,13 +5,10 @@ import {
   Bot,
   Plus,
   RefreshCw,
-  Trash2,
   Sparkles,
   Key,
-  ShieldCheck,
   Send,
   CheckCircle2,
-  AlertCircle,
   HelpCircle,
 } from "lucide-react";
 import {
@@ -20,8 +17,10 @@ import {
 } from "../../features/auto-reply/hooks/useAutoReply";
 import AutoReplyForm from "../../features/auto-reply/components/AutoReplyForm";
 import AutoReplyTable from "../../features/auto-reply/components/AutoReplyTable";
+import { useI18n } from "../../context/I18nContext";
 
 export default function AutoReply() {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"rules" | "ai">("rules");
 
   // Rules state
@@ -94,7 +93,7 @@ export default function AutoReply() {
         apiKey: aiKeyInput.trim() || undefined,
       });
       if (res.data) {
-        setAiSaveMsg("AI Bot configuration saved successfully!");
+        setAiSaveMsg(t("toast.saved_success", "AI Bot configuration saved successfully!"));
         setAiKeyInput("");
         void loadAiConfig();
         setTimeout(() => setAiSaveMsg(""), 3000);
@@ -117,7 +116,7 @@ export default function AutoReply() {
       } else {
         setTestReply("No reply received. Make sure your API Key is valid.");
       }
-    } catch (err: unknown) {
+    } catch {
       setTestReply("Error testing AI response. Please check your API key.");
     } finally {
       setTestingAi(false);
@@ -194,7 +193,7 @@ export default function AutoReply() {
               />
             </button>
             <button onClick={openCreate} className="btn-primary">
-              <Plus className="w-4 h-4" /> New Rule
+              <Plus className="w-4 h-4" /> {t("autoreply.add_rule", "New Rule")}
             </button>
           </div>
         )}
@@ -206,11 +205,11 @@ export default function AutoReply() {
           {rules.length === 0 && !loading ? (
             <EmptyState
               icon={Bot}
-              title="No auto-reply rules"
-              description="Create rules to automatically reply when inbound messages match specific keywords."
+              title={t("autoreply.title", "No auto-reply rules")}
+              description={t("autoreply.subtitle", "Create rules to automatically reply when inbound messages match specific keywords.")}
               action={
                 <button onClick={openCreate} className="btn-primary">
-                  <Plus className="w-4 h-4" /> Create Rule
+                  <Plus className="w-4 h-4" /> {t("autoreply.add_rule", "Create Rule")}
                 </button>
               }
             />
@@ -237,22 +236,22 @@ export default function AutoReply() {
           {deleteId && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
               <div className="card p-6 max-w-sm w-full space-y-4">
-                <h3 className="text-base font-bold text-white">Delete Rule</h3>
+                <h3 className="text-base font-bold text-white">{t("confirm.delete_title", "Delete Rule")}</h3>
                 <p className="text-sm text-gray-400">
-                  Are you sure you want to delete this auto-reply rule?
+                  {t("confirm.delete_desc", "Are you sure you want to delete this auto-reply rule?")}
                 </p>
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => setDeleteId(null)}
                     className="btn-secondary"
                   >
-                    Cancel
+                    {t("actions.cancel", "Cancel")}
                   </button>
                   <button
                     onClick={() => void handleDelete(deleteId)}
                     className="btn-danger"
                   >
-                    Delete
+                    {t("actions.delete", "Delete")}
                   </button>
                 </div>
               </div>
@@ -359,11 +358,8 @@ export default function AutoReply() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-medium text-gray-300">
-                    System Prompt (Persona & Gaya Bahasa)
+                    System Prompt
                   </label>
-                  <span className="text-[10px] text-gray-500">
-                    Karakter & aturan bicara bot
-                  </span>
                 </div>
                 <textarea
                   rows={3}
@@ -374,7 +370,6 @@ export default function AutoReply() {
                       systemPrompt: e.target.value,
                     }))
                   }
-                  placeholder="Contoh: Anda adalah customer support WhatsApp yang ramah dan solutif..."
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 font-sans leading-relaxed"
                 />
               </div>
@@ -382,11 +377,8 @@ export default function AutoReply() {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-medium text-gray-300">
-                    Knowledge Base Bisnis & FAQ Produk
+                    Knowledge Base & FAQ
                   </label>
-                  <span className="text-[10px] text-gray-500">
-                    Data produk, harga, & info toko
-                  </span>
                 </div>
                 <textarea
                   rows={4}
@@ -397,54 +389,8 @@ export default function AutoReply() {
                       knowledgeBase: e.target.value,
                     }))
                   }
-                  placeholder="Masukkan daftar produk, harga, jam operasional, no rekening, atau FAQ yang ingin dijawab oleh AI..."
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 font-sans leading-relaxed"
                 />
-              </div>
-
-              <div className="space-y-3 p-3 bg-gray-800/40 border border-gray-700/60 rounded-xl">
-                <div>
-                  <label className="block text-xs font-medium text-purple-300 mb-1">
-                    Human Agent Handover Keywords
-                  </label>
-                  <input
-                    type="text"
-                    value={
-                      Array.isArray(aiConfig.handoverKeywords)
-                        ? aiConfig.handoverKeywords.join(", ")
-                        : aiConfig.handoverKeywords || ""
-                    }
-                    onChange={(e) =>
-                      setAiConfig((prev) => ({
-                        ...prev,
-                        handoverKeywords: e.target.value as any,
-                      }))
-                    }
-                    placeholder="cs, admin, human, manusia, bantuan"
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                  />
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    Jika pelanggan mengetik kata di atas, bot akan otomatis berhenti selama 2 jam dan mengalihkan chat ke CS manusia.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-purple-300 mb-1">
-                    Pesan Alihkan ke CS
-                  </label>
-                  <input
-                    type="text"
-                    value={aiConfig.handoverMessage || ""}
-                    onChange={(e) =>
-                      setAiConfig((prev) => ({
-                        ...prev,
-                        handoverMessage: e.target.value,
-                      }))
-                    }
-                    placeholder="Pesan Anda telah diteruskan ke Customer Service manusia. Mohon ditunggu ya kak."
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                  />
-                </div>
               </div>
 
               {aiSaveMsg && (
@@ -460,7 +406,7 @@ export default function AutoReply() {
                   disabled={savingAi}
                   className="btn-primary bg-purple-600 hover:bg-purple-500 border-none px-4 py-2"
                 >
-                  {savingAi ? "Saving..." : "Save AI Configuration"}
+                  {savingAi ? t("status.saving", "Saving...") : t("actions.save", "Save AI Configuration")}
                 </button>
               </div>
             </form>
@@ -507,10 +453,6 @@ export default function AutoReply() {
                   </p>
                 </div>
               )}
-            </div>
-
-            <div className="p-3 rounded-lg bg-gray-800/40 text-[11px] text-gray-400 border border-gray-800">
-              💡 <span className="font-semibold text-gray-300">Tip:</span> Ensure you have saved your API key and enabled the switch above to activate automatic AI responses.
             </div>
           </div>
         </div>

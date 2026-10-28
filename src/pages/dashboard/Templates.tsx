@@ -2,12 +2,14 @@ import { useState } from "react";
 import { MessageTemplate } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import { FileText, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { useI18n } from "../../context/I18nContext";
 import { useTemplates } from "../../features/templates/hooks/useTemplates";
 import TemplateForm from "../../features/templates/components/TemplateForm";
 import TemplatePreview from "../../features/templates/components/TemplatePreview";
 import TemplateTable from "../../features/templates/components/TemplateTable";
 
 export default function Templates() {
+  const { t } = useI18n();
   const { templates, loading, load, create, update, remove, renderTemplate } =
     useTemplates();
   const [showForm, setShowForm] = useState(false);
@@ -44,7 +46,7 @@ export default function Templates() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          Reusable message templates with {"{{variable}}"} placeholders
+          {t("templates.subtitle")}
         </p>
         <div className="flex gap-2">
           <button
@@ -55,7 +57,7 @@ export default function Templates() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button onClick={openCreate} className="btn-primary">
-            <Plus className="w-4 h-4" /> New Template
+            <Plus className="w-4 h-4" /> {t("templates.new")}
           </button>
         </div>
       </div>
@@ -80,19 +82,19 @@ export default function Templates() {
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="card w-full max-w-sm p-6 space-y-4">
-            <p className="text-sm font-semibold text-white">Delete Template?</p>
+            <p className="text-sm font-semibold text-white">{t("templates.delete_confirm_title")}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => void handleDelete(deleteId)}
                 className="btn-danger flex-1 justify-center"
               >
-                <Trash2 className="w-4 h-4" /> Delete
+                <Trash2 className="w-4 h-4" /> {t("actions.delete", "Delete")}
               </button>
               <button
                 onClick={() => setDeleteId(null)}
                 className="btn-secondary flex-1 justify-center"
               >
-                Cancel
+                {t("actions.cancel", "Cancel")}
               </button>
             </div>
           </div>
@@ -108,13 +110,11 @@ export default function Templates() {
         ) : templates.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="No templates"
-            description={
-              "Create reusable message templates with {{variable}} placeholders."
-            }
+            title={t("templates.empty_title")}
+            description={t("templates.empty_desc")}
             action={
               <button className="btn-primary" onClick={openCreate}>
-                <Plus className="w-4 h-4" /> New Template
+                <Plus className="w-4 h-4" /> {t("templates.new")}
               </button>
             }
           />

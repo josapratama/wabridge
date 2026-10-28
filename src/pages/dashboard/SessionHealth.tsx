@@ -6,6 +6,7 @@ import {
   Session,
 } from "../../api/client";
 import { Activity, RefreshCw, Wifi, WifiOff, Loader2 } from "lucide-react";
+import { useI18n } from "../../context/I18nContext";
 
 const statusColor: Record<string, string> = {
   connected: "text-brand-400",
@@ -13,18 +14,19 @@ const statusColor: Record<string, string> = {
   reconnecting: "text-yellow-400",
 };
 
-const statusIcon = (status: string) => {
-  if (status === "connected")
-    return <Wifi className="w-4 h-4 text-brand-400" />;
-  if (status === "reconnecting")
-    return <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />;
-  return <WifiOff className="w-4 h-4 text-red-400" />;
-};
-
 export default function SessionHealth() {
+  const { t } = useI18n();
   const [health, setHealth] = useState<SessionHealthLog[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const statusIcon = (status: string) => {
+    if (status === "connected")
+      return <Wifi className="w-4 h-4 text-brand-400" />;
+    if (status === "reconnecting")
+      return <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />;
+    return <WifiOff className="w-4 h-4 text-red-400" />;
+  };
 
   const load = async () => {
     setLoading(true);
@@ -53,7 +55,7 @@ export default function SessionHealth() {
     <div className="p-6 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          Real-time connection status · auto-refreshes every 30s
+          {t("session_health.subtitle")}
         </p>
         <button
           onClick={() => void load()}
@@ -61,7 +63,7 @@ export default function SessionHealth() {
           disabled={loading}
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          <span>Refresh</span>
+          <span>{t("session_health.refresh")}</span>
         </button>
       </div>
 
@@ -72,7 +74,7 @@ export default function SessionHealth() {
       ) : rows.length === 0 ? (
         <div className="card p-8 text-center">
           <p className="text-sm text-gray-500">
-            No sessions found. Create a session first.
+            {t("session_health.empty")}
           </p>
         </div>
       ) : (
@@ -98,7 +100,7 @@ export default function SessionHealth() {
                   <span
                     className={`text-xs font-medium ${log ? statusColor[log.status] : "text-gray-600"}`}
                   >
-                    {log?.status ?? "unknown"}
+                    {log?.status ? t(`session_health.${log.status}`, log.status) : "unknown"}
                   </span>
                 </div>
               </div>
@@ -106,13 +108,13 @@ export default function SessionHealth() {
               {/* Stats */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-800/50 rounded-lg px-3 py-2">
-                  <p className="text-[10px] text-gray-500">Sent today</p>
+                  <p className="text-[10px] text-gray-500">{t("messages.sent_tab", "Sent today")}</p>
                   <p className="text-lg font-bold text-white">
                     {log?.messagesSentToday ?? 0}
                   </p>
                 </div>
                 <div className="bg-gray-800/50 rounded-lg px-3 py-2">
-                  <p className="text-[10px] text-gray-500">Received today</p>
+                  <p className="text-[10px] text-gray-500">{t("messages.received_tab", "Received today")}</p>
                   <p className="text-lg font-bold text-white">
                     {log?.messagesReceivedToday ?? 0}
                   </p>
@@ -123,13 +125,13 @@ export default function SessionHealth() {
               <div className="flex items-center justify-between text-xs text-gray-500">
                 <span>
                   {log?.latencyMs != null
-                    ? `${log.latencyMs}ms latency`
-                    : "No latency data"}
+                    ? `${log.latencyMs}ms ${t("session_health.latency").toLowerCase()}`
+                    : "—"}
                 </span>
                 <span>
                   {log
-                    ? `Checked ${new Date(log.checkedAt).toLocaleTimeString()}`
-                    : "Never checked"}
+                    ? `${t("session_health.last_heartbeat")}: ${new Date(log.checkedAt).toLocaleTimeString()}`
+                    : "—"}
                 </span>
               </div>
 
@@ -141,7 +143,7 @@ export default function SessionHealth() {
                     : "bg-gray-800 text-gray-500 border border-gray-700"
                 }`}
               >
-                Session: {session.status}
+                {t("sessions.title")}: {session.status}
               </div>
             </div>
           ))}

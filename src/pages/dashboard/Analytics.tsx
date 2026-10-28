@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { analyticsApi, AnalyticsSummary, UsageRecord } from "../../api/client";
 import { BarChart2, TrendingUp, RefreshCw, AlertCircle } from "lucide-react";
+import { useI18n } from "../../context/I18nContext";
 
 function StatCard({
   label,
@@ -46,6 +47,7 @@ function MiniBar({
 }
 
 export default function Analytics() {
+  const { t } = useI18n();
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [usage, setUsage] = useState<UsageRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +78,7 @@ export default function Analytics() {
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          Message traffic statistics, delivery trends, and quota usage
+          {t("analytics.subtitle")}
         </p>
         <button
           onClick={() => void load()}
@@ -96,25 +98,25 @@ export default function Analytics() {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
-              label="Total Sent"
+              label={t("analytics.total_messages")}
               value={summary?.totalSent ?? 0}
               color="text-brand-400"
-              sub="outbound messages"
+              sub={t("messages.sent_tab", "outbound messages")}
             />
             <StatCard
-              label="Total Received"
+              label={t("messages.received_tab", "Total Received")}
               value={summary?.totalReceived ?? 0}
               color="text-blue-400"
-              sub="inbound messages"
+              sub={t("messages.received_tab", "inbound messages")}
             />
             <StatCard
-              label="Success Rate"
+              label={t("analytics.success_rate")}
               value={`${summary?.successRate ?? 100}%`}
               color="text-green-400"
-              sub="sent successfully"
+              sub={t("analytics.delivered", "sent successfully")}
             />
             <StatCard
-              label="Monthly Quota"
+              label={t("analytics.monthly_usage")}
               value={`${usage?.messagesSent ?? 0} / ${usage?.quotaLimit ?? 1000}`}
               color={usagePct > 80 ? "text-red-400" : "text-yellow-400"}
               sub={`${usagePct}% used this month`}
@@ -126,7 +128,7 @@ export default function Analytics() {
             <div className="card p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-gray-200">
-                  Monthly Usage — {usage.month}
+                  {t("analytics.monthly_usage")} — {usage.month}
                 </p>
                 <span
                   className={`text-xs font-medium ${usagePct > 80 ? "text-red-400" : "text-gray-400"}`}
@@ -154,14 +156,14 @@ export default function Analytics() {
           <div className="card p-5 space-y-4">
             <h2 className="text-sm font-semibold text-white flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-brand-400" />
-              Last 7 Days
+              {t("time.last_7_days", "Last 7 Days")}
             </h2>
             <div className="space-y-3">
               {summary?.dailyStats.map((day) => (
                 <div key={day.date} className="space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500 w-20 shrink-0">
-                      {new Date(day.date).toLocaleDateString("en", {
+                      {new Date(day.date).toLocaleDateString(undefined, {
                         weekday: "short",
                         month: "short",
                         day: "numeric",
@@ -192,14 +194,14 @@ export default function Analytics() {
             </div>
             <div className="flex items-center gap-4 pt-1">
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className="w-2.5 h-2.5 rounded-full bg-brand-500" /> Sent
+                <span className="w-2.5 h-2.5 rounded-full bg-brand-500" /> {t("messages.sent_tab", "Sent")}
               </div>
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />{" "}
-                Received
+                {t("messages.received_tab", "Received")}
               </div>
               <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Failed
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> {t("analytics.failed", "Failed")}
               </div>
             </div>
           </div>
@@ -208,7 +210,7 @@ export default function Analytics() {
           {summary && Object.keys(summary.statusBreakdown).length > 0 && (
             <div className="card p-5 space-y-3">
               <h2 className="text-sm font-semibold text-white">
-                Status Breakdown
+                {t("analytics.providers_breakdown", "Status Breakdown")}
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {Object.entries(summary.statusBreakdown).map(

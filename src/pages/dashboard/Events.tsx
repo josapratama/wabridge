@@ -3,8 +3,10 @@ import { eventsApi, ProviderEvent } from "../../api/client";
 import StatusBadge from "../../components/StatusBadge";
 import EmptyState from "../../components/EmptyState";
 import { Activity, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { useI18n } from "../../context/I18nContext";
 
 function EventRow({ event }: { event: ProviderEvent }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
 
   return (
@@ -36,7 +38,7 @@ function EventRow({ event }: { event: ProviderEvent }) {
             <span
               className={`w-1.5 h-1.5 rounded-full ${event.processed ? "bg-brand-400" : "bg-yellow-400"}`}
             />
-            {event.processed ? "processed" : "pending"}
+            {event.processed ? t("events.processed") : t("events.pending")}
           </span>
         </td>
         <td className="px-5 py-3 text-gray-500 text-xs">
@@ -57,6 +59,7 @@ function EventRow({ event }: { event: ProviderEvent }) {
 }
 
 export default function Events() {
+  const { t } = useI18n();
   const [events, setEvents] = useState<ProviderEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
@@ -82,7 +85,7 @@ export default function Events() {
     <div className="p-6 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          All provider events log — click a row to inspect payload
+          {t("events.subtitle")}
         </p>
         <button
           onClick={() => void load()}
@@ -90,14 +93,14 @@ export default function Events() {
           disabled={loading}
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+          {t("common.refresh", "Refresh")}
         </button>
       </div>
 
       {/* Filter */}
       <input
         className="input max-w-xs"
-        placeholder="Filter by event type or provider…"
+        placeholder={t("common.search", "Filter by event type or provider…")}
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
       />
@@ -110,8 +113,8 @@ export default function Events() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={Activity}
-            title="No events"
-            description="Events are recorded when webhooks arrive or messages are sent."
+            title={t("events.empty")}
+            description={t("events.subtitle")}
           />
         ) : (
           <table className="w-full text-sm">
@@ -119,19 +122,19 @@ export default function Events() {
               <tr className="border-b border-gray-800">
                 <th className="px-5 py-3 w-8" />
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Provider
+                  {t("events.provider")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Event Type
+                  {t("events.event_type")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Session
+                  {t("events.session")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  State
+                  {t("events.status")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Time
+                  {t("events.timestamp")}
                 </th>
               </tr>
             </thead>
@@ -146,7 +149,7 @@ export default function Events() {
 
       {filtered.length > 0 && (
         <p className="text-xs text-gray-600 text-right">
-          Showing {filtered.length} of {events.length} events
+          {filtered.length} / {events.length} {t("nav.events").toLowerCase()}
         </p>
       )}
     </div>

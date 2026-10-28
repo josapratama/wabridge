@@ -18,6 +18,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import StatusBadge from "../../components/StatusBadge";
+import { useI18n } from "../../context/I18nContext";
 
 function StatCard({
   label,
@@ -46,6 +47,7 @@ function StatCard({
 }
 
 export default function Dashboard() {
+  const { t } = useI18n();
   const [health, setHealth] = useState<HealthResult | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -79,7 +81,7 @@ export default function Dashboard() {
       {/* Subtitle / Action Bar */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
-          Overview and real-time status of your WhatsApp integration
+          {t("dashboard.subtitle", "Overview and real-time status of your WhatsApp integration")}
         </p>
         <button
           onClick={() => void load()}
@@ -87,7 +89,7 @@ export default function Dashboard() {
           disabled={loading}
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
+          {t("actions.refresh", "Refresh")}
         </button>
       </div>
 
@@ -107,10 +109,10 @@ export default function Dashboard() {
           )}
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-200">
-              System status: <StatusBadge value={health.status} />
+              {t("dashboard.system_status", "System status:")} <StatusBadge value={health.status} />
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              Uptime {Math.floor(health.uptime)}s
+              {t("dashboard.uptime", { seconds: Math.floor(health.uptime) })}
             </p>
           </div>
           <div className="flex gap-3">
@@ -122,7 +124,7 @@ export default function Dashboard() {
                 <p
                   className={`text-xs ${p.healthy ? "text-brand-400" : "text-red-400"}`}
                 >
-                  {p.healthy ? "● online" : "● offline"}
+                  {p.healthy ? `● ${t("status.online", "online")}` : `● ${t("status.offline", "offline")}`}
                   {p.latencyMs != null && ` · ${p.latencyMs}ms`}
                 </p>
               </div>
@@ -134,25 +136,25 @@ export default function Dashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Total Sessions"
+          label={t("dashboard.total_sessions", "Total Sessions")}
           value={sessions.length}
           icon={Layers}
           color="bg-blue-500/15 text-blue-400"
         />
         <StatCard
-          label="Active Sessions"
+          label={t("dashboard.active_sessions", "Active Sessions")}
           value={activeSessions}
           icon={Layers}
           color="bg-brand-500/15 text-brand-400"
         />
         <StatCard
-          label="Total Messages"
+          label={t("dashboard.total_messages", "Total Messages")}
           value={messages.length}
           icon={MessageSquare}
           color="bg-purple-500/15 text-purple-400"
         />
         <StatCard
-          label="Failed Messages"
+          label={t("dashboard.failed_messages", "Failed Messages")}
           value={failedMessages}
           icon={Activity}
           color="bg-red-500/15 text-red-400"
@@ -165,10 +167,10 @@ export default function Dashboard() {
         <div className="card">
           <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-200">
-              Recent Messages
+              {t("dashboard.recent_messages", "Recent Messages")}
             </h2>
             <span className="text-xs text-gray-500">
-              {messages.length} total
+              {t("dashboard.total_count", { count: messages.length })}
             </span>
           </div>
           <div className="divide-y divide-gray-800">
@@ -189,7 +191,7 @@ export default function Dashboard() {
               ))}
             {messages.length === 0 && (
               <p className="px-5 py-8 text-sm text-gray-600 text-center">
-                No messages yet
+                {t("dashboard.no_messages", "No messages yet")}
               </p>
             )}
           </div>
@@ -199,9 +201,11 @@ export default function Dashboard() {
         <div className="card">
           <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-200">
-              Recent Events
+              {t("dashboard.recent_events", "Recent Events")}
             </h2>
-            <span className="text-xs text-gray-500">{events.length} total</span>
+            <span className="text-xs text-gray-500">
+              {t("dashboard.total_count", { count: events.length })}
+            </span>
           </div>
           <div className="divide-y divide-gray-800">
             {events
@@ -225,7 +229,7 @@ export default function Dashboard() {
               ))}
             {events.length === 0 && (
               <p className="px-5 py-8 text-sm text-gray-600 text-center">
-                No events yet
+                {t("dashboard.no_events", "No events yet")}
               </p>
             )}
           </div>

@@ -1,17 +1,20 @@
 import { Link, useLocation } from "react-router-dom";
 import { Zap, ArrowRight } from "lucide-react";
-
-const links = [
-  { to: "/#features", label: "Features", external: true },
-  { to: "/#how-it-works", label: "How it works", external: true },
-  { to: "/pricing", label: "Pricing", external: false },
-  { to: "/public-docs", label: "Docs", external: false },
-];
+import { useI18n } from "../context/I18nContext";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const scrollTop = () => window.scrollTo({ top: 0, behavior: "instant" });
 
 export default function PublicNav() {
   const { pathname } = useLocation();
+  const { t } = useI18n();
+
+  const links = [
+    { to: "/#features", labelKey: "public.features", defaultLabel: "Features", external: true },
+    { to: "/#how-it-works", labelKey: "public.how_it_works", defaultLabel: "How it works", external: true },
+    { to: "/pricing", labelKey: "public.pricing", defaultLabel: "Pricing", external: false },
+    { to: "/public-docs", labelKey: "public.docs", defaultLabel: "Docs", external: false },
+  ];
 
   return (
     <nav className="border-b border-gray-800 sticky top-0 z-50 bg-gray-950/90 backdrop-blur-sm">
@@ -23,15 +26,15 @@ export default function PublicNav() {
           </div>
           <span className="text-sm font-bold text-white">WA Integration</span>
           {pathname === "/public-docs" && (
-            <span className="text-xs text-gray-500 ml-1">/ Docs</span>
+            <span className="text-xs text-gray-500 ml-1">/ {t("public.docs", "Docs")}</span>
           )}
           {pathname === "/pricing" && (
-            <span className="text-xs text-gray-500 ml-1">/ Pricing</span>
+            <span className="text-xs text-gray-500 ml-1">/ {t("public.pricing", "Pricing")}</span>
           )}
         </Link>
 
-        {/* Links */}
-        <div className="flex items-center gap-5">
+        {/* Links & Switcher */}
+        <div className="flex items-center gap-4 sm:gap-5">
           {links.map((link) =>
             link.external ? (
               <a
@@ -39,7 +42,7 @@ export default function PublicNav() {
                 href={link.to}
                 className="text-xs text-gray-400 hover:text-white transition-colors hidden sm:block"
               >
-                {link.label}
+                {t(link.labelKey, link.defaultLabel)}
               </a>
             ) : (
               <Link
@@ -52,16 +55,20 @@ export default function PublicNav() {
                     : "text-gray-400 hover:text-white"
                 }`}
               >
-                {link.label}
+                {t(link.labelKey, link.defaultLabel)}
               </Link>
             ),
           )}
+
+          <LanguageSwitcher compact />
+
           <Link
             to="/login"
             onClick={scrollTop}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-lg transition-colors"
           >
-            Get Started <ArrowRight className="w-3 h-3" />
+            <span>{t("public.get_started", "Get Started")}</span>
+            <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
       </div>

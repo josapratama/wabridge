@@ -20,6 +20,7 @@ import {
   HeartPulse,
   X,
 } from "lucide-react";
+import { useI18n } from "../context/I18nContext";
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -28,52 +29,60 @@ interface SidebarProps {
 
 const navGroups = [
   {
-    label: "Overview",
+    groupKey: "nav.overview",
+    fallbackGroup: "Overview",
     items: [
-      { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-      { to: "/inbox", icon: MessageSquare, label: "Live Chat" },
-      { to: "/analytics", icon: BarChart2, label: "Analytics" },
+      { to: "/dashboard", icon: LayoutDashboard, labelKey: "nav.dashboard", fallbackLabel: "Dashboard" },
+      { to: "/inbox", icon: MessageSquare, labelKey: "nav.live_chat", fallbackLabel: "Live Chat" },
+      { to: "/analytics", icon: BarChart2, labelKey: "nav.analytics", fallbackLabel: "Analytics" },
     ],
   },
   {
-    label: "WhatsApp",
+    groupKey: "nav.whatsapp",
+    fallbackGroup: "WhatsApp",
     items: [
-      { to: "/provider-configs", icon: Settings2, label: "Provider Configs" },
-      { to: "/sessions", icon: Layers, label: "Sessions" },
-      { to: "/groups", icon: Users, label: "WA Groups" },
-      { to: "/session-health", icon: HeartPulse, label: "Session Health" },
-      { to: "/messages", icon: MessageSquare, label: "Messages Log" },
-      { to: "/events", icon: Activity, label: "Events" },
+      { to: "/provider-configs", icon: Settings2, labelKey: "nav.provider_configs", fallbackLabel: "Provider Configs" },
+      { to: "/sessions", icon: Layers, labelKey: "nav.sessions", fallbackLabel: "Sessions" },
+      { to: "/groups", icon: Users, labelKey: "nav.wa_groups", fallbackLabel: "WA Groups" },
+      { to: "/session-health", icon: HeartPulse, labelKey: "nav.session_health", fallbackLabel: "Session Health" },
+      { to: "/messages", icon: MessageSquare, labelKey: "nav.messages_log", fallbackLabel: "Messages Log" },
+      { to: "/events", icon: Activity, labelKey: "nav.events", fallbackLabel: "Events" },
     ],
   },
   {
-    label: "Messaging",
+    groupKey: "nav.messaging",
+    fallbackGroup: "Messaging",
     items: [
-      { to: "/broadcast", icon: Radio, label: "Broadcast" },
-      { to: "/scheduled", icon: Clock, label: "Scheduled" },
-      { to: "/templates", icon: FileText, label: "Templates" },
-      { to: "/auto-reply", icon: Bot, label: "Auto-reply & AI" },
+      { to: "/broadcast", icon: Radio, labelKey: "nav.broadcast", fallbackLabel: "Broadcast" },
+      { to: "/scheduled", icon: Clock, labelKey: "nav.scheduled", fallbackLabel: "Scheduled" },
+      { to: "/templates", icon: FileText, labelKey: "nav.templates", fallbackLabel: "Templates" },
+      { to: "/auto-reply", icon: Bot, labelKey: "nav.auto_reply", fallbackLabel: "Auto-reply & AI" },
     ],
   },
   {
-    label: "Contacts",
-    items: [{ to: "/contacts", icon: Users, label: "Contacts" }],
+    groupKey: "nav.contacts",
+    fallbackGroup: "Contacts",
+    items: [{ to: "/contacts", icon: Users, labelKey: "nav.contacts", fallbackLabel: "Contacts" }],
   },
   {
-    label: "Automation",
-    items: [{ to: "/webhooks", icon: Webhook, label: "Webhooks" }],
+    groupKey: "nav.automation",
+    fallbackGroup: "Automation",
+    items: [{ to: "/webhooks", icon: Webhook, labelKey: "nav.webhooks", fallbackLabel: "Webhooks" }],
   },
   {
-    label: "Team",
-    items: [{ to: "/team", icon: Users2, label: "Team" }],
+    groupKey: "nav.team",
+    fallbackGroup: "Team",
+    items: [{ to: "/team", icon: Users2, labelKey: "nav.team", fallbackLabel: "Team" }],
   },
   {
-    label: "Developer",
-    items: [{ to: "/api-keys", icon: Key, label: "API Keys" }],
+    groupKey: "nav.developer",
+    fallbackGroup: "Developer",
+    items: [{ to: "/api-keys", icon: Key, labelKey: "nav.api_keys", fallbackLabel: "API Keys" }],
   },
 ];
 
 export default function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarProps) {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const userJson = localStorage.getItem("user");
   const user = userJson ? JSON.parse(userJson) : null;
@@ -117,7 +126,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarPr
               <p className="text-sm font-semibold text-white leading-none">
                 WA Integration
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">Control Center</p>
+              <p className="text-xs text-gray-500 mt-0.5">{t("nav.control_center")}</p>
             </div>
           </div>
 
@@ -134,12 +143,12 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarPr
         {/* Nav Links */}
         <nav className="flex-1 min-h-0 px-3 py-3 space-y-4 overflow-y-auto">
           {navGroups.map((group) => (
-            <div key={group.label}>
+            <div key={group.groupKey}>
               <p className="px-3 mb-1 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-                {group.label}
+                {t(group.groupKey, group.fallbackGroup)}
               </p>
               <div className="space-y-0.5">
-                {group.items.map(({ to, icon: Icon, label }) => (
+                {group.items.map(({ to, icon: Icon, labelKey, fallbackLabel }) => (
                   <NavLink
                     key={to}
                     to={to}
@@ -154,7 +163,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarPr
                     }
                   >
                     <Icon className="w-4 h-4 shrink-0" />
-                    {label}
+                    {t(labelKey, fallbackLabel)}
                   </NavLink>
                 ))}
               </div>
@@ -182,7 +191,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarPr
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-red-300 hover:bg-red-900/20 transition-colors"
           >
             <LogOut className="w-4 h-4 shrink-0" />
-            Logout
+            {t("auth.logout", "Logout")}
           </button>
         </div>
       </aside>

@@ -9,8 +9,10 @@ import {
 import ContactForm from "../../features/contacts/components/ContactForm";
 import ContactTable from "../../features/contacts/components/ContactTable";
 import ContactTagFilter from "../../features/contacts/components/ContactTagFilter";
+import { useI18n } from "../../context/I18nContext";
 
 export default function Contacts() {
+  const { t } = useI18n();
   const {
     contacts,
     loading,
@@ -135,7 +137,7 @@ export default function Contacts() {
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          Total <span className="font-semibold text-gray-200">{contacts.length}</span> WhatsApp contacts recorded
+          {t("dashboard.total_count", { count: contacts.length })} {t("contacts.title", "contacts")}
         </p>
         <div className="flex gap-2">
           <button
@@ -152,21 +154,21 @@ export default function Contacts() {
             title="Import all contacts from connected WhatsApp groups & chats"
           >
             <Users className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
-            <span>{syncing ? "Syncing..." : "Sync WhatsApp"}</span>
+            <span>{syncing ? t("status.loading", "Syncing...") : "Sync WhatsApp"}</span>
           </button>
           <button
             onClick={() => setShowImport(true)}
             className="btn-secondary flex items-center gap-1.5"
           >
             <Upload className="w-4 h-4 text-brand-400" />
-            <span>Import CSV</span>
+            <span>{t("actions.import", "Import CSV")}</span>
           </button>
           <button onClick={openCreate} className="btn-primary">
-            <Plus className="w-4 h-4" /> Add Contact
+            <Plus className="w-4 h-4" /> {t("contacts.add_contact", "Add Contact")}
           </button>
           <div className="relative group">
             <button className="btn-secondary">
-              <Download className="w-4 h-4" /> Export
+              <Download className="w-4 h-4" /> {t("actions.export", "Export")}
             </button>
             <div className="absolute right-0 top-full mt-1 w-28 card py-1 hidden group-hover:block z-10">
               <button
@@ -213,19 +215,19 @@ export default function Contacts() {
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="card w-full max-w-sm p-6 space-y-4">
-            <p className="text-sm font-semibold text-white">Delete Contact?</p>
+            <p className="text-sm font-semibold text-white">{t("confirm.delete_title", "Delete Contact?")}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => void handleDelete(deleteId)}
                 className="btn-danger flex-1 justify-center"
               >
-                <Trash2 className="w-4 h-4" /> Delete
+                <Trash2 className="w-4 h-4" /> {t("actions.delete", "Delete")}
               </button>
               <button
                 onClick={() => setDeleteId(null)}
                 className="btn-secondary flex-1 justify-center"
               >
-                Cancel
+                {t("actions.cancel", "Cancel")}
               </button>
             </div>
           </div>
@@ -241,11 +243,11 @@ export default function Contacts() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={Users}
-            title="No contacts"
-            description="Add contacts to use in broadcasts and messaging."
+            title={t("contacts.empty", "No contacts")}
+            description={t("contacts.subtitle", "Add contacts to use in broadcasts and messaging.")}
             action={
               <button className="btn-primary" onClick={openCreate}>
-                <Plus className="w-4 h-4" /> Add Contact
+                <Plus className="w-4 h-4" /> {t("contacts.add_contact", "Add Contact")}
               </button>
             }
           />
@@ -265,7 +267,7 @@ export default function Contacts() {
             <div className="flex items-center justify-between pb-2 border-b border-gray-800">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Upload className="w-5 h-5 text-brand-400" />
-                Import Contacts via CSV / Text
+                {t("actions.import", "Import Contacts via CSV / Text")}
               </h3>
               <button
                 onClick={() => {
@@ -332,7 +334,7 @@ export default function Contacts() {
                 className="btn-secondary"
                 disabled={importing}
               >
-                Cancel
+                {t("actions.cancel", "Cancel")}
               </button>
               <button
                 type="button"
@@ -340,7 +342,7 @@ export default function Contacts() {
                 disabled={importing || !importText.trim()}
                 className="btn-primary"
               >
-                {importing ? "Importing..." : "Process Import"}
+                {importing ? t("status.loading", "Importing...") : t("actions.import", "Process Import")}
               </button>
             </div>
           </div>

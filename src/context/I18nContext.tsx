@@ -10,14 +10,28 @@ const translations: Record<Language, any> = { id, en, ja };
 interface I18nContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (path: string, fallback?: string) => string;
+  t: (
+    path: string,
+    paramsOrFallback?: Record<string, string | number> | string,
+    fallback?: string,
+  ) => string;
 }
 
 const I18nContext = createContext<I18nContextType>({
   language: "id",
   setLanguage: () => {},
-  t: (_path, fallback) => fallback || "",
+  t: (_path, paramsOrFallback, fallback) => {
+    if (typeof paramsOrFallback === "string") return paramsOrFallback;
+    return fallback || _path;
+  },
 });
+
+function interpolate(text: string, params?: Record<string, string | number>): string {
+  if (!params) return text;
+  return text.replace(/\{(\w+)\}/g, (_, key) => {
+    return params[key] !== undefined ? String(params[key]) : `{${key}}`;
+  });
+}
 
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
@@ -35,7 +49,20 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
   };
 
-  const t = (path: string, fallback?: string): string => {
+  const t = (
+    path: string,
+    paramsOrFallback?: Record<string, string | number> | string,
+    fallback?: string,
+  ): string => {
+    let params: Record<string, string | number> | undefined;
+    let defFallback = fallback;
+
+    if (typeof paramsOrFallback === "object" && paramsOrFallback !== null) {
+      params = paramsOrFallback;
+    } else if (typeof paramsOrFallback === "string") {
+      defFallback = paramsOrFallback;
+    }
+
     const keys = path.split(".");
     let val: any = translations[language];
     for (const k of keys) {
@@ -46,7 +73,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       }
     }
-    if (typeof val === "string") return val;
+    if (typeof val === "string") return interpolate(val, params);
 
     // fallback to en
     let enVal: any = translations.en;
@@ -58,9 +85,10 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         break;
       }
     }
-    if (typeof enVal === "string") return enVal;
+    if (typeof enVal === "string") return interpolate(enVal, params);
 
-    return fallback ?? path;
+    const result = defFallback ?? path;
+    return interpolate(result, params);
   };
 
   return (

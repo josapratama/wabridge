@@ -6,8 +6,10 @@ import { SendForm } from "../../features/messages/constants";
 import MessageFilters from "../../features/messages/components/MessageFilters";
 import MessageSendForm from "../../features/messages/components/MessageSendForm";
 import MessageTable from "../../features/messages/components/MessageTable";
+import { useI18n } from "../../context/I18nContext";
 
 export default function Messages() {
+  const { t } = useI18n();
   const { messages, sessions, loading, load, send, exportMessages, filter } =
     useMessages();
   const [showForm, setShowForm] = useState(false);
@@ -29,7 +31,7 @@ export default function Messages() {
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          Showing <span className="font-semibold text-gray-200">{filtered.length}</span> messages
+          {t("table.showing", "Showing")} <span className="font-semibold text-gray-200">{filtered.length}</span> {t("messages.title", "messages")}
         </p>
         <div className="flex items-center gap-2">
           <button
@@ -41,7 +43,7 @@ export default function Messages() {
           </button>
           <div className="relative group">
             <button className="btn-secondary">
-              <Download className="w-4 h-4" /> Export
+              <Download className="w-4 h-4" /> {t("actions.export", "Export")}
             </button>
             <div className="absolute right-0 top-full mt-1 w-32 card py-1 hidden group-hover:block z-10">
               <button
@@ -69,7 +71,7 @@ export default function Messages() {
             </div>
           </div>
           <button onClick={() => setShowForm(true)} className="btn-primary">
-            <Send className="w-4 h-4" /> Send Message
+            <Send className="w-4 h-4" /> {t("messages.send_new", "Send Message")}
           </button>
         </div>
       </div>
@@ -102,11 +104,11 @@ export default function Messages() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={MessageSquare}
-            title="No messages"
+            title={t("messages.empty", "No messages")}
             description={
               hasFilters
-                ? "No messages match your filters."
-                : "Send your first message or wait for inbound messages."
+                ? t("table.no_data", "No messages match your filters.")
+                : t("messages.subtitle", "Send your first message or wait for inbound messages.")
             }
             action={
               !hasFilters ? (
@@ -114,7 +116,7 @@ export default function Messages() {
                   className="btn-primary"
                   onClick={() => setShowForm(true)}
                 >
-                  <Send className="w-4 h-4" /> Send Message
+                  <Send className="w-4 h-4" /> {t("messages.send_new", "Send Message")}
                 </button>
               ) : undefined
             }

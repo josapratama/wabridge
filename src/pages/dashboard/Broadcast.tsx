@@ -4,8 +4,10 @@ import { Radio, Plus, RefreshCw } from "lucide-react";
 import { useBroadcast } from "../../features/broadcast/hooks/useBroadcast";
 import BroadcastForm from "../../features/broadcast/components/BroadcastForm";
 import BroadcastTable from "../../features/broadcast/components/BroadcastTable";
+import { useI18n } from "../../context/I18nContext";
 
 export default function Broadcast() {
+  const { t } = useI18n();
   const { jobs, sessions, contacts, loading, load, create, start, cancel, allTags } =
     useBroadcast();
   const [showForm, setShowForm] = useState(false);
@@ -27,7 +29,7 @@ export default function Broadcast() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          Send announcements and bulk messages to multiple recipients
+          {t("broadcast.subtitle", "Send announcements and bulk messages to multiple recipients")}
         </p>
         <div className="flex gap-2">
           <button
@@ -38,7 +40,7 @@ export default function Broadcast() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button onClick={() => setShowForm(true)} className="btn-primary">
-            <Plus className="w-4 h-4" /> New Broadcast
+            <Plus className="w-4 h-4" /> {t("broadcast.create", "New Broadcast")}
           </button>
         </div>
       </div>
@@ -63,11 +65,11 @@ export default function Broadcast() {
         ) : jobs.length === 0 ? (
           <EmptyState
             icon={Radio}
-            title="No broadcasts"
-            description="Create a broadcast to send messages to multiple recipients."
+            title={t("broadcast.title", "No broadcasts")}
+            description={t("broadcast.subtitle", "Create a broadcast to send messages to multiple recipients.")}
             action={
               <button className="btn-primary" onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4" /> New Broadcast
+                <Plus className="w-4 h-4" /> {t("broadcast.create", "New Broadcast")}
               </button>
             }
           />

@@ -16,8 +16,10 @@ import {
   Clock,
   Radio,
 } from "lucide-react";
+import { useI18n } from "../../context/I18nContext";
 
 export default function Groups() {
+  const { t } = useI18n();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [groups, setGroups] = useState<WhatsAppGroup[]>([]);
@@ -114,13 +116,13 @@ export default function Groups() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <p className="text-sm text-gray-400">
-            View participating WhatsApp groups and broadcast announcements directly to groups
+            {t("groups.subtitle")}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400">Session:</span>
+            <span className="text-xs text-gray-400">{t("groups.select_session")}:</span>
             <select
               value={selectedSessionId}
               onChange={(e) => setSelectedSessionId(e.target.value)}
@@ -140,7 +142,7 @@ export default function Groups() {
             className="btn-secondary"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            <span>Fetch Groups</span>
+            <span>{t("groups.refresh_groups")}</span>
           </button>
         </div>
       </div>
@@ -149,16 +151,16 @@ export default function Groups() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-500">
           <RefreshCw className="w-8 h-8 animate-spin text-brand-500 mb-2" />
-          <p className="text-xs">Fetching WhatsApp groups from device...</p>
+          <p className="text-xs">{t("common.loading", "Fetching WhatsApp groups from device...")}</p>
         </div>
       ) : groups.length === 0 ? (
         <div className="card p-12 text-center text-gray-500">
           <div className="w-12 h-12 rounded-xl bg-gray-800 border border-gray-700 flex items-center justify-center mx-auto mb-3">
             <Users className="w-6 h-6 text-gray-400" />
           </div>
-          <p className="text-sm font-semibold text-gray-300">No Groups Found</p>
+          <p className="text-sm font-semibold text-gray-300">{t("groups.empty_title")}</p>
           <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-            Make sure the selected session is connected to WhatsApp and that the account is currently participating in groups.
+            {t("groups.empty_desc")}
           </p>
         </div>
       ) : (
@@ -174,7 +176,7 @@ export default function Groups() {
                     <Users className="w-4 h-4" />
                   </div>
                   <span className="px-2 py-0.5 rounded-full bg-gray-800 text-[10px] text-gray-300 font-mono">
-                    {group.participantsCount} members
+                    {t("groups.members_count", { count: group.participantsCount })}
                   </span>
                 </div>
 
@@ -186,12 +188,12 @@ export default function Groups() {
                   <button
                     onClick={() => copyToClipboard(group.id)}
                     className="hover:text-gray-300 transition-colors"
-                    title="Copy Group JID"
+                    title={t("groups.copy_jid")}
                   >
                     <Copy className="w-3 h-3" />
                   </button>
                   {copySuccess === group.id && (
-                    <span className="text-[10px] text-brand-400">Copied!</span>
+                    <span className="text-[10px] text-brand-400">{t("groups.copied")}</span>
                   )}
                 </div>
               </div>
@@ -207,7 +209,7 @@ export default function Groups() {
                   className="btn-primary text-xs py-1 px-2.5 flex items-center gap-1.5"
                 >
                   <Send className="w-3 h-3" />
-                  <span>Send Message</span>
+                  <span>{t("groups.send_message")}</span>
                 </button>
               </div>
             </div>
@@ -221,23 +223,23 @@ export default function Groups() {
           <div className="card w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-150">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
               <Radio className="w-4 h-4 text-brand-400" />
-              Send to Group
+              {t("groups.modal_title", { name: targetGroup.subject })}
             </h2>
             <p className="text-xs text-gray-400 mt-1">
-              Posting message to <span className="font-semibold text-white">{targetGroup.subject}</span> ({targetGroup.participantsCount} participants)
+              Posting message to <span className="font-semibold text-white">{targetGroup.subject}</span> ({t("groups.members_count", { count: targetGroup.participantsCount })})
             </p>
 
             <form onSubmit={handleSendGroupMessage} className="mt-4 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-1">
-                  Message Content
+                  {t("templates.content", "Message Content")}
                 </label>
                 <textarea
                   value={groupMessage}
                   onChange={(e) => setGroupMessage(e.target.value)}
                   rows={4}
                   required
-                  placeholder="Enter announcement or message to be sent to this group..."
+                  placeholder={t("common.type_message", "Enter announcement or message to be sent to this group...")}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500"
                 />
               </div>
@@ -263,14 +265,14 @@ export default function Groups() {
                   className="btn-secondary"
                   disabled={sending}
                 >
-                  Cancel
+                  {t("actions.cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={sending || !groupMessage.trim()}
                   className="btn-primary"
                 >
-                  {sending ? "Sending..." : "Send to Group"}
+                  {sending ? t("common.sending", "Sending...") : t("groups.send_message")}
                 </button>
               </div>
             </form>

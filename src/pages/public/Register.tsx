@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Zap, ArrowLeft, Check } from "lucide-react";
 import { authApi } from "../../api/client";
+import { useI18n } from "../../context/I18nContext";
+import { LanguageSwitcher } from "../../components/LanguageSwitcher";
 
 const perks = [
   "Free forever — self-host with no limits",
@@ -12,6 +14,7 @@ const perks = [
 ];
 
 export default function Register() {
+  const { t } = useI18n();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,17 +31,21 @@ export default function Register() {
       if (res.success) {
         navigate("/dashboard");
       } else {
-        setError(res.message || "Registration failed");
+        setError(res.message || t("status.failed", "Registration failed"));
       }
     } catch {
-      setError("An unexpected error occurred");
+      setError(t("status.error", "An unexpected error occurred"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex">
+    <div className="min-h-screen bg-gray-950 flex relative">
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSwitcher compact />
+      </div>
+
       {/* Left — Feature panel (hidden on mobile) */}
       <div className="hidden lg:flex flex-1 bg-gray-900 border-r border-gray-800 flex-col justify-center px-12 relative overflow-hidden">
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-brand-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -47,14 +54,13 @@ export default function Register() {
         <div className="relative space-y-8 max-w-sm">
           <div>
             <p className="text-xs text-brand-400 font-semibold uppercase tracking-widest mb-3">
-              Get started for free
+              {t("public.get_started", "Get started for free")}
             </p>
             <h2 className="text-2xl font-bold text-white leading-snug">
-              Start sending WhatsApp messages in minutes
+              {t("public.hero_title", "Start sending WhatsApp messages in minutes")}
             </h2>
             <p className="text-sm text-gray-400 mt-3 leading-relaxed">
-              Self-host on your own server with full control. No credit card
-              required, no message limits.
+              {t("public.hero_desc", "Self-host on your own server with full control. No credit card required, no message limits.")}
             </p>
           </div>
 
@@ -97,7 +103,7 @@ export default function Register() {
             to="/"
             className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors mb-10"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to home
+            <ArrowLeft className="w-3.5 h-3.5" /> {t("public.back_to_home", "Back to home")}
           </Link>
 
           <div className="mb-8">
@@ -110,10 +116,10 @@ export default function Register() {
               </span>
             </div>
             <h1 className="text-2xl font-bold text-white">
-              Create your account
+              {t("auth.register_desc", "Create your account")}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Free forever · No credit card required
+              {t("public.hero_desc", "Free forever · No credit card required")}
             </p>
           </div>
 
@@ -125,7 +131,7 @@ export default function Register() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label">Full Name</label>
+              <label className="label">{t("auth.full_name", "Full Name")}</label>
               <input
                 type="text"
                 value={name}
@@ -136,7 +142,7 @@ export default function Register() {
               />
             </div>
             <div>
-              <label className="label">Email Address</label>
+              <label className="label">{t("auth.email", "Email Address")}</label>
               <input
                 type="email"
                 value={email}
@@ -147,7 +153,7 @@ export default function Register() {
               />
             </div>
             <div>
-              <label className="label">Password</label>
+              <label className="label">{t("auth.password", "Password")}</label>
               <input
                 type="password"
                 value={password}
@@ -158,7 +164,7 @@ export default function Register() {
                 required
               />
               <p className="text-[10px] text-gray-600 mt-1">
-                Minimum 6 characters
+                {t("validation.min_length", "Minimum 6 characters")}
               </p>
             </div>
             <button
@@ -166,17 +172,17 @@ export default function Register() {
               disabled={loading}
               className="btn-primary w-full justify-center py-2.5 mt-2"
             >
-              {loading ? "Creating account..." : "Create Account"}
+              {loading ? t("public.registering", "Creating account...") : t("public.register", "Create Account")}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-6">
-            Already have an account?{" "}
+            {t("auth.already_have_account", "Already have an account?")}{" "}
             <Link
               to="/login"
               className="text-brand-400 hover:text-brand-300 font-medium"
             >
-              Sign in
+              {t("auth.login_now", "Sign in")}
             </Link>
           </p>
         </div>

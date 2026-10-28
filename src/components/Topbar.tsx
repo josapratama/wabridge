@@ -4,8 +4,6 @@ import {
   Menu,
   X,
   Activity,
-  CheckCircle2,
-  AlertTriangle,
   ExternalLink,
   LogOut,
   User,
@@ -16,36 +14,39 @@ import {
   QrCode,
 } from "lucide-react";
 import { healthApi, HealthResult } from "../api/client";
+import { useI18n } from "../context/I18nContext";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 interface TopbarProps {
   onToggleMobileSidebar: () => void;
   isMobileSidebarOpen: boolean;
 }
 
-const routeTitles: Record<string, { group: string; title: string }> = {
-  "/dashboard": { group: "Overview", title: "Dashboard" },
-  "/inbox": { group: "Overview", title: "Live Chat Inbox" },
-  "/analytics": { group: "Overview", title: "Analytics" },
-  "/provider-configs": { group: "WhatsApp", title: "Provider Configs" },
-  "/sessions": { group: "WhatsApp", title: "Sessions" },
-  "/groups": { group: "WhatsApp", title: "WhatsApp Groups" },
-  "/session-health": { group: "WhatsApp", title: "Session Health" },
-  "/messages": { group: "WhatsApp", title: "Messages" },
-  "/events": { group: "WhatsApp", title: "Events" },
-  "/broadcast": { group: "Messaging", title: "Broadcast" },
-  "/scheduled": { group: "Messaging", title: "Scheduled Messages" },
-  "/templates": { group: "Messaging", title: "Templates" },
-  "/auto-reply": { group: "Messaging", title: "Auto-reply" },
-  "/contacts": { group: "Contacts", title: "Contacts" },
-  "/webhooks": { group: "Automation", title: "Webhooks" },
-  "/team": { group: "Team", title: "Team Members" },
-  "/api-keys": { group: "Developer", title: "API Keys" },
+const routeKeyMap: Record<string, { groupKey: string; titleKey: string; defaultGroup: string; defaultTitle: string }> = {
+  "/dashboard": { groupKey: "nav.overview", titleKey: "nav.dashboard", defaultGroup: "Overview", defaultTitle: "Dashboard" },
+  "/inbox": { groupKey: "nav.overview", titleKey: "nav.live_chat", defaultGroup: "Overview", defaultTitle: "Live Chat" },
+  "/analytics": { groupKey: "nav.overview", titleKey: "nav.analytics", defaultGroup: "Overview", defaultTitle: "Analytics" },
+  "/provider-configs": { groupKey: "nav.whatsapp", titleKey: "nav.provider_configs", defaultGroup: "WhatsApp", defaultTitle: "Provider Configs" },
+  "/sessions": { groupKey: "nav.whatsapp", titleKey: "nav.sessions", defaultGroup: "WhatsApp", defaultTitle: "Sessions" },
+  "/groups": { groupKey: "nav.whatsapp", titleKey: "nav.wa_groups", defaultGroup: "WhatsApp", defaultTitle: "WhatsApp Groups" },
+  "/session-health": { groupKey: "nav.whatsapp", titleKey: "nav.session_health", defaultGroup: "WhatsApp", defaultTitle: "Session Health" },
+  "/messages": { groupKey: "nav.whatsapp", titleKey: "nav.messages_log", defaultGroup: "WhatsApp", defaultTitle: "Messages" },
+  "/events": { groupKey: "nav.whatsapp", titleKey: "nav.events", defaultGroup: "WhatsApp", defaultTitle: "Events" },
+  "/broadcast": { groupKey: "nav.messaging", titleKey: "nav.broadcast", defaultGroup: "Messaging", defaultTitle: "Broadcast" },
+  "/scheduled": { groupKey: "nav.messaging", titleKey: "nav.scheduled", defaultGroup: "Messaging", defaultTitle: "Scheduled Messages" },
+  "/templates": { groupKey: "nav.messaging", titleKey: "nav.templates", defaultGroup: "Messaging", defaultTitle: "Templates" },
+  "/auto-reply": { groupKey: "nav.messaging", titleKey: "nav.auto_reply", defaultGroup: "Messaging", defaultTitle: "Auto-reply" },
+  "/contacts": { groupKey: "nav.contacts", titleKey: "nav.contacts", defaultGroup: "Contacts", defaultTitle: "Contacts" },
+  "/webhooks": { groupKey: "nav.automation", titleKey: "nav.webhooks", defaultGroup: "Automation", defaultTitle: "Webhooks" },
+  "/team": { groupKey: "nav.team", titleKey: "nav.team", defaultGroup: "Team", defaultTitle: "Team Members" },
+  "/api-keys": { groupKey: "nav.developer", titleKey: "nav.api_keys", defaultGroup: "Developer", defaultTitle: "API Keys" },
 };
 
 export default function Topbar({
   onToggleMobileSidebar,
   isMobileSidebarOpen,
 }: TopbarProps) {
+  const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
   const [health, setHealth] = useState<HealthResult | null>(null);
@@ -59,10 +60,11 @@ export default function Topbar({
   const userJson = localStorage.getItem("user");
   const user = userJson ? JSON.parse(userJson) : null;
 
-  const currentRoute = routeTitles[location.pathname] || {
-    group: "Dashboard",
-    title: location.pathname.replace("/", "").replace("-", " ") || "Dashboard",
-  };
+  const currentRouteMeta = routeKeyMap[location.pathname];
+  const groupLabel = currentRouteMeta ? t(currentRouteMeta.groupKey, currentRouteMeta.defaultGroup) : t("nav.overview", "Overview");
+  const titleLabel = currentRouteMeta
+    ? t(currentRouteMeta.titleKey, currentRouteMeta.defaultTitle)
+    : location.pathname.replace("/", "").replace("-", " ") || "Dashboard";
 
   const fetchHealth = async () => {
     setHealthLoading(true);
@@ -130,20 +132,20 @@ export default function Topbar({
 
         <div>
           <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <span>{currentRoute.group}</span>
+            <span>{groupLabel}</span>
             <span>/</span>
             <span className="text-gray-300 font-medium capitalize">
-              {currentRoute.title}
+              {titleLabel}
             </span>
           </div>
           <h1 className="text-base sm:text-lg font-bold text-white capitalize leading-tight">
-            {currentRoute.title}
+            {titleLabel}
           </h1>
         </div>
       </div>
 
-      {/* Right: Health pill, Public docs link, User dropdown */}
-      <div className="flex items-center gap-2 sm:gap-4">
+      {/* Right: Health pill, Language Switcher, Public docs link, User dropdown */}
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Live System Health pill with popover */}
         <div className="relative" ref={popoverRef}>
           <button
@@ -167,10 +169,10 @@ export default function Topbar({
               />
             </span>
             <span className="hidden md:inline">
-              {isHealthy ? "All Systems Operational" : "System Degraded"}
+              {isHealthy ? t("nav.system_operational", "All Systems Operational") : t("nav.system_degraded", "System Degraded")}
             </span>
             <span className="md:hidden">
-              {isHealthy ? "Online" : "Degraded"}
+              {isHealthy ? t("status.online", "Online") : t("status.offline", "Degraded")}
             </span>
             <ChevronDown className="w-3 h-3 text-gray-400" />
           </button>
@@ -182,7 +184,7 @@ export default function Topbar({
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-brand-400" />
                   <span className="text-xs font-semibold text-white">
-                    Provider Status
+                    {t("nav.provider_status", "Provider Status")}
                   </span>
                 </div>
                 <button
@@ -193,7 +195,7 @@ export default function Topbar({
                   <RefreshCw
                     className={`w-3 h-3 ${healthLoading ? "animate-spin" : ""}`}
                   />
-                  <span>Refresh</span>
+                  <span>{t("actions.refresh", "Refresh")}</span>
                 </button>
               </div>
 
@@ -220,7 +222,7 @@ export default function Topbar({
                             p.healthy ? "text-brand-400" : "text-red-400"
                           }`}
                         >
-                          {p.healthy ? "Online" : "Offline"}
+                          {p.healthy ? t("status.online", "Online") : t("status.offline", "Offline")}
                         </span>
                         {p.message && (
                           <p className="text-[10px] text-gray-500 max-w-[120px] truncate">
@@ -232,7 +234,7 @@ export default function Topbar({
                   ))
                 ) : (
                   <p className="text-xs text-gray-400 text-center py-2">
-                    {healthLoading ? "Checking providers..." : "No health data"}
+                    {healthLoading ? t("nav.checking_providers", "Checking providers...") : t("nav.no_health_data", "No health data")}
                   </p>
                 )}
               </div>
@@ -247,13 +249,13 @@ export default function Topbar({
                     className="mt-3 w-full py-1.5 px-3 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors shadow"
                   >
                     <QrCode className="w-3.5 h-3.5" />
-                    <span>Scan WhatsApp QR Code</span>
+                    <span>{t("nav.scan_qr", "Scan WhatsApp QR Code")}</span>
                   </Link>
                 )}
 
               {health && (
                 <div className="mt-3 pt-2.5 border-t border-gray-800 text-[11px] text-gray-500 flex justify-between">
-                  <span>Uptime</span>
+                  <span>{t("nav.uptime", "Uptime")}</span>
                   <span className="font-mono text-gray-300">
                     {Math.floor(health.uptime)}s
                   </span>
@@ -263,15 +265,18 @@ export default function Topbar({
           )}
         </div>
 
+        {/* Global Language Switcher */}
+        <LanguageSwitcher compact />
+
         {/* Quick Docs Link */}
         <Link
           to="/public-docs"
           target="_blank"
           rel="noopener noreferrer"
           className="hidden sm:flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-gray-800/80 transition-colors"
-          title="Open API Documentation"
+          title={t("nav.api_docs", "Open API Documentation")}
         >
-          <span>API Docs</span>
+          <span>{t("nav.api_docs", "API Docs")}</span>
           <ExternalLink className="w-3.5 h-3.5" />
         </Link>
 
@@ -312,7 +317,7 @@ export default function Topbar({
                   className="flex items-center gap-2.5 px-4 py-2 text-xs text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
                 >
                   <Zap className="w-3.5 h-3.5 text-gray-400" />
-                  API Keys & Integrations
+                  {t("nav.api_keys", "API Keys & Integrations")}
                 </Link>
                 <Link
                   to="/team"
@@ -320,7 +325,7 @@ export default function Topbar({
                   className="flex items-center gap-2.5 px-4 py-2 text-xs text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
                 >
                   <User className="w-3.5 h-3.5 text-gray-400" />
-                  Team Management
+                  {t("nav.team_management", "Team Management")}
                 </Link>
               </div>
 
@@ -330,7 +335,7 @@ export default function Topbar({
                   className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  Sign out
+                  {t("nav.sign_out", "Sign out")}
                 </button>
               </div>
             </div>

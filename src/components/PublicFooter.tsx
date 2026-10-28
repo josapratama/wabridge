@@ -7,38 +7,41 @@ import {
   Globe,
   Code2,
 } from "lucide-react";
+import { useI18n } from "../context/I18nContext";
 
 const scrollTop = () => window.scrollTo({ top: 0, behavior: "instant" });
 
-const footerLinks = {
-  Product: [
-    { label: "Features", href: "/#features" },
-    { label: "How it works", href: "/#how-it-works" },
-    { label: "Pricing", to: "/pricing" },
-    { label: "Dashboard", to: "/login" },
-  ],
-  Developers: [
-    { label: "Documentation", to: "/public-docs" },
-    { label: "Quick Start", to: "/public-docs" },
-    { label: "API Reference", to: "/public-docs" },
-    { label: "Webhooks", to: "/public-docs" },
-  ],
-  Platform: [
-    { label: "Baileys (Free)", to: "/public-docs" },
-    { label: "Meta Cloud API", to: "/public-docs" },
-    { label: "BSP / Partner", to: "/public-docs" },
-    { label: "Self-hosted", to: "/public-docs" },
-  ],
-};
-
-const stats = [
-  { value: "3", label: "Providers" },
-  { value: "14+", label: "Features" },
-  { value: "4", label: "Languages" },
-  { value: "∞", label: "Messages" },
-];
-
 export default function PublicFooter() {
+  const { t } = useI18n();
+
+  const footerLinks = {
+    [t("footer.product")]: [
+      { label: t("public.features"), href: "/#features" },
+      { label: t("public.how_it_works"), href: "/#how-it-works" },
+      { label: t("public.pricing"), to: "/pricing" },
+      { label: t("nav.overview"), to: "/login" },
+    ],
+    [t("footer.developers")]: [
+      { label: t("public.docs"), to: "/public-docs" },
+      { label: "Quick Start", to: "/public-docs" },
+      { label: "API Reference", to: "/public-docs" },
+      { label: "Webhooks", to: "/public-docs" },
+    ],
+    [t("footer.platform")]: [
+      { label: "Baileys (Free)", to: "/public-docs" },
+      { label: "Meta Cloud API", to: "/public-docs" },
+      { label: "BSP / Partner", to: "/public-docs" },
+      { label: "Self-hosted", to: "/public-docs" },
+    ],
+  };
+
+  const stats = [
+    { value: "3", label: t("footer.providers_count") },
+    { value: "14+", label: t("footer.features_count") },
+    { value: "3", label: t("footer.languages_count") },
+    { value: "∞", label: t("footer.messages_count") },
+  ];
+
   return (
     <footer className="border-t border-gray-800">
       {/* Stats */}
@@ -73,9 +76,7 @@ export default function PublicFooter() {
               </span>
             </Link>
             <p className="text-xs text-gray-400 leading-relaxed max-w-xs">
-              A complete self-hosted WhatsApp API platform. Connect any number,
-              send any message type, automate replies — all through a simple
-              REST API.
+              {t("footer.tagline")}
             </p>
             <div className="flex flex-wrap gap-2">
               {[
@@ -98,7 +99,7 @@ export default function PublicFooter() {
               onClick={scrollTop}
               className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium rounded-lg transition-colors"
             >
-              Get Started <ArrowRight className="w-3.5 h-3.5" />
+              {t("public.get_started")} <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
@@ -141,7 +142,7 @@ export default function PublicFooter() {
               <Zap className="w-2.5 h-2.5 text-white" />
             </div>
             <span className="text-xs text-gray-600">
-              WA Integration — Self-hosted WhatsApp API Platform
+              WA Integration — {t("footer.all_rights")}
             </span>
           </div>
           <div className="flex items-center gap-1 text-xs text-gray-700">
@@ -155,21 +156,21 @@ export default function PublicFooter() {
               onClick={scrollTop}
               className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
             >
-              Pricing
+              {t("public.pricing")}
             </Link>
             <Link
               to="/public-docs"
               onClick={scrollTop}
               className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
             >
-              Docs
+              {t("public.docs")}
             </Link>
             <Link
               to="/login"
               onClick={scrollTop}
               className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
             >
-              Login
+              {t("public.sign_in")}
             </Link>
           </div>
         </div>

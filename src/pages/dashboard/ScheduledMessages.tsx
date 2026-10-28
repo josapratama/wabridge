@@ -7,8 +7,10 @@ import {
 } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import { Clock, Plus, X, RefreshCw, Ban } from "lucide-react";
+import { useI18n } from "../../context/I18nContext";
 
 export default function ScheduledMessages() {
+  const { t } = useI18n();
   const [messages, setMessages] = useState<ScheduledMessage[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +83,7 @@ export default function ScheduledMessages() {
     <div className="p-6 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          Queue and automate messages to be sent at specific dates and times
+          {t("scheduled.subtitle")}
         </p>
         <div className="flex gap-2">
           <button
@@ -92,7 +94,7 @@ export default function ScheduledMessages() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button onClick={() => setShowForm(true)} className="btn-primary">
-            <Plus className="w-4 h-4" /> Schedule Message
+            <Plus className="w-4 h-4" /> {t("scheduled.schedule_button")}
           </button>
         </div>
       </div>
@@ -103,7 +105,7 @@ export default function ScheduledMessages() {
           <div className="card w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-white">
-                Schedule a Message
+                {t("scheduled.schedule_button")}
               </p>
               <button
                 onClick={() => setShowForm(false)}
@@ -119,7 +121,7 @@ export default function ScheduledMessages() {
             )}
             <form onSubmit={(e) => void handleCreate(e)} className="space-y-3">
               <div>
-                <label className="label">Session *</label>
+                <label className="label">{t("scheduled.session")} *</label>
                 <select
                   className="input"
                   required
@@ -128,7 +130,7 @@ export default function ScheduledMessages() {
                     setForm({ ...form, sessionId: e.target.value })
                   }
                 >
-                  <option value="">Select active session…</option>
+                  <option value="">{t("common.select", "Select active session…")}</option>
                   {sessions.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name} ({s.providerType})
@@ -142,7 +144,7 @@ export default function ScheduledMessages() {
                 )}
               </div>
               <div>
-                <label className="label">To (phone number) *</label>
+                <label className="label">{t("scheduled.recipient")} *</label>
                 <input
                   className="input"
                   placeholder="628123456789"
@@ -152,13 +154,13 @@ export default function ScheduledMessages() {
                 />
               </div>
               <div>
-                <label className="label">Message *</label>
+                <label className="label">{t("scheduled.content")} *</label>
                 <textarea
                   className="input resize-none"
                   rows={4}
                   required
                   maxLength={4096}
-                  placeholder="Type your message…"
+                  placeholder={t("common.type_message", "Type your message…")}
                   value={form.content}
                   onChange={(e) =>
                     setForm({ ...form, content: e.target.value })
@@ -166,7 +168,7 @@ export default function ScheduledMessages() {
                 />
               </div>
               <div>
-                <label className="label">Send At *</label>
+                <label className="label">{t("scheduled.scheduled_for")} *</label>
                 <input
                   type="datetime-local"
                   className="input"
@@ -189,14 +191,14 @@ export default function ScheduledMessages() {
                   ) : (
                     <Clock className="w-4 h-4" />
                   )}
-                  {saving ? "Scheduling…" : "Schedule"}
+                  {saving ? t("common.saving", "Scheduling…") : t("scheduled.schedule_button")}
                 </button>
                 <button
                   type="button"
                   className="btn-secondary"
                   onClick={() => setShowForm(false)}
                 >
-                  Cancel
+                  {t("actions.cancel", "Cancel")}
                 </button>
               </div>
             </form>
@@ -213,11 +215,11 @@ export default function ScheduledMessages() {
         ) : messages.length === 0 ? (
           <EmptyState
             icon={Clock}
-            title="No scheduled messages"
-            description="Schedule a message to be sent at a specific time."
+            title={t("scheduled.empty_title")}
+            description={t("scheduled.empty_desc")}
             action={
               <button className="btn-primary" onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4" /> Schedule Message
+                <Plus className="w-4 h-4" /> {t("scheduled.schedule_button")}
               </button>
             }
           />
@@ -226,19 +228,19 @@ export default function ScheduledMessages() {
             <thead>
               <tr className="border-b border-gray-800">
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Send At
+                  {t("scheduled.scheduled_for")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Session
+                  {t("scheduled.session")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  To
+                  {t("scheduled.recipient")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Message
+                  {t("scheduled.content")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Status
+                  {t("common.status", "Status")}
                 </th>
                 <th className="px-5 py-3" />
               </tr>
@@ -262,7 +264,7 @@ export default function ScheduledMessages() {
                     <span
                       className={`text-xs font-medium ${statusColor[m.status] ?? "text-gray-400"}`}
                     >
-                      ● {m.status}
+                      ● {t(`scheduled.status_${m.status}`, m.status)}
                     </span>
                     {m.errorMessage && (
                       <p className="text-[10px] text-red-400/70 mt-0.5 truncate max-w-[120px]">
@@ -276,7 +278,7 @@ export default function ScheduledMessages() {
                         onClick={() => void handleCancel(m.id)}
                         className="btn-danger text-xs"
                       >
-                        <Ban className="w-3.5 h-3.5" /> Cancel
+                        <Ban className="w-3.5 h-3.5" /> {t("scheduled.cancel")}
                       </button>
                     )}
                   </td>

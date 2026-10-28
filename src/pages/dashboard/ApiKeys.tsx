@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ApiKey } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
-import { Key, Plus, RefreshCw, ShieldCheck } from "lucide-react";
+import { Key, Plus, RefreshCw } from "lucide-react";
 import { useApiKeys } from "../../features/api-keys/hooks/useApiKeys";
 import ApiKeyRow from "../../features/api-keys/components/ApiKeyRow";
 import {
@@ -10,8 +10,10 @@ import {
   RevokeModal,
 } from "../../features/api-keys/components/ApiKeyModals";
 import DeveloperUsageGuide from "../../features/api-keys/components/DeveloperUsageGuide";
+import { useI18n } from "../../context/I18nContext";
 
 export default function ApiKeys() {
+  const { t } = useI18n();
   const { keys, loading, load, create, revoke, fmt, isExpired } = useApiKeys();
   const [showCreate, setShowCreate] = useState(false);
   const [newKey, setNewKey] = useState<ApiKey | null>(null);
@@ -36,9 +38,9 @@ export default function ApiKeys() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-bold text-white">API Keys & Integrasi</h1>
+          <h1 className="text-lg font-bold text-white">{t("apikeys.title", "API Keys & Integrasi")}</h1>
           <p className="text-xs sm:text-sm text-gray-400">
-            Kelola token autentikasi untuk mengakses REST API WhatsApp Gateway secara programatik
+            {t("apikeys.subtitle", "Kelola token autentikasi untuk mengakses REST API WhatsApp Gateway secara programatik")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -50,7 +52,7 @@ export default function ApiKeys() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button onClick={() => setShowCreate(true)} className="btn-primary">
-            <Plus className="w-4 h-4" /> New API Key
+            <Plus className="w-4 h-4" /> {t("apikeys.create_key", "New API Key")}
           </button>
         </div>
       </div>
@@ -84,14 +86,14 @@ export default function ApiKeys() {
         ) : keys.length === 0 ? (
           <EmptyState
             icon={Key}
-            title="No API keys"
-            description="Create an API key to start sending messages from your application."
+            title={t("apikeys.empty", "No API keys")}
+            description={t("apikeys.subtitle", "Create an API key to start sending messages from your application.")}
             action={
               <button
                 className="btn-primary"
                 onClick={() => setShowCreate(true)}
               >
-                <Plus className="w-4 h-4" /> New API Key
+                <Plus className="w-4 h-4" /> {t("apikeys.create_key", "New API Key")}
               </button>
             }
           />

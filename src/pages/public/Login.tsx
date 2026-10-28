@@ -9,15 +9,18 @@ import {
   Webhook,
 } from "lucide-react";
 import { authApi } from "../../api/client";
+import { useI18n } from "../../context/I18nContext";
+import { LanguageSwitcher } from "../../components/LanguageSwitcher";
 
 const features = [
-  { icon: MessageSquare, text: "Send text, image, video, document & location" },
-  { icon: Radio, text: "Broadcast to 1000+ contacts with delay" },
-  { icon: Bot, text: "Auto-reply rules with regex support" },
-  { icon: Webhook, text: "Real-time webhooks to your server" },
+  { icon: MessageSquare, textKey: "messages.title", defaultText: "Send text, image, video, document & location" },
+  { icon: Radio, textKey: "broadcast.title", defaultText: "Broadcast to 1000+ contacts with delay" },
+  { icon: Bot, textKey: "autoreply.title", defaultText: "Auto-reply rules with regex support" },
+  { icon: Webhook, textKey: "webhooks.title", defaultText: "Real-time webhooks to your server" },
 ];
 
 export default function Login() {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -35,17 +38,21 @@ export default function Login() {
         localStorage.setItem("user", JSON.stringify(res.data.user));
         navigate("/dashboard");
       } else {
-        setError(res.message || "Login failed");
+        setError(res.message || t("status.failed", "Login failed"));
       }
     } catch {
-      setError("An unexpected error occurred");
+      setError(t("status.error", "An unexpected error occurred"));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex">
+    <div className="min-h-screen bg-gray-950 flex relative">
+      <div className="absolute top-4 right-4 z-20">
+        <LanguageSwitcher compact />
+      </div>
+
       {/* Left — Form */}
       <div className="flex-1 flex flex-col justify-center px-8 py-12 max-w-md mx-auto w-full lg:mx-0 lg:max-w-none lg:w-[480px] lg:shrink-0">
         <div className="w-full max-w-sm mx-auto">
@@ -53,7 +60,7 @@ export default function Login() {
             to="/"
             className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors mb-10"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to home
+            <ArrowLeft className="w-3.5 h-3.5" /> {t("public.back_to_home", "Back to home")}
           </Link>
 
           <div className="mb-8">
@@ -65,9 +72,11 @@ export default function Login() {
                 WA Integration
               </span>
             </div>
-            <h1 className="text-2xl font-bold text-white">Welcome back</h1>
+            <h1 className="text-2xl font-bold text-white">
+              {t("auth.welcome_back", "Welcome back")}
+            </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Sign in to your dashboard
+              {t("auth.login_desc", "Sign in to your dashboard")}
             </p>
           </div>
 
@@ -79,7 +88,7 @@ export default function Login() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="label">Email Address</label>
+              <label className="label">{t("auth.email", "Email Address")}</label>
               <input
                 type="email"
                 value={email}
@@ -90,7 +99,7 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="label">Password</label>
+              <label className="label">{t("auth.password", "Password")}</label>
               <input
                 type="password"
                 value={password}
@@ -105,17 +114,17 @@ export default function Login() {
               disabled={loading}
               className="btn-primary w-full justify-center py-2.5 mt-2"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? t("public.signing_in", "Signing in...") : t("public.sign_in", "Sign In")}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-6">
-            Don't have an account?{" "}
+            {t("auth.dont_have_account", "Don't have an account?")}{" "}
             <Link
               to="/register"
               className="text-brand-400 hover:text-brand-300 font-medium"
             >
-              Register now
+              {t("auth.register_now", "Register now")}
             </Link>
           </p>
         </div>
@@ -133,41 +142,22 @@ export default function Login() {
               WhatsApp API Platform
             </p>
             <h2 className="text-2xl font-bold text-white leading-snug">
-              Everything you need to automate WhatsApp
+              {t("public.hero_title", "Everything you need to automate WhatsApp")}
             </h2>
             <p className="text-sm text-gray-400 mt-3 leading-relaxed">
-              Connect any WhatsApp number, send any message type, and automate
-              replies — all through a simple REST API.
+              {t("public.hero_desc", "Connect any WhatsApp number, send any message type, and automate replies — all through a simple REST API.")}
             </p>
           </div>
 
           <div className="space-y-3">
             {features.map((f) => (
-              <div key={f.text} className="flex items-center gap-3">
+              <div key={f.textKey} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-brand-600/15 border border-brand-800/40 flex items-center justify-center shrink-0">
                   <f.icon className="w-3.5 h-3.5 text-brand-400" />
                 </div>
-                <p className="text-xs text-gray-300">{f.text}</p>
+                <p className="text-xs text-gray-300">{t(f.textKey, f.defaultText)}</p>
               </div>
             ))}
-          </div>
-
-          <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-xl space-y-2">
-            <p className="text-xs text-gray-300 leading-relaxed italic">
-              "WA Integration made it trivial to add WhatsApp notifications to
-              our app. The API is clean and the dashboard is intuitive."
-            </p>
-            <div className="flex items-center gap-2 pt-1">
-              <div className="w-6 h-6 rounded-full bg-brand-600/30 flex items-center justify-center text-[10px] font-bold text-brand-400">
-                A
-              </div>
-              <div>
-                <p className="text-[11px] font-medium text-gray-200">
-                  A Developer
-                </p>
-                <p className="text-[10px] text-gray-500">Self-hosted user</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

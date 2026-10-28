@@ -19,6 +19,7 @@ import {
   QrCode,
 } from "lucide-react";
 import BaileysConnectionModal from "../../components/BaileysConnectionModal";
+import { useI18n } from "../../context/I18nContext";
 
 function useCopy() {
   const [copied, setCopied] = useState<string | null>(null);
@@ -31,6 +32,7 @@ function useCopy() {
 }
 
 export default function Sessions() {
+  const { t } = useI18n();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [configs, setConfigs] = useState<ProviderConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,7 +152,7 @@ export default function Sessions() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          Active and configured WhatsApp account sessions
+          {t("sessions.subtitle", "Active and configured WhatsApp account sessions")}
         </p>
         <div className="flex items-center gap-2">
           <button
@@ -161,7 +163,7 @@ export default function Sessions() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button onClick={() => setShowForm(true)} className="btn-primary">
-            <Plus className="w-4 h-4" /> New Session
+            <Plus className="w-4 h-4" /> {t("sessions.new_session", "New Session")}
           </button>
         </div>
       </div>
@@ -172,7 +174,7 @@ export default function Sessions() {
           <div className="card w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-semibold text-white">
-                New Session
+                {t("sessions.add_modal_title", "New Session")}
               </h2>
               <button
                 onClick={() => setShowForm(false)}
@@ -190,10 +192,10 @@ export default function Sessions() {
 
             <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
               <div>
-                <label className="label">Session Name *</label>
+                <label className="label">{t("sessions.session_name", "Session Name")} *</label>
                 <input
                   className="input"
-                  placeholder="e.g. Main Account"
+                  placeholder={t("sessions.session_name_placeholder", "e.g. Main Account")}
                   required
                   minLength={3}
                   value={form.name}
@@ -201,7 +203,7 @@ export default function Sessions() {
                 />
               </div>
               <div>
-                <label className="label">Provider Config *</label>
+                <label className="label">{t("sessions.provider", "Provider Config")} *</label>
                 <select
                   className="input"
                   required
@@ -210,7 +212,7 @@ export default function Sessions() {
                     setForm({ ...form, providerConfigId: e.target.value })
                   }
                 >
-                  <option value="">Select a config…</option>
+                  <option value="">{t("common.loading", "Select a config…")}</option>
                   {configs.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} ({c.providerType}) {c.isActive ? "✓" : ""}
@@ -234,14 +236,14 @@ export default function Sessions() {
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  {saving ? "Creating…" : "Create Session"}
+                  {saving ? t("status.saving", "Creating…") : t("actions.create", "Create Session")}
                 </button>
                 <button
                   type="button"
                   className="btn-secondary"
                   onClick={() => setShowForm(false)}
                 >
-                  Cancel
+                  {t("actions.cancel", "Cancel")}
                 </button>
               </div>
             </form>
@@ -258,12 +260,12 @@ export default function Sessions() {
         ) : sessions.length === 0 ? (
           <EmptyState
             icon={Layers}
-            title="No sessions"
-            description="Create a session to link a provider config to a WhatsApp account."
+            title={t("sessions.title", "No sessions")}
+            description={t("sessions.empty", "Create a session to link a provider config to a WhatsApp account.")}
             action={
               <button className="btn-primary" onClick={() => setShowForm(true)}>
                 <Plus className="w-4 h-4" />
-                New Session
+                {t("sessions.new_session", "New Session")}
               </button>
             }
           />
@@ -272,22 +274,22 @@ export default function Sessions() {
             <thead>
               <tr className="border-b border-gray-800">
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Name
+                  {t("contacts.name", "Name")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
                   Session ID
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Provider
+                  {t("sessions.provider", "Provider")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
                   Config
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Status
+                  {t("sessions.status", "Status")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Created
+                  {t("sessions.created_at", "Created")}
                 </th>
                 <th className="px-5 py-3" />
               </tr>
@@ -306,7 +308,7 @@ export default function Sessions() {
                       <button
                         onClick={() => copy(s.id, s.id)}
                         className="text-gray-600 hover:text-gray-400 transition-colors shrink-0"
-                        title="Copy Session ID"
+                        title={t("actions.copy", "Copy Session ID")}
                       >
                         {copied === s.id ? (
                           <Check className="w-3.5 h-3.5 text-brand-400" />
@@ -334,7 +336,7 @@ export default function Sessions() {
                         <button
                           onClick={() => openQrModal(s.providerConfigId)}
                           className="btn-secondary text-xs"
-                          title="Connect WhatsApp / Scan QR"
+                          title={t("sessions.scan_qr", "Connect WhatsApp / Scan QR")}
                         >
                           <QrCode className="w-3.5 h-3.5" /> QR Code
                         </button>
@@ -347,11 +349,11 @@ export default function Sessions() {
                       >
                         {s.status === "active" ? (
                           <>
-                            <PowerOff className="w-3.5 h-3.5" /> Deactivate
+                            <PowerOff className="w-3.5 h-3.5" /> {t("sessions.disconnect", "Deactivate")}
                           </>
                         ) : (
                           <>
-                            <Power className="w-3.5 h-3.5" /> Activate
+                            <Power className="w-3.5 h-3.5" /> {t("sessions.reconnect", "Activate")}
                           </>
                         )}
                       </button>

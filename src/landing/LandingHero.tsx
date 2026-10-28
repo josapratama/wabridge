@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Zap, ArrowRight, Code2 } from "lucide-react";
+import { useI18n } from "../context/I18nContext";
 
 const sendExample = `curl -X POST https://your-domain.com/v1/messages/send \\
   -H "X-API-Key: wai_live_xxxxxxxxxxxx" \\
@@ -11,23 +12,21 @@ const sendExample = `curl -X POST https://your-domain.com/v1/messages/send \\
   }'`;
 
 export default function LandingHero() {
+  const { t } = useI18n();
+
   return (
     <section className="max-w-6xl mx-auto px-6 pt-20 pb-24 text-center">
       <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-900/40 border border-brand-800/50 rounded-full text-xs text-brand-400 mb-8">
         <Zap className="w-3 h-3" />
-        Multi-provider WhatsApp API Platform
+        {t("landing.badge")}
       </div>
 
       <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-        Send WhatsApp messages
-        <br />
-        <span className="text-brand-400">from any application</span>
+        {t("landing.title")}
       </h1>
 
       <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-        A complete self-hosted WhatsApp integration platform. Connect via
-        Baileys, Meta Cloud API, or BSP. Manage sessions, broadcast to
-        thousands, automate replies — all through a simple REST API.
+        {t("landing.description")}
       </p>
 
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
@@ -35,13 +34,13 @@ export default function LandingHero() {
           to="/login"
           className="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl transition-colors text-sm"
         >
-          Start for free <ArrowRight className="w-4 h-4" />
+          {t("landing.start_free")} <ArrowRight className="w-4 h-4" />
         </Link>
         <Link
           to="/public-docs"
           className="inline-flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium rounded-xl transition-colors text-sm"
         >
-          <Code2 className="w-4 h-4" /> View API Docs
+          <Code2 className="w-4 h-4" /> {t("landing.view_docs")}
         </Link>
       </div>
 

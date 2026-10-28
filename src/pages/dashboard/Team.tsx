@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { teamApi, TeamMember } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import { Users2, Plus, X, Check, RefreshCw, Trash2 } from "lucide-react";
+import { useI18n } from "../../context/I18nContext";
 
 const ROLES = ["admin", "operator", "viewer"] as const;
 const roleColor: Record<string, string> = {
@@ -11,6 +12,7 @@ const roleColor: Record<string, string> = {
 };
 
 export default function Team() {
+  const { t } = useI18n();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -61,7 +63,7 @@ export default function Team() {
     <div className="p-6 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          Manage team members, permissions, and roles
+          {t("team.subtitle")}
         </p>
         <div className="flex gap-2">
           <button
@@ -72,7 +74,7 @@ export default function Team() {
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <button onClick={() => setShowForm(true)} className="btn-primary">
-            <Plus className="w-4 h-4" /> Invite Member
+            <Plus className="w-4 h-4" /> {t("team.invite")}
           </button>
         </div>
       </div>
@@ -84,7 +86,7 @@ export default function Team() {
             <span
               className={`text-xs px-2 py-0.5 rounded border font-medium ${roleColor[role]}`}
             >
-              {role}
+              {t(`team.role_${role}`, role)}
             </span>
             <span className="text-xs text-gray-500">
               {role === "admin"
@@ -103,7 +105,7 @@ export default function Team() {
           <div className="card w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-white">
-                Invite Team Member
+                {t("team.invite")}
               </p>
               <button
                 onClick={() => setShowForm(false)}
@@ -119,7 +121,7 @@ export default function Team() {
             )}
             <form onSubmit={(e) => void handleInvite(e)} className="space-y-3">
               <div>
-                <label className="label">Email *</label>
+                <label className="label">{t("team.email")} *</label>
                 <input
                   type="email"
                   className="input"
@@ -133,7 +135,7 @@ export default function Team() {
                 </p>
               </div>
               <div>
-                <label className="label">Role *</label>
+                <label className="label">{t("team.role")} *</label>
                 <select
                   className="input"
                   value={form.role}
@@ -146,7 +148,7 @@ export default function Team() {
                 >
                   {ROLES.map((r) => (
                     <option key={r} value={r}>
-                      {r}
+                      {t(`team.role_${r}`, r)}
                     </option>
                   ))}
                 </select>
@@ -162,14 +164,14 @@ export default function Team() {
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  {saving ? "Inviting…" : "Invite"}
+                  {saving ? t("common.saving", "Inviting…") : t("team.invite")}
                 </button>
                 <button
                   type="button"
                   className="btn-secondary"
                   onClick={() => setShowForm(false)}
                 >
-                  Cancel
+                  {t("actions.cancel", "Cancel")}
                 </button>
               </div>
             </form>
@@ -181,19 +183,19 @@ export default function Team() {
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="card w-full max-w-sm p-6 space-y-4">
-            <p className="text-sm font-semibold text-white">Remove Member?</p>
+            <p className="text-sm font-semibold text-white">{t("team.delete_confirm_title")}</p>
             <div className="flex gap-2">
               <button
                 onClick={() => void handleDelete(deleteId)}
                 className="btn-danger flex-1 justify-center"
               >
-                <Trash2 className="w-4 h-4" /> Remove
+                <Trash2 className="w-4 h-4" /> {t("team.remove")}
               </button>
               <button
                 onClick={() => setDeleteId(null)}
                 className="btn-secondary flex-1 justify-center"
               >
-                Cancel
+                {t("actions.cancel", "Cancel")}
               </button>
             </div>
           </div>
@@ -209,11 +211,11 @@ export default function Team() {
         ) : members.length === 0 ? (
           <EmptyState
             icon={Users2}
-            title="No team members"
-            description="Invite team members to collaborate."
+            title={t("team.empty_title")}
+            description={t("team.empty_desc")}
             action={
               <button className="btn-primary" onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4" /> Invite Member
+                <Plus className="w-4 h-4" /> {t("team.invite")}
               </button>
             }
           />
@@ -222,13 +224,13 @@ export default function Team() {
             <thead>
               <tr className="border-b border-gray-800">
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Member
+                  {t("common.member", "Member")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Role
+                  {t("team.role")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Invited
+                  {t("common.invited", "Invited")}
                 </th>
                 <th className="px-5 py-3" />
               </tr>
@@ -252,7 +254,7 @@ export default function Team() {
                     >
                       {ROLES.map((r) => (
                         <option key={r} value={r}>
-                          {r}
+                          {t(`team.role_${r}`, r)}
                         </option>
                       ))}
                     </select>
@@ -264,6 +266,7 @@ export default function Team() {
                     <button
                       onClick={() => setDeleteId(m.id)}
                       className="btn-danger text-xs"
+                      title={t("team.remove")}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
