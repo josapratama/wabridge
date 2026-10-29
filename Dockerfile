@@ -2,6 +2,9 @@
 FROM oven/bun:1.3-alpine AS builder
 WORKDIR /app
 
+ARG VITE_API_URL=https://wabridge-backend.josapratama.com
+ENV VITE_API_URL=$VITE_API_URL
+
 # Copy dependency specifications
 COPY package.json bun.lock* ./
 

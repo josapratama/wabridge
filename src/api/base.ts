@@ -1,10 +1,35 @@
-export const BASE =
-  (import.meta as any).env?.VITE_API_URL ||
-  (typeof window !== "undefined" &&
-  window.location.hostname !== "localhost" &&
-  window.location.hostname !== "127.0.0.1"
-    ? `${window.location.protocol}//${window.location.hostname}:3000`
-    : "http://localhost:3000");
+function getBaseUrl(): string {
+  // 1. Check Vite env variable injected at build time
+  const envUrl = (import.meta as any).env?.VITE_API_URL;
+  if (envUrl && typeof envUrl === "string" && envUrl.trim() && !envUrl.includes("undefined")) {
+    return envUrl.replace(/\/+$/, "");
+  }
+
+  // 2. Browser runtime detection
+  if (typeof window !== "undefined") {
+    const winEnv = (window as any).__ENV__?.VITE_API_URL;
+    if (winEnv && typeof winEnv === "string" && winEnv.trim()) {
+      return winEnv.replace(/\/+$/, "");
+    }
+
+    const { hostname, protocol } = window.location;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return "http://localhost:3000";
+    }
+
+    // Auto-detect production domain: wabridge.josapratama.com -> wabridge-backend.josapratama.com
+    if (hostname.includes("wabridge")) {
+      const backendHost = hostname.replace("wabridge", "wabridge-backend");
+      return `${protocol}//${backendHost}`;
+    }
+
+    return `${protocol}//${hostname}:3000`;
+  }
+
+  return "http://localhost:3000";
+}
+
+export const BASE = getBaseUrl();
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
