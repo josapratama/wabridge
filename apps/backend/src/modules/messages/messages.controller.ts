@@ -1,0 +1,75 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
+import { MessagesService } from "./messages.service";
+import { SendMessageDto } from "./dto/send-message.dto";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+
+@UseGuards(JwtAuthGuard)
+@Controller("messages")
+export class MessagesController {
+  constructor(private readonly service: MessagesService) {}
+
+  @Post("send")
+  send(@Body() dto: SendMessageDto) {
+    return this.service.send(dto);
+  }
+
+  @Post("upload")
+  async uploadMedia(
+    @Body() body: { base64: string; filename: string; mimeType: string },
+  ) {
+    if (!body.base64) {
+      return { success: false, error: "base64 payload is required" };
+    }
+    const fs = await import("fs");
+    const path = await import("path");
+    const uploadsDir = path.join(process.cwd(), "public", "uploads");
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const safeName = (body.filename || "media_file")
+      .replace(/[^a-zA-Z0-9._-]/g, "_");
+    const filename = `${Date.now()}-${safeName}`;
+    const filePath = path.join(uploadsDir, filename);
+
+    const base64Data = body.base64.replace(/^data:.*?;base64,/, "");
+    fs.writeFileSync(filePath, Buffer.from(base64Data, "base64"));
+
+    const url = `/uploads/${filename}`;
+    return { success: true, url, filename, mimeType: body.mimeType };
+  }
+
+  @Get()
+  findAll(
+    @Query("sessionId") sessionId?: string,
+    @Query("status") status?: string,
+    @Query("direction") direction?: string,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+    @Query("search") search?: string,
+    @Query("limit") limit?: string,
+  ) {
+    return this.service.findFiltered({
+      sessionId,
+      status,
+      direction,
+      from,
+      to,
+      search,
+      limit: parseInt(limit ?? "100", 10),
+    });
+  }
+
+  @Get(":id")
+  findById(@Param("id") id: string) {
+    return this.service.findById(id);
+  }
+}

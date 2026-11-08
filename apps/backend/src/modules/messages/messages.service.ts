@@ -1,0 +1,277 @@
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { v4 as uuidv4 } from "uuid";
+import { EVENT_TYPES, MESSAGE_STATUS } from "../../common/constants";
+import type { Message, SendTextMessageCommand } from "../../common/types";
+import {
+  MessageRepository,
+  ProviderConfigRepository,
+  SessionRepository,
+} from "../../repositories/interfaces";
+import { ProviderRoutingService } from "../provider-routing/provider-routing.service";
+import { EventsService } from "../events/events.service";
+import { AppLogger } from "../../common/logger/app.logger";
+import { SendMessageDto } from "./dto/send-message.dto";
+
+import { WebhookOutboundService } from "../webhook-outbound/webhook-outbound.service";
+import { AutoReplyService } from "../auto-reply/auto-reply.service";
+
+@Injectable()
+export class MessagesService {
+  private readonly retryAttempts: number;
+  private readonly retryDelayMs: number;
+
+  constructor(
+    @Inject(MessageRepository)
+    private readonly messageRepo: MessageRepository,
+    @Inject(SessionRepository)
+    private readonly sessionRepo: SessionRepository,
+    @Inject(ProviderConfigRepository)
+    private readonly configRepo: ProviderConfigRepository,
+    private readonly routingService: ProviderRoutingService,
+    private readonly eventsService: EventsService,
+    private readonly webhookService: WebhookOutboundService,
+    private readonly autoReplyService: AutoReplyService,
+    private readonly logger: AppLogger,
+  ) {
+    this.retryAttempts = parseInt(process.env.RETRY_ATTEMPTS ?? "3", 10);
+    this.retryDelayMs = parseInt(process.env.RETRY_DELAY_MS ?? "1000", 10);
+  }
+
+  async send(dto: SendMessageDto): Promise<Message> {
+    // 1. Validate session
+    const session = await this.sessionRepo.findById(dto.sessionId);
+    if (!session)
+      throw new NotFoundException(`Session ${dto.sessionId} not found`);
+    if (session.status !== "active") {
+      throw new BadRequestException(`Session ${dto.sessionId} is not active`);
+    }
+
+    // 2. Get provider config
+    const config = await this.configRepo.findById(session.providerConfigId);
+    if (!config) {
+      throw new NotFoundException(
+        `ProviderConfig ${session.providerConfigId} not found`,
+      );
+    }
+    if (!config.isActive) {
+      throw new BadRequestException(
+        `ProviderConfig ${config.id} is not active`,
+      );
+    }
+
+    // 3. Get provider implementation
+    const provider = this.routingService.getProvider(session.providerType);
+
+    // 4. Save message with queued status
+    const now = new Date().toISOString();
+    let message: Message = await this.messageRepo.save({
+      id: uuidv4(),
+      sessionId: dto.sessionId,
+      direction: "outbound",
+      from: config.phoneNumberId ?? "system",
+      to: dto.to,
+      type: (dto.type as Message["type"]) ?? "text",
+      content: dto.message,
+      mediaUrl: dto.mediaUrl,
+      mediaCaption: dto.mediaCaption,
+      mediaMimeType: dto.mediaMimeType,
+      status: MESSAGE_STATUS.QUEUED,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // 5. Send with retry
+    let lastError = "";
+    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
+      try {
+        this.logger.logStructured(
+          "info",
+          `Sending message attempt ${attempt}/${this.retryAttempts}`,
+          { messageId: message.id, to: dto.to },
+          "MessagesService",
+        );
+
+        const result = await provider.sendTextMessage({
+          to: dto.to,
+          message: dto.message,
+          config,
+          sessionId: dto.sessionId,
+          type: dto.type as SendTextMessageCommand["type"],
+          mediaUrl: dto.mediaUrl,
+          mediaCaption: dto.mediaCaption,
+          mediaMimeType: dto.mediaMimeType,
+          latitude: dto.latitude,
+          longitude: dto.longitude,
+          locationName: dto.locationName,
+        });
+
+        if (result.success) {
+          message =
+            (await this.messageRepo.update(message.id, {
+              status: MESSAGE_STATUS.SENT,
+              externalMessageId: result.externalMessageId,
+              rawPayload: result.rawResponse,
+            })) ?? message;
+
+          await this.eventsService.recordRaw(
+            session.providerType,
+            EVENT_TYPES.MESSAGE_SENT,
+            {
+              messageId: message.id,
+              externalMessageId: result.externalMessageId,
+            },
+            dto.sessionId,
+          );
+
+          // Dispatch webhook event
+          void this.webhookService.dispatch("message.sent", {
+            messageId: message.id,
+            sessionId: dto.sessionId,
+            to: dto.to,
+            content: dto.message,
+            status: "sent",
+          });
+
+          return message;
+        }
+
+        lastError = result.error ?? "Unknown provider error";
+        this.logger.warn(
+          `Send attempt ${attempt} failed: ${lastError}`,
+          "MessagesService",
+        );
+      } catch (err: unknown) {
+        lastError = err instanceof Error ? err.message : "Unknown error";
+        this.logger.error(
+          `Send attempt ${attempt} threw: ${lastError}`,
+          undefined,
+          "MessagesService",
+        );
+      }
+
+      if (attempt < this.retryAttempts) {
+        await this.sleep(this.retryDelayMs);
+      }
+    }
+
+    // 6. All retries exhausted
+    message =
+      (await this.messageRepo.update(message.id, {
+        status: MESSAGE_STATUS.FAILED,
+      })) ?? message;
+
+    await this.eventsService.recordRaw(
+      session.providerType,
+      EVENT_TYPES.SEND_ERROR,
+      { messageId: message.id, error: lastError },
+      dto.sessionId,
+    );
+
+    throw new BadRequestException(
+      `Failed to send message after ${this.retryAttempts} attempts: ${lastError}`,
+    );
+  }
+
+  async findAll(): Promise<Message[]> {
+    return this.messageRepo.findAll();
+  }
+
+  async findFiltered(filters: {
+    sessionId?: string;
+    status?: string;
+    direction?: string;
+    from?: string;
+    to?: string;
+    search?: string;
+    limit?: number;
+  }): Promise<Message[]> {
+    let messages = await this.messageRepo.findAll();
+    if (filters.sessionId)
+      messages = messages.filter((m) => m.sessionId === filters.sessionId);
+    if (filters.status)
+      messages = messages.filter((m) => m.status === filters.status);
+    if (filters.direction)
+      messages = messages.filter((m) => m.direction === filters.direction);
+    if (filters.from)
+      messages = messages.filter((m) => m.from.includes(filters.from!));
+    if (filters.to)
+      messages = messages.filter((m) => m.to.includes(filters.to!));
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      messages = messages.filter(
+        (m) =>
+          m.content.toLowerCase().includes(q) ||
+          m.from.includes(q) ||
+          m.to.includes(q),
+      );
+    }
+    return messages.slice(-(filters.limit ?? 100)).reverse();
+  }
+
+  async findById(id: string): Promise<Message> {
+    const msg = await this.messageRepo.findById(id);
+    if (!msg) throw new NotFoundException(`Message ${id} not found`);
+    return msg;
+  }
+
+  /**
+   * Called by webhook handlers when an inbound message arrives.
+   * Saves the message, dispatches webhook event, and triggers auto-reply.
+   */
+  async handleInbound(params: {
+    sessionId: string;
+    from: string;
+    to: string;
+    content: string;
+    externalMessageId?: string;
+    rawPayload?: Record<string, unknown>;
+  }): Promise<Message> {
+    const now = new Date().toISOString();
+    const message = await this.messageRepo.save({
+      id: uuidv4(),
+      sessionId: params.sessionId,
+      externalMessageId: params.externalMessageId,
+      direction: "inbound",
+      from: params.from,
+      to: params.to,
+      type: "text",
+      content: params.content,
+      status: "received",
+      rawPayload: params.rawPayload,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Dispatch webhook event (fire-and-forget)
+    void this.webhookService.dispatch("message.received", {
+      messageId: message.id,
+      sessionId: params.sessionId,
+      from: params.from,
+      content: params.content,
+    });
+
+    // Check auto-reply rules
+    const replyContent = await this.autoReplyService.match(
+      params.sessionId,
+      params.content,
+    );
+    if (replyContent) {
+      void this.send({
+        sessionId: params.sessionId,
+        to: params.from,
+        message: replyContent,
+      });
+    }
+
+    return message;
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}

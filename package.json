@@ -1,31 +1,19 @@
 {
-  "name": "whatsapp-dashboard",
+  "name": "wabridge",
   "version": "1.0.0",
-  "type": "module",
+  "description": "WhatsApp Multi-Device Bridge & Integration Suite (Monorepo)",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "sync:i18n": "node scripts/sync-i18n.js wabridge src/locales https://polyglot-hub.josapratama.com",
-    "prebuild": "npm run sync:i18n",
-    "predev": "npm run sync:i18n",
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "lucide-react": "^0.441.0",
-    "qrcode": "^1.5.4",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.0"
+    "dev": "concurrently \"bun run --cwd apps/backend dev\" \"bun run --cwd apps/frontend dev\"",
+    "dev:backend": "bun run --cwd apps/backend dev",
+    "dev:frontend": "bun run --cwd apps/frontend dev",
+    "build": "bun run --cwd apps/backend build && bun run --cwd apps/frontend build",
+    "sync:i18n": "bun run --cwd apps/frontend sync:i18n"
   },
   "devDependencies": {
-    "@types/qrcode": "^1.5.6",
-    "@types/react": "^18.3.5",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.45",
-    "tailwindcss": "^3.4.10",
-    "typescript": "^5.5.3",
-    "vite": "^5.4.2"
+    "concurrently": "^8.2.2"
   }
 }

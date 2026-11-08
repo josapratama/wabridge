@@ -1,9 +1,62 @@
+version: "3.8"
+
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: wabridge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: whatsapp
+      POSTGRES_PASSWORD: whatsapp_password
+      POSTGRES_DB: whatsapp_integration
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whatsapp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # WhatsApp Integration API (Backend)
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+      target: runner
+    container_name: wabridge-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://whatsapp:whatsapp_password@postgres:5432/whatsapp_integration
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      JWT_EXPIRES_IN: 7d
+      BAILEYS_AUTH_DIR: /app/baileys_auth_data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - baileys_auth:/app/baileys_auth_data
+
+  # WhatsApp Management Dashboard (Frontend)
   frontend:
     build:
-      context: .
+      context: ./apps/frontend
       dockerfile: Dockerfile
     container_name: wabridge-frontend
     restart: unless-stopped
     ports:
       - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+    driver: local
+  baileys_auth:
+    driver: local
