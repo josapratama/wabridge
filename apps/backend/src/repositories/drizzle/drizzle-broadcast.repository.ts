@@ -34,6 +34,15 @@ export class DrizzleBroadcastJobRepository implements BroadcastJobRepository {
     return results.map((r) => this.mapToEntity(r));
   }
 
+  async findRunningJobs(): Promise<BroadcastJob[]> {
+    const results = await this.db
+      .select()
+      .from(schema.broadcastJobs)
+      .where(eq(schema.broadcastJobs.status, "running"));
+
+    return results.map((r) => this.mapToEntity(r));
+  }
+
   async save(entity: BroadcastJob): Promise<BroadcastJob> {
     const results = await this.db
       .insert(schema.broadcastJobs)

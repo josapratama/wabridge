@@ -29,11 +29,11 @@ import makeWASocket, {
   DisconnectReason,
   Browsers,
   fetchLatestBaileysVersion,
+  downloadMediaMessage,
 } from "@whiskeysockets/baileys";
-import { Boom } from "@hapi/boom";
 import * as qrcode from "qrcode";
 import pino from "pino";
-import { makeInMemoryStore } from "store-baileys";
+import { makeInMemoryStore, type InMemoryStore } from "./in-memory-store";
 
 export interface BaileysSessionInstance {
   configId: string;
@@ -44,7 +44,7 @@ export interface BaileysSessionInstance {
   phoneNumber: string | null;
   isConnecting: boolean;
   connectionReady: boolean;
-  store: ReturnType<typeof makeInMemoryStore> | null;
+  store: InMemoryStore | null;
 }
 
 @Injectable()
@@ -164,12 +164,15 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
     inst.isConnecting = true;
     inst.connectionReady = false;
 
+    const authDir = this.getAuthDir(config.id);
+    const storePath = path.join(authDir, "baileys_store.json");
+
     if (!inst.store) {
       inst.store = makeInMemoryStore({ logger: this.logger_pino });
+      inst.store.readFromFile(storePath);
     }
 
     try {
-      const authDir = this.getAuthDir(config.id);
       const { state, saveCreds } = await useMultiFileAuthState(authDir);
 
       const { version, isLatest } = await fetchLatestBaileysVersion();
@@ -204,7 +207,10 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
       inst.sock = sock;
       inst.store?.bind(sock.ev);
 
-      sock.ev.on("creds.update", saveCreds);
+      sock.ev.on("creds.update", () => {
+        void saveCreds();
+        inst.store?.writeToFile(storePath);
+      });
 
       sock.ev.on("connection.update", async (update) => {
         const { connection, lastDisconnect, qr } = update;
@@ -234,7 +240,7 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
           inst.connectionReady = false;
           inst.qrCodeData = null;
 
-          const statusCode = (lastDisconnect?.error as Boom)?.output
+          const statusCode = (lastDisconnect?.error as any)?.output
             ?.statusCode;
 
           this.logger.warn(
@@ -371,6 +377,60 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
           const from = msg.key.remoteJid || "";
           const to = sock.user?.id || "";
 
+          // Auto-download media for inbound images, audio, documents, and videos
+          let mediaUrl: string | undefined = undefined;
+          let mediaMimeType: string | undefined = undefined;
+
+          if (messageType !== "text") {
+            try {
+              const buffer = await downloadMediaMessage(
+                msg,
+                "buffer",
+                {},
+                {
+                  logger: this.logger_pino,
+                  reuploadRequest: sock.updateMediaMessage,
+                },
+              );
+              if (buffer && Buffer.isBuffer(buffer)) {
+                const uploadsDir = path.join(process.cwd(), "public", "uploads");
+                if (!fs.existsSync(uploadsDir)) {
+                  fs.mkdirSync(uploadsDir, { recursive: true });
+                }
+                const extMap: Record<string, string> = {
+                  image: "jpg",
+                  audio: "ogg",
+                  video: "mp4",
+                  document:
+                    msg.message?.documentMessage?.fileName?.split(".").pop() ||
+                    "bin",
+                };
+                const ext = extMap[messageType] || "bin";
+                const filename = `inbound_${Date.now()}_${uuidv4().slice(0, 8)}.${ext}`;
+                fs.writeFileSync(path.join(uploadsDir, filename), buffer);
+                mediaUrl = `/uploads/${filename}`;
+
+                if (messageType === "image") mediaMimeType = "image/jpeg";
+                else if (messageType === "audio") mediaMimeType = "audio/ogg";
+                else if (messageType === "video") mediaMimeType = "video/mp4";
+                else if (messageType === "document")
+                  mediaMimeType =
+                    msg.message?.documentMessage?.mimetype ||
+                    "application/octet-stream";
+
+                this.logger.log(
+                  `[Session ${configId}] Inbound ${messageType} downloaded to ${mediaUrl}`,
+                  "BaileysWhatsAppProvider",
+                );
+              }
+            } catch (dlErr) {
+              this.logger.warn(
+                `[Session ${configId}] Failed to download inbound media: ${dlErr}`,
+                "BaileysWhatsAppProvider",
+              );
+            }
+          }
+
           const event: ProviderWebhookEvent = {
             eventType: "message.inbound",
             providerType: PROVIDER_TYPES.BAILEYS,
@@ -379,6 +439,7 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
             to,
             content,
             messageType,
+            mediaUrl,
             status: MESSAGE_STATUS.RECEIVED,
             timestamp:
               msg.messageTimestamp?.toString() || new Date().toISOString(),
@@ -397,6 +458,8 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
               to,
               type: messageType,
               content,
+              mediaUrl,
+              mediaMimeType,
               status: MESSAGE_STATUS.RECEIVED,
               rawPayload: event.rawPayload,
               createdAt: new Date().toISOString(),
@@ -409,6 +472,8 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
               from,
               content,
               type: messageType,
+              mediaUrl,
+              mediaMimeType,
             });
 
             // Auto-reply & AI Bot: ONLY for 1-on-1 chats, ignore groups to prevent spam!
@@ -572,6 +637,17 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
         } else if (fs.existsSync(mediaUrl)) {
           mediaSource = fs.readFileSync(mediaUrl);
         }
+      }
+
+      // Human typing / presence simulation for anti-ban safety
+      try {
+        await inst.sock.presenceSubscribe(jid);
+        await inst.sock.sendPresenceUpdate(type === "audio" ? "recording" : "composing", jid);
+        const typingDelay = Math.floor(600 + Math.random() * 800);
+        await new Promise((r) => setTimeout(r, typingDelay));
+        await inst.sock.sendPresenceUpdate("paused", jid);
+      } catch {
+        // non-fatal if presence update fails
       }
 
       let result: Awaited<ReturnType<typeof inst.sock.sendMessage>>;

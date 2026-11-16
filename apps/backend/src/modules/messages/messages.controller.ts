@@ -28,12 +28,10 @@ export class MessagesController {
     if (!body.base64) {
       return { success: false, error: "base64 payload is required" };
     }
-    const fs = await import("fs");
+    const fs = await import("fs/promises");
     const path = await import("path");
     const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    await fs.mkdir(uploadsDir, { recursive: true });
 
     const safeName = (body.filename || "media_file")
       .replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -41,7 +39,7 @@ export class MessagesController {
     const filePath = path.join(uploadsDir, filename);
 
     const base64Data = body.base64.replace(/^data:.*?;base64,/, "");
-    fs.writeFileSync(filePath, Buffer.from(base64Data, "base64"));
+    await fs.writeFile(filePath, Buffer.from(base64Data, "base64"));
 
     const url = `/uploads/${filename}`;
     return { success: true, url, filename, mimeType: body.mimeType };

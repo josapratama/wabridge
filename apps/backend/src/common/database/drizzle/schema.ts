@@ -6,6 +6,7 @@ import {
   jsonb,
   integer,
   bigint,
+  index,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("User", {
@@ -60,35 +61,53 @@ export const sessions = pgTable("Session", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export const messages = pgTable("Message", {
-  id: text("id").primaryKey(),
-  sessionId: text("sessionId")
-    .notNull()
-    .references(() => sessions.id),
-  externalMessageId: text("externalMessageId"),
-  direction: text("direction").notNull(),
-  from: text("from").notNull(),
-  to: text("to").notNull(),
-  type: text("type").default("text").notNull(), // text | image | document | audio | video | location
-  content: text("content").notNull(),
-  mediaUrl: text("mediaUrl"),
-  mediaCaption: text("mediaCaption"),
-  mediaMimeType: text("mediaMimeType"),
-  status: text("status").default("queued").notNull(),
-  rawPayload: jsonb("rawPayload"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
-});
+export const messages = pgTable(
+  "Message",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("sessionId")
+      .notNull()
+      .references(() => sessions.id),
+    externalMessageId: text("externalMessageId"),
+    direction: text("direction").notNull(),
+    from: text("from").notNull(),
+    to: text("to").notNull(),
+    type: text("type").default("text").notNull(), // text | image | document | audio | video | location
+    content: text("content").notNull(),
+    mediaUrl: text("mediaUrl"),
+    mediaCaption: text("mediaCaption"),
+    mediaMimeType: text("mediaMimeType"),
+    status: text("status").default("queued").notNull(),
+    rawPayload: jsonb("rawPayload"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    sessionIdx: index("idx_messages_session").on(table.sessionId),
+    fromIdx: index("idx_messages_from").on(table.from),
+    toIdx: index("idx_messages_to").on(table.to),
+    createdAtIdx: index("idx_messages_created_at").on(table.createdAt),
+    externalIdIdx: index("idx_messages_external_id").on(table.externalMessageId),
+    statusIdx: index("idx_messages_status").on(table.status),
+  }),
+);
 
-export const providerEvents = pgTable("ProviderEvent", {
-  id: text("id").primaryKey(),
-  sessionId: text("sessionId"),
-  providerType: text("providerType").notNull(),
-  eventType: text("eventType").notNull(),
-  payload: jsonb("payload").notNull(),
-  processed: boolean("processed").default(false).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const providerEvents = pgTable(
+  "ProviderEvent",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("sessionId"),
+    providerType: text("providerType").notNull(),
+    eventType: text("eventType").notNull(),
+    payload: jsonb("payload").notNull(),
+    processed: boolean("processed").default(false).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    sessionIdx: index("idx_provider_events_session").on(table.sessionId),
+    createdAtIdx: index("idx_provider_events_created_at").on(table.createdAt),
+  }),
+);
 
 // ── Webhook Endpoints ─────────────────────────────────────────────────────────
 
@@ -106,20 +125,27 @@ export const webhookEndpoints = pgTable("WebhookEndpoint", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export const webhookLogs = pgTable("WebhookLog", {
-  id: text("id").primaryKey(),
-  webhookEndpointId: text("webhookEndpointId")
-    .notNull()
-    .references(() => webhookEndpoints.id, { onDelete: "cascade" }),
-  eventType: text("eventType").notNull(),
-  payload: jsonb("payload").notNull(),
-  responseStatus: integer("responseStatus"),
-  responseBody: text("responseBody"),
-  durationMs: integer("durationMs"),
-  attempt: integer("attempt").default(1).notNull(),
-  success: boolean("success").default(false).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const webhookLogs = pgTable(
+  "WebhookLog",
+  {
+    id: text("id").primaryKey(),
+    webhookEndpointId: text("webhookEndpointId")
+      .notNull()
+      .references(() => webhookEndpoints.id, { onDelete: "cascade" }),
+    eventType: text("eventType").notNull(),
+    payload: jsonb("payload").notNull(),
+    responseStatus: integer("responseStatus"),
+    responseBody: text("responseBody"),
+    durationMs: integer("durationMs"),
+    attempt: integer("attempt").default(1).notNull(),
+    success: boolean("success").default(false).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    endpointIdx: index("idx_webhook_logs_endpoint").on(table.webhookEndpointId),
+    createdAtIdx: index("idx_webhook_logs_created_at").on(table.createdAt),
+  }),
+);
 
 // ── Message Templates ─────────────────────────────────────────────────────────
 
@@ -277,4 +303,20 @@ export const sessionHealthLogs = pgTable("SessionHealthLog", {
   messagesSentToday: integer("messagesSentToday").default(0).notNull(),
   messagesReceivedToday: integer("messagesReceivedToday").default(0).notNull(),
   checkedAt: timestamp("checkedAt").defaultNow().notNull(),
+});
+
+// ── AI Bot Configuration ───────────────────────────────────────────────────────
+
+export const aiBotConfigs = pgTable("AiBotConfig", {
+  id: text("id").primaryKey(),
+  userId: text("userId").references(() => users.id, { onDelete: "cascade" }),
+  isEnabled: boolean("isEnabled").default(false).notNull(),
+  provider: text("provider").default("gemini").notNull(),
+  apiKey: text("apiKey").default("").notNull(),
+  model: text("model").default("gemini-1.5-flash").notNull(),
+  systemPrompt: text("systemPrompt").notNull(),
+  knowledgeBase: text("knowledgeBase"),
+  handoverKeywords: jsonb("handoverKeywords"),
+  handoverMessage: text("handoverMessage"),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

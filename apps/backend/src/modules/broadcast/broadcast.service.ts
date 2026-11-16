@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   BadRequestException,
   Optional,
+  OnApplicationBootstrap,
 } from "@nestjs/common";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -28,7 +29,7 @@ function parseSpintax(text: string): string {
 }
 
 @Injectable()
-export class BroadcastService {
+export class BroadcastService implements OnApplicationBootstrap {
   private runningJobs = new Set<string>();
 
   constructor(
@@ -40,6 +41,34 @@ export class BroadcastService {
     @Inject(ContactRepository)
     private readonly contactRepo?: ContactRepository,
   ) {}
+
+  onApplicationBootstrap(): void {
+    // Recover any jobs that were interrupted by a server reboot
+    setTimeout(() => {
+      void this.recoverInterruptedJobs();
+    }, 4000);
+  }
+
+  private async recoverInterruptedJobs(): Promise<void> {
+    try {
+      const running = await this.repo.findRunningJobs();
+      if (running.length > 0) {
+        this.logger.warn(
+          `Found ${running.length} interrupted broadcast job(s) from prior restart. Resuming...`,
+          "BroadcastService",
+        );
+        for (const job of running) {
+          void this.runJob(job);
+        }
+      }
+    } catch (e) {
+      this.logger.error(
+        `Failed to recover broadcast jobs: ${e}`,
+        undefined,
+        "BroadcastService",
+      );
+    }
+  }
 
   async create(
     userId: string,
@@ -90,6 +119,20 @@ export class BroadcastService {
     return updated!;
   }
 
+  async resume(id: string, userId: string): Promise<BroadcastJob> {
+    const job = await this.repo.findById(id);
+    if (!job) throw new NotFoundException("Broadcast job not found");
+    if (job.userId !== userId) throw new ForbiddenException();
+    if (this.runningJobs.has(id))
+      throw new BadRequestException("Job is already running");
+
+    const updated = await this.repo.update(id, {
+      status: "running",
+    });
+    void this.runJob(updated!);
+    return updated!;
+  }
+
   async cancel(id: string, userId: string): Promise<BroadcastJob> {
     const job = await this.repo.findById(id);
     if (!job) throw new NotFoundException("Broadcast job not found");
@@ -101,15 +144,17 @@ export class BroadcastService {
 
   private async runJob(job: BroadcastJob): Promise<void> {
     this.runningJobs.add(job.id);
-    let sentCount = 0;
-    let failedCount = 0;
+    const startIndex = (job.sentCount || 0) + (job.failedCount || 0);
+    const recipientsToProcess = job.recipients.slice(startIndex);
+    let sentCount = job.sentCount || 0;
+    let failedCount = job.failedCount || 0;
 
     this.logger.log(
-      `Starting broadcast ${job.id} to ${job.recipients.length} recipients with anti-ban jitter`,
+      `Starting/Resuming broadcast ${job.id} (${recipientsToProcess.length} remaining of ${job.recipients.length}) with anti-ban jitter`,
       "BroadcastService",
     );
 
-    for (const phone of job.recipients) {
+    for (const phone of recipientsToProcess) {
       if (!this.runningJobs.has(job.id)) break; // cancelled
 
       // Lookup contact name for dynamic variables if available

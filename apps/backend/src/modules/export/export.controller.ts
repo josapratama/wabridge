@@ -8,7 +8,10 @@ import {
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { ExportService } from "./export.service";
-import type { FastifyReply } from "fastify";
+interface FastifyReplyLike {
+  header(name: string, value: string): this;
+  send(payload: any): any;
+}
 
 @Controller("export")
 @UseGuards(JwtAuthGuard)
@@ -22,7 +25,7 @@ export class ExportController {
     @Query("sessionId") sessionId?: string,
     @Query("status") status?: string,
     @Query("direction") direction?: string,
-    @Res() reply: FastifyReply = undefined as any,
+    @Res() reply: FastifyReplyLike = undefined as any,
   ) {
     const result = await this.exportService.exportMessages({
       format,
@@ -44,7 +47,7 @@ export class ExportController {
   async exportContacts(
     @Request() req: any,
     @Query("format") format: "csv" | "json" = "csv",
-    @Res() reply: FastifyReply = undefined as any,
+    @Res() reply: FastifyReplyLike = undefined as any,
   ) {
     const result = await this.exportService.exportContacts(req.user.id, format);
     reply

@@ -120,6 +120,7 @@ export interface ProviderWebhookEvent {
   to?: string;
   content?: string;
   messageType?: MessageType;
+  mediaUrl?: string;
   status?: MessageStatus;
   timestamp?: string;
   rawPayload: Record<string, unknown>;

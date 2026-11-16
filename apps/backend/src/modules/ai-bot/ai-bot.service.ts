@@ -1,5 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject, Optional } from "@nestjs/common";
 import { AppLogger } from "../../common/logger/app.logger";
+import { MessageRepository } from "../../repositories/interfaces";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -32,7 +33,12 @@ export class AiBotService {
       "Baik kak, pesan Anda telah dialihkan ke Tim Customer Service (Manusia). Mohon tunggu sebentar ya kak.",
   };
 
-  constructor(private readonly logger: AppLogger) {
+  constructor(
+    private readonly logger: AppLogger,
+    @Optional()
+    @Inject(MessageRepository)
+    private readonly messageRepo?: MessageRepository,
+  ) {
     this.loadConfig();
   }
 
@@ -149,10 +155,32 @@ export class AiBotService {
         effectiveSystemPrompt += `\n\nKNOWLEDGE BASE & INFORMASI BISNIS/FAQ:\n${this.config.knowledgeBase}\n\nJawablah berdasarkan pengetahuan di atas jika relevan.`;
       }
 
+      // Fetch recent conversation history for multi-turn context
+      let history: Array<{ role: "user" | "assistant"; content: string }> = [];
+      if (this.messageRepo && fromJid) {
+        try {
+          const recent = await this.messageRepo.findRecentByJid(fromJid, 8);
+          history = recent
+            .filter((m) => m.content && !m.content.startsWith("["))
+            .map((m) => ({
+              role: (m.direction === "inbound" ? "user" : "assistant") as
+                | "user"
+                | "assistant",
+              content: m.content,
+            }));
+        } catch {
+          // ignore history lookup failure
+        }
+      }
+
       if (this.config.provider === "gemini") {
-        return await this.callGemini(userMessage, effectiveSystemPrompt);
+        return await this.callGemini(userMessage, effectiveSystemPrompt, history);
       } else {
-        return await this.callOpenAiCompatible(userMessage, effectiveSystemPrompt);
+        return await this.callOpenAiCompatible(
+          userMessage,
+          effectiveSystemPrompt,
+          history,
+        );
       }
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
@@ -168,18 +196,36 @@ export class AiBotService {
   private async callGemini(
     userMessage: string,
     systemPrompt: string,
+    history: Array<{ role: "user" | "assistant"; content: string }> = [],
   ): Promise<string> {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model || "gemini-1.5-flash"}:generateContent?key=${this.config.apiKey}`;
+
+    const contents: any[] = [];
+    for (const h of history) {
+      contents.push({
+        role: h.role === "assistant" ? "model" : "user",
+        parts: [{ text: h.content }],
+      });
+    }
+    // Ensure current message is at the end
+    if (
+      contents.length === 0 ||
+      contents[contents.length - 1].parts[0]?.text !== userMessage
+    ) {
+      contents.push({
+        role: "user",
+        parts: [{ text: userMessage }],
+      });
+    }
+
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: `${systemPrompt}\n\nPesan Pelanggan: ${userMessage}` }],
-          },
-        ],
+        system_instruction: {
+          parts: [{ text: systemPrompt }],
+        },
+        contents,
       }),
       signal: AbortSignal.timeout(15000),
     });
@@ -200,11 +246,25 @@ export class AiBotService {
   private async callOpenAiCompatible(
     userMessage: string,
     systemPrompt: string,
+    history: Array<{ role: "user" | "assistant"; content: string }> = [],
   ): Promise<string> {
     const baseUrl =
       this.config.provider === "openrouter"
         ? "https://openrouter.ai/api/v1/chat/completions"
         : "https://api.openai.com/v1/chat/completions";
+
+    const messages: Array<{ role: string; content: string }> = [
+      { role: "system", content: systemPrompt },
+    ];
+    for (const h of history) {
+      messages.push({ role: h.role, content: h.content });
+    }
+    if (
+      messages.length === 1 ||
+      messages[messages.length - 1].content !== userMessage
+    ) {
+      messages.push({ role: "user", content: userMessage });
+    }
 
     const res = await fetch(baseUrl, {
       method: "POST",
@@ -214,10 +274,7 @@ export class AiBotService {
       },
       body: JSON.stringify({
         model: this.config.model || "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
+        messages,
         max_tokens: 500,
       }),
       signal: AbortSignal.timeout(15000),

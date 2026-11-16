@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq } from "drizzle-orm";
+import { eq, or, desc } from "drizzle-orm";
 import { MessageRepository } from "../interfaces";
 import { Message } from "../../common/types";
 import { DRIZZLE_CLIENT } from "../../common/database/database.module";
@@ -77,6 +77,33 @@ export class DrizzleMessageRepository implements MessageRepository {
     })) as Message[];
   }
 
+  async findRecentByJid(jid: string, limit = 10): Promise<Message[]> {
+    const cleanJid = jid.replace(/:\d+@/, "@");
+    const results = await this.db
+      .select()
+      .from(schema.messages)
+      .where(
+        or(
+          eq(schema.messages.from, cleanJid),
+          eq(schema.messages.to, cleanJid),
+        ),
+      )
+      .orderBy(desc(schema.messages.createdAt))
+      .limit(limit);
+
+    // Return in chronological order for conversation memory
+    return results.reverse().map((m) => ({
+      ...m,
+      externalMessageId: m.externalMessageId || undefined,
+      mediaUrl: m.mediaUrl || undefined,
+      mediaCaption: m.mediaCaption || undefined,
+      mediaMimeType: m.mediaMimeType || undefined,
+      rawPayload: (m.rawPayload as Record<string, unknown>) || undefined,
+      createdAt: m.createdAt.toISOString(),
+      updatedAt: m.updatedAt.toISOString(),
+    })) as Message[];
+  }
+
   async save(entity: Message): Promise<Message> {
     const results = await this.db
       .insert(schema.messages)
@@ -89,6 +116,9 @@ export class DrizzleMessageRepository implements MessageRepository {
         to: entity.to,
         type: entity.type,
         content: entity.content,
+        mediaUrl: entity.mediaUrl || null,
+        mediaCaption: entity.mediaCaption || null,
+        mediaMimeType: entity.mediaMimeType || null,
         status: entity.status,
         rawPayload: entity.rawPayload || null,
       })
@@ -98,6 +128,9 @@ export class DrizzleMessageRepository implements MessageRepository {
     return {
       ...message,
       externalMessageId: message.externalMessageId || undefined,
+      mediaUrl: message.mediaUrl || undefined,
+      mediaCaption: message.mediaCaption || undefined,
+      mediaMimeType: message.mediaMimeType || undefined,
       rawPayload: (message.rawPayload as Record<string, unknown>) || undefined,
       createdAt: message.createdAt.toISOString(),
       updatedAt: message.updatedAt.toISOString(),
@@ -118,6 +151,9 @@ export class DrizzleMessageRepository implements MessageRepository {
         to: partial.to,
         type: partial.type,
         content: partial.content,
+        mediaUrl: partial.mediaUrl,
+        mediaCaption: partial.mediaCaption,
+        mediaMimeType: partial.mediaMimeType,
         status: partial.status,
         rawPayload:
           partial.rawPayload === undefined
@@ -133,6 +169,9 @@ export class DrizzleMessageRepository implements MessageRepository {
     return {
       ...message,
       externalMessageId: message.externalMessageId || undefined,
+      mediaUrl: message.mediaUrl || undefined,
+      mediaCaption: message.mediaCaption || undefined,
+      mediaMimeType: message.mediaMimeType || undefined,
       rawPayload: (message.rawPayload as Record<string, unknown>) || undefined,
       createdAt: message.createdAt.toISOString(),
       updatedAt: message.updatedAt.toISOString(),

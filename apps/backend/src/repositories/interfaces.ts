@@ -49,6 +49,7 @@ export abstract class MessageRepository extends BaseRepository<Message> {
   abstract findByExternalMessageId(
     externalMessageId: string,
   ): Promise<Message | null>;
+  abstract findRecentByJid(jid: string, limit?: number): Promise<Message[]>;
 }
 
 export abstract class EventRepository extends BaseRepository<ProviderEvent> {
@@ -144,6 +145,7 @@ export abstract class ContactRepository {
 export abstract class BroadcastJobRepository {
   abstract findById(id: string): Promise<BroadcastJob | null>;
   abstract findAllByUserId(userId: string): Promise<BroadcastJob[]>;
+  abstract findRunningJobs(): Promise<BroadcastJob[]>;
   abstract save(entity: BroadcastJob): Promise<BroadcastJob>;
   abstract update(
     id: string,

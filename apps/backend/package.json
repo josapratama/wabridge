@@ -50,7 +50,6 @@
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
-    "store-baileys": "^1.0.6",
     "supertest": "^7.2.2",
     "uuid": "^9.0.1"
   },

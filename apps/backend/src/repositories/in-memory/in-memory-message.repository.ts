@@ -50,4 +50,11 @@ export class InMemoryMessageRepository extends MessageRepository {
     }
     return null;
   }
+
+  async findRecentByJid(jid: string, limit = 10): Promise<Message[]> {
+    const cleanJid = jid.replace(/:\d+@/, "@");
+    return Array.from(this.store.values())
+      .filter((m) => m.from === cleanJid || m.to === cleanJid)
+      .slice(-limit);
+  }
 }

@@ -48,6 +48,11 @@ export class BroadcastController {
     return this.service.start(id, req.user.id);
   }
 
+  @Post(":id/resume")
+  resume(@Param("id") id: string, @Request() req: any) {
+    return this.service.resume(id, req.user.id);
+  }
+
   @Delete(":id")
   cancel(@Param("id") id: string, @Request() req: any) {
     return this.service.cancel(id, req.user.id);
