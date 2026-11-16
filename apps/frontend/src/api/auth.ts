@@ -11,6 +11,12 @@ export interface LoginResponse {
   user: User;
 }
 
+export interface AuthHubConfigResponse {
+  enabled: boolean;
+  authhub_url: string;
+  client_id: string;
+}
+
 export const authApi = {
   login: (body: { email: string; password: string }) =>
     request<LoginResponse>("/auth/login", {
@@ -23,4 +29,11 @@ export const authApi = {
       body: JSON.stringify(body),
     }),
   profile: () => request<User>("/auth/profile"),
+  getAuthHubConfig: () =>
+    request<AuthHubConfigResponse>("/auth/authhub/config"),
+  authHubCallback: (code: string) =>
+    request<LoginResponse>("/auth/authhub/callback", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
 };

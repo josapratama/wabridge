@@ -37,6 +37,9 @@ services:
       JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
       JWT_EXPIRES_IN: 7d
       BAILEYS_AUTH_DIR: /app/baileys_auth_data
+      AUTHHUB_URL: https://auth.josapratama.com
+      AUTHHUB_CLIENT_ID: ah_client_wabridge_6d7e8f
+      AUTHHUB_CLIENT_SECRET: ah_secret_wabridge_2b3c4d5e6f7a8b9c0d1e2f
     depends_on:
       postgres:
         condition: service_healthy

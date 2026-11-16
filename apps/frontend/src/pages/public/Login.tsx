@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Zap,
@@ -7,6 +7,7 @@ import {
   Radio,
   Bot,
   Webhook,
+  Shield,
 } from "lucide-react";
 import { authApi } from "../../api/client";
 import { useI18n } from "../../context/I18nContext";
@@ -25,7 +26,44 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [authHubConfig, setAuthHubConfig] = useState<{
+    enabled: boolean;
+    authhub_url: string;
+    client_id: string;
+  } | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    authApi
+      .getAuthHubConfig()
+      .then((res) => {
+        if (res.success && res.data?.enabled) {
+          setAuthHubConfig(res.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleAuthHubLogin = () => {
+    const authhubUrl =
+      authHubConfig?.authhub_url || "https://auth.josapratama.com";
+    const clientId =
+      authHubConfig?.client_id || "ah_client_wabridge_6d7e8f";
+    const state =
+      Math.random().toString(36).substring(2) + Date.now().toString(36);
+    sessionStorage.setItem("authhub_sso_state", state);
+
+    const redirectUri = `${window.location.origin}/auth/callback`;
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      state,
+      scope: "openid profile email roles permissions",
+    });
+
+    window.location.href = `${authhubUrl}/oauth/authorize?${params.toString()}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,6 +123,24 @@ export default function Login() {
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
+
+          {/* AuthHub SSO Button */}
+          <button
+            type="button"
+            onClick={handleAuthHubLogin}
+            className="w-full mb-5 flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-lg bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-medium text-sm shadow-lg shadow-brand-500/20 transition-all border border-brand-400/30"
+          >
+            <Shield className="w-4 h-4 text-brand-200" />
+            <span>{t("auth.login_authhub", "Sign in with AuthHub SSO")}</span>
+          </button>
+
+          <div className="relative flex items-center justify-center mb-5">
+            <div className="border-t border-gray-800 w-full" />
+            <span className="bg-gray-950 px-3 text-xs text-gray-500 font-medium tracking-wider uppercase">
+              {t("auth.or_traditional", "or with email")}
+            </span>
+            <div className="border-t border-gray-800 w-full" />
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

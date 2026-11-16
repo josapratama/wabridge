@@ -25,6 +25,16 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Get("authhub/config")
+  getAuthHubConfig() {
+    return this.authService.getAuthHubConfig();
+  }
+
+  @Post("authhub/callback")
+  async authHubCallback(@Body() body: { code: string }) {
+    return this.authService.handleAuthHubCallback(body?.code);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get("profile")
   getProfile(@Request() req: any) {

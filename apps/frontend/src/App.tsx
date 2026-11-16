@@ -22,6 +22,7 @@ import LiveChat from "./pages/dashboard/LiveChat";
 import Groups from "./pages/dashboard/Groups";
 import Login from "./pages/public/Login";
 import Register from "./pages/public/Register";
+import AuthHubCallback from "./pages/public/AuthHubCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
 
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/public-docs" element={<PublicDocs />} />
       <Route path="/docs" element={<PublicDocs />} />
       <Route path="/pricing" element={<Pricing />} />
+      <Route path="/auth/callback" element={<AuthHubCallback />} />
 
       {/* Guest only — redirect to /dashboard if already logged in */}
       <Route element={<PublicRoute />}>
