@@ -19,6 +19,10 @@ export interface AiBotConfig {
   temperature?: number;
   maxTokens?: number;
   contextWindow?: number;
+  senderFilterMode?: "all" | "whitelist" | "blacklist";
+  whitelistNumbers?: string[];
+  blacklistNumbers?: string[];
+  ignoreGroups?: boolean;
 }
 
 export const aiBotApi = {
@@ -41,6 +45,10 @@ export const aiBotApi = {
     temperature?: number;
     maxTokens?: number;
     contextWindow?: number;
+    senderFilterMode?: "all" | "whitelist" | "blacklist";
+    whitelistNumbers?: string[];
+    blacklistNumbers?: string[];
+    ignoreGroups?: boolean;
   }) =>
     request<{ success: boolean; message: string }>("/ai-bot/config", {
       method: "POST",

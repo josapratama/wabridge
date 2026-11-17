@@ -22,6 +22,10 @@ export interface AiBotConfig {
   temperature?: number; // 0.1 - 1.0 (default: 0.7)
   maxTokens?: number; // default: 500
   contextWindow?: number; // default: 8
+  senderFilterMode?: "all" | "whitelist" | "blacklist"; // default: "all"
+  whitelistNumbers?: string[]; // e.g. ["628123456789"]
+  blacklistNumbers?: string[]; // e.g. ["628111222333"]
+  ignoreGroups?: boolean; // default: true (AI only answers private DMs)
 }
 
 export type AiBotConfigResponse = Omit<AiBotConfig, "apiKey"> & {
@@ -49,6 +53,10 @@ const DEFAULT_CONFIG: AiBotConfig = {
   temperature: 0.7,
   maxTokens: 500,
   contextWindow: 8,
+  senderFilterMode: "all",
+  whitelistNumbers: [],
+  blacklistNumbers: [],
+  ignoreGroups: true,
 };
 
 @Injectable()
@@ -152,6 +160,10 @@ export class AiBotService {
       temperature: cfg.temperature ?? 0.7,
       maxTokens: cfg.maxTokens ?? 500,
       contextWindow: cfg.contextWindow ?? 8,
+      senderFilterMode: cfg.senderFilterMode ?? "all",
+      whitelistNumbers: cfg.whitelistNumbers ?? [],
+      blacklistNumbers: cfg.blacklistNumbers ?? [],
+      ignoreGroups: cfg.ignoreGroups ?? true,
       apiKeyMasked,
       hasKey,
     };
@@ -176,6 +188,10 @@ export class AiBotService {
     if (update.temperature !== undefined) cfg.temperature = update.temperature;
     if (update.maxTokens !== undefined) cfg.maxTokens = update.maxTokens;
     if (update.contextWindow !== undefined) cfg.contextWindow = update.contextWindow;
+    if (update.senderFilterMode !== undefined) cfg.senderFilterMode = update.senderFilterMode;
+    if (update.whitelistNumbers !== undefined) cfg.whitelistNumbers = update.whitelistNumbers;
+    if (update.blacklistNumbers !== undefined) cfg.blacklistNumbers = update.blacklistNumbers;
+    if (update.ignoreGroups !== undefined) cfg.ignoreGroups = update.ignoreGroups;
 
     if (update.apiKey && update.apiKey.trim() !== "") {
       cfg.apiKey = update.apiKey.trim();
@@ -273,6 +289,12 @@ export class AiBotService {
       return null;
     }
 
+    // 0. Group chat filter: ignore group messages if ignoreGroups is true (default)
+    const isGroup = fromJid?.includes("@g.us");
+    if (isGroup && (cfg.ignoreGroups ?? true)) {
+      return null;
+    }
+
     // 1. Session Binding check: if configured, only reply on targeted sessions
     if (
       sessionId &&
@@ -283,7 +305,47 @@ export class AiBotService {
       return null;
     }
 
-    // 2. Schedule Mode check: if "after_hours", only reply when OUTSIDE work hours
+    // 2. Sender Phone Number Filter (Whitelist / Blacklist)
+    if (fromJid) {
+      const senderPhone = fromJid.split("@")[0].replace(/\D/g, "");
+      if (senderPhone) {
+        if (cfg.senderFilterMode === "whitelist") {
+          const allowed = cfg.whitelistNumbers || [];
+          if (allowed.length > 0) {
+            const matches = allowed.some((num) => {
+              const clean = num.replace(/\D/g, "");
+              if (!clean) return false;
+              return (
+                senderPhone === clean ||
+                senderPhone.endsWith(clean) ||
+                clean.endsWith(senderPhone)
+              );
+            });
+            if (!matches) {
+              return null; // Sesi ini hanya menjawab nomor whitelist!
+            }
+          }
+        } else if (cfg.senderFilterMode === "blacklist") {
+          const blocked = cfg.blacklistNumbers || [];
+          if (blocked.length > 0) {
+            const matches = blocked.some((num) => {
+              const clean = num.replace(/\D/g, "");
+              if (!clean) return false;
+              return (
+                senderPhone === clean ||
+                senderPhone.endsWith(clean) ||
+                clean.endsWith(senderPhone)
+              );
+            });
+            if (matches) {
+              return null; // Nomor ini ada di daftar blacklist -> abaikan!
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Schedule Mode check: if "after_hours", only reply when OUTSIDE work hours
     if (cfg.scheduleMode === "after_hours") {
       const isWorkHours = this.isWithinWorkHours(
         cfg.workHoursStart,

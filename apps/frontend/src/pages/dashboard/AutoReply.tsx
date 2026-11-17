@@ -13,6 +13,7 @@ import {
   Smartphone,
   Clock,
   RotateCcw,
+  Users,
 } from "lucide-react";
 import {
   useAutoReply,
@@ -85,6 +86,10 @@ export default function AutoReply() {
     workDays: [1, 2, 3, 4, 5],
     temperature: 0.7,
     maxTokens: 500,
+    senderFilterMode: "all",
+    whitelistNumbers: [],
+    blacklistNumbers: [],
+    ignoreGroups: true,
   });
 
   const [aiKeyInput, setAiKeyInput] = useState("");
@@ -208,6 +213,10 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
         temperature: aiConfig.temperature,
         maxTokens: aiConfig.maxTokens,
         contextWindow: aiConfig.contextWindow,
+        senderFilterMode: aiConfig.senderFilterMode || "all",
+        whitelistNumbers: aiConfig.whitelistNumbers || [],
+        blacklistNumbers: aiConfig.blacklistNumbers || [],
+        ignoreGroups: aiConfig.ignoreGroups !== false,
         apiKey: aiKeyInput.trim() || undefined,
       });
       if (res.data) {
@@ -635,6 +644,144 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                       </div>
                     </div>
                   )}
+              </div>
+
+              {/* Sender Phone Number Filtering (Whitelist / Blacklist) */}
+              <div className="p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="block text-xs font-semibold text-gray-200 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-purple-400" />
+                    <span>{t("autoreply.sender_filter_title", "Filter Kontak Pengirim (Pelanggan)")}</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 text-[11px] text-gray-400 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={aiConfig.ignoreGroups !== false}
+                      onChange={(e) =>
+                        setAiConfig((prev) => ({
+                          ...prev,
+                          ignoreGroups: e.target.checked,
+                        }))
+                      }
+                      className="rounded text-purple-600 focus:ring-purple-500"
+                    />
+                    <span>{t("autoreply.ignore_groups", "Abaikan Chat Grup (Hanya DM)")}</span>
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-4 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                    <input
+                      type="radio"
+                      name="senderFilterMode"
+                      checked={!aiConfig.senderFilterMode || aiConfig.senderFilterMode === "all"}
+                      onChange={() =>
+                        setAiConfig((prev) => ({
+                          ...prev,
+                          senderFilterMode: "all",
+                        }))
+                      }
+                      className="text-purple-600 focus:ring-purple-500"
+                    />
+                    <span>{t("autoreply.sender_all", "Semua Kontak Pengirim")}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                    <input
+                      type="radio"
+                      name="senderFilterMode"
+                      checked={aiConfig.senderFilterMode === "whitelist"}
+                      onChange={() =>
+                        setAiConfig((prev) => ({
+                          ...prev,
+                          senderFilterMode: "whitelist",
+                        }))
+                      }
+                      className="text-purple-600 focus:ring-purple-500"
+                    />
+                    <span>{t("autoreply.sender_whitelist", "Hanya Nomor Tertentu (Whitelist)")}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                    <input
+                      type="radio"
+                      name="senderFilterMode"
+                      checked={aiConfig.senderFilterMode === "blacklist"}
+                      onChange={() =>
+                        setAiConfig((prev) => ({
+                          ...prev,
+                          senderFilterMode: "blacklist",
+                        }))
+                      }
+                      className="text-purple-600 focus:ring-purple-500"
+                    />
+                    <span>{t("autoreply.sender_blacklist", "Kecualikan Nomor Tertentu (Blacklist)")}</span>
+                  </label>
+                </div>
+
+                {/* Whitelist Input */}
+                {aiConfig.senderFilterMode === "whitelist" && (
+                  <div className="pt-2 border-t border-gray-700/50 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-purple-300 font-medium">
+                        {t("autoreply.whitelist_desc", "Hanya nomor di bawah ini yang akan dibalas otomatis oleh AI:")}
+                      </span>
+                      <span className="text-gray-400 font-mono text-[10px]">
+                        {(aiConfig.whitelistNumbers || []).length} {t("autoreply.numbers_count", "nomor")}
+                      </span>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={(aiConfig.whitelistNumbers || []).join(", ")}
+                      onChange={(e) => {
+                        const nums = e.target.value
+                          .split(/[\n,;]+/)
+                          .map((n) => n.trim().replace(/\D/g, ""))
+                          .filter(Boolean);
+                        setAiConfig((prev) => ({
+                          ...prev,
+                          whitelistNumbers: Array.from(new Set(nums)),
+                        }));
+                      }}
+                      placeholder="628123456789, 628987654321, 085712345678"
+                      className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-purple-500 leading-relaxed"
+                    />
+                    <p className="text-[10px] text-gray-500">
+                      {t("autoreply.numbers_format_help", "Pisahkan nomor dengan tanda koma (,) atau baris baru. Kontak lain akan dibiarkan untuk dibalas manual.")}
+                    </p>
+                  </div>
+                )}
+
+                {/* Blacklist Input */}
+                {aiConfig.senderFilterMode === "blacklist" && (
+                  <div className="pt-2 border-t border-gray-700/50 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-yellow-300 font-medium">
+                        {t("autoreply.blacklist_desc", "Nomor di bawah ini TIDAK akan pernah dibalas oleh AI (misal: keluarga, atasan, internal):")}
+                      </span>
+                      <span className="text-gray-400 font-mono text-[10px]">
+                        {(aiConfig.blacklistNumbers || []).length} {t("autoreply.numbers_count", "nomor")}
+                      </span>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={(aiConfig.blacklistNumbers || []).join(", ")}
+                      onChange={(e) => {
+                        const nums = e.target.value
+                          .split(/[\n,;]+/)
+                          .map((n) => n.trim().replace(/\D/g, ""))
+                          .filter(Boolean);
+                        setAiConfig((prev) => ({
+                          ...prev,
+                          blacklistNumbers: Array.from(new Set(nums)),
+                        }));
+                      }}
+                      placeholder="628111222333, 628999888777"
+                      className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2.5 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-purple-500 leading-relaxed"
+                    />
+                    <p className="text-[10px] text-gray-500">
+                      {t("autoreply.blacklist_help", "Pisahkan nomor dengan tanda koma (,) atau baris baru. Kontak di daftar ini akan selalu manual.")}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Schedule Mode / Jam Kerja */}

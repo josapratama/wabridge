@@ -683,7 +683,17 @@
     "handover_2h": "2 時間（推奨）",
     "handover_6h": "6 時間",
     "handover_24h": "24 時間",
-    "kb_title": "ナレッジベース＆FAQドキュメント"
+    "kb_title": "ナレッジベース＆FAQドキュメント",
+    "sender_filter_title": "送信元（顧客）連絡先フィルタ",
+    "ignore_groups": "グループチャットを無視（個人DMのみ）",
+    "sender_all": "すべての送信元連絡先",
+    "sender_whitelist": "特定番号のみ（ホワイトリスト）",
+    "sender_blacklist": "特定番号を除外（ブラックリスト）",
+    "whitelist_desc": "下記の番号のみがAIによって自動返信されます：",
+    "blacklist_desc": "下記の番号はAIによって返信されません（家族、上司、社内スタッフなど）：",
+    "numbers_count": "件の番号",
+    "numbers_format_help": "番号はカンマ（,）または改行で区切ってください。他の連絡先は手動返信に残されます。",
+    "blacklist_help": "番号はカンマ（,）または改行で区切ってください。このリストの連絡先は常に手動対応になります。"
   },
   "contacts": {
     "title": "連絡先",

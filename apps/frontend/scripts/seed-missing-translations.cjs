@@ -1553,5 +1553,55 @@ module.exports = { TRANSLATIONS: {
     "id": "Izin akses mikrofon diperlukan untuk merekam voice note.",
     "en": "Microphone permission is required to record voice notes.",
     "ja": "音声メモを録音するにはマイクの許可が必要です。"
+  },
+  "autoreply.sender_filter_title": {
+    "id": "Filter Kontak Pengirim (Pelanggan)",
+    "en": "Sender Contact Filtering (Customers)",
+    "ja": "送信元（顧客）連絡先フィルタ"
+  },
+  "autoreply.ignore_groups": {
+    "id": "Abaikan Chat Grup (Hanya DM)",
+    "en": "Ignore Group Chats (Direct Only)",
+    "ja": "グループチャットを無視（個人DMのみ）"
+  },
+  "autoreply.sender_all": {
+    "id": "Semua Kontak Pengirim",
+    "en": "All Incoming Contacts",
+    "ja": "すべての送信元連絡先"
+  },
+  "autoreply.sender_whitelist": {
+    "id": "Hanya Nomor Tertentu (Whitelist)",
+    "en": "Specific Numbers Only (Whitelist)",
+    "ja": "特定番号のみ（ホワイトリスト）"
+  },
+  "autoreply.sender_blacklist": {
+    "id": "Kecualikan Nomor Tertentu (Blacklist)",
+    "en": "Exclude Specific Numbers (Blacklist)",
+    "ja": "特定番号を除外（ブラックリスト）"
+  },
+  "autoreply.whitelist_desc": {
+    "id": "Hanya nomor di bawah ini yang akan dibalas otomatis oleh AI:",
+    "en": "Only numbers listed below will be answered automatically by AI:",
+    "ja": "下記の番号のみがAIによって自動返信されます："
+  },
+  "autoreply.blacklist_desc": {
+    "id": "Nomor di bawah ini TIDAK akan pernah dibalas oleh AI (misal: keluarga, atasan, internal):",
+    "en": "Numbers listed below will NEVER be answered by AI (e.g. family, boss, internal team):",
+    "ja": "下記の番号はAIによって返信されません（家族、上司、社内スタッフなど）："
+  },
+  "autoreply.numbers_count": {
+    "id": "nomor",
+    "en": "numbers",
+    "ja": "件の番号"
+  },
+  "autoreply.numbers_format_help": {
+    "id": "Pisahkan nomor dengan tanda koma (,) atau baris baru. Kontak lain akan dibiarkan untuk dibalas manual.",
+    "en": "Separate numbers with comma (,) or newline. Other contacts will be left for manual reply.",
+    "ja": "番号はカンマ（,）または改行で区切ってください。他の連絡先は手動返信に残されます。"
+  },
+  "autoreply.blacklist_help": {
+    "id": "Pisahkan nomor dengan tanda koma (,) atau baris baru. Kontak di daftar ini akan selalu manual.",
+    "en": "Separate numbers with comma (,) or newline. Contacts on this list will always be handled manually.",
+    "ja": "番号はカンマ（,）または改行で区切ってください。このリストの連絡先は常に手動対応になります。"
   }
 } };

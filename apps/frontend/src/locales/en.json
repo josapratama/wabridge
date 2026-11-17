@@ -683,7 +683,17 @@
     "handover_2h": "2 Hours (Recommended)",
     "handover_6h": "6 Hours",
     "handover_24h": "24 Hours",
-    "kb_title": "Knowledge Base & FAQ Documents"
+    "kb_title": "Knowledge Base & FAQ Documents",
+    "sender_filter_title": "Sender Contact Filtering (Customers)",
+    "ignore_groups": "Ignore Group Chats (Direct Only)",
+    "sender_all": "All Incoming Contacts",
+    "sender_whitelist": "Specific Numbers Only (Whitelist)",
+    "sender_blacklist": "Exclude Specific Numbers (Blacklist)",
+    "whitelist_desc": "Only numbers listed below will be answered automatically by AI:",
+    "blacklist_desc": "Numbers listed below will NEVER be answered by AI (e.g. family, boss, internal team):",
+    "numbers_count": "numbers",
+    "numbers_format_help": "Separate numbers with comma (,) or newline. Other contacts will be left for manual reply.",
+    "blacklist_help": "Separate numbers with comma (,) or newline. Contacts on this list will always be handled manually."
   },
   "contacts": {
     "title": "Contacts",

@@ -683,7 +683,17 @@
     "handover_2h": "2 Jam (Rekomendasi)",
     "handover_6h": "6 Jam",
     "handover_24h": "24 Jam",
-    "kb_title": "Knowledge Base & Dokumen FAQ"
+    "kb_title": "Knowledge Base & Dokumen FAQ",
+    "sender_filter_title": "Filter Kontak Pengirim (Pelanggan)",
+    "ignore_groups": "Abaikan Chat Grup (Hanya DM)",
+    "sender_all": "Semua Kontak Pengirim",
+    "sender_whitelist": "Hanya Nomor Tertentu (Whitelist)",
+    "sender_blacklist": "Kecualikan Nomor Tertentu (Blacklist)",
+    "whitelist_desc": "Hanya nomor di bawah ini yang akan dibalas otomatis oleh AI:",
+    "blacklist_desc": "Nomor di bawah ini TIDAK akan pernah dibalas oleh AI (misal: keluarga, atasan, internal):",
+    "numbers_count": "nomor",
+    "numbers_format_help": "Pisahkan nomor dengan tanda koma (,) atau baris baru. Kontak lain akan dibiarkan untuk dibalas manual.",
+    "blacklist_help": "Pisahkan nomor dengan tanda koma (,) atau baris baru. Kontak di daftar ini akan selalu manual."
   },
   "contacts": {
     "title": "Buku Kontak",
