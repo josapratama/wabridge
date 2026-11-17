@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AutoReplyRule, aiBotApi, AiBotConfig } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
 import {
@@ -10,6 +10,9 @@ import {
   Send,
   CheckCircle2,
   HelpCircle,
+  Upload,
+  FileText,
+  BookOpen,
 } from "lucide-react";
 import {
   useAutoReply,
@@ -55,6 +58,64 @@ export default function AutoReply() {
   const [testInput, setTestInput] = useState("");
   const [testReply, setTestReply] = useState("");
   const [testingAi, setTestingAi] = useState(false);
+  const kbFileInputRef = useRef<HTMLInputElement>(null);
+
+  const KB_TEMPLATES = [
+    {
+      label: "🛍️ Toko Online / E-Commerce",
+      prompt: "Anda adalah customer support toko online yang ramah, sopan, dan solutif. Bantu calon pembeli memilih produk, menjawab info harga, ongkir, serta cara pembayaran.",
+      kb: `[PRODUK & HARGA]
+- Paket Basic: Rp 99.000 (1 Akun, 1000 pesan/hari)
+- Paket Pro: Rp 199.000 (3 Akun, Broadcast tanpa batas)
+- Paket Enterprise: Rp 499.000 (Multi-device, Webhook, Prioritas)
+
+[METODE PEMBAYARAN]
+- Transfer Bank: BCA 1234567890 a/n WaBridge Indonesia
+- QRIS: Mendukung GoPay, OVO, Dana, ShopeePay
+
+[PENGIRIMAN & JAM KERJA]
+- Pengiriman instan aktif 24/7 setelah bukti transfer diverifikasi.
+- Jam CS aktif: Senin - Sabtu, 08:00 - 21:00 WIB.`,
+    },
+    {
+      label: "🏢 Customer Support Umum",
+      prompt: "Anda adalah AI Assistant WaBridge. Berikan informasi yang akurat, ringkas, dan jelas sesuai basis pengetahuan perusahaan.",
+      kb: `[PROFIL PERUSAHAAN]
+WaBridge adalah platform gateway WhatsApp API dan automasi pesan untuk bisnis di Indonesia.
+
+[FITUR UTAMA]
+1. Gateway WhatsApp multi-device (Meta Cloud API & Baileys Web).
+2. Broadcast massal terjadwal.
+3. Auto-reply cerdas berbasis kata kunci & integrasi AI.
+4. Live Chat terpusat.`,
+    },
+    {
+      label: "🩺 Klinik & Booking Janji Temu",
+      prompt: "Anda adalah asisten administrasi klinik. Bantu pasien mengetahui jadwal dokter, biaya konsultasi, dan alur pendaftaran.",
+      kb: `[JADWAL PRAKTIK DOKTER]
+- dr. Spesialis Anak: Senin - Jumat, 09.00 - 13.00
+- dr. Gigi & Mulut: Selasa & Kamis, 14.00 - 18.00
+- dr. Umum: Setiap hari 24 Jam
+
+[ALUR PENDAFTARAN]
+Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
+    },
+  ];
+
+  const handleKbFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = reader.result as string;
+      setAiConfig((prev) => ({
+        ...prev,
+        knowledgeBase: prev.knowledgeBase ? `${prev.knowledgeBase}\n\n${text}` : text,
+      }));
+    };
+    reader.readAsText(file);
+    if (kbFileInputRef.current) kbFileInputRef.current.value = "";
+  };
 
   const loadAiConfig = async () => {
     try {
@@ -375,13 +436,55 @@ export default function AutoReply() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-gray-300">
-                    Knowledge Base & FAQ
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-gray-200">
+                    Knowledge Base & Dokumen FAQ
                   </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={kbFileInputRef}
+                      onChange={handleKbFileUpload}
+                      accept=".txt,.md,.json,.csv"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => kbFileInputRef.current?.click()}
+                      className="text-[11px] text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium bg-purple-950/40 border border-purple-800/50 px-2 py-0.5 rounded-md transition-colors"
+                      title="Upload dokumen pengetahuan (.txt, .md, .csv)"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>Upload Dokumen</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Quick Templates */}
+                <div className="mb-2">
+                  <p className="text-[10px] text-gray-400 mb-1">Gunakan template siap pakai:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {KB_TEMPLATES.map((tpl, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setAiConfig((prev) => ({
+                            ...prev,
+                            systemPrompt: tpl.prompt,
+                            knowledgeBase: tpl.kb,
+                          }));
+                        }}
+                        className="text-[11px] bg-gray-800/80 hover:bg-gray-750 text-gray-300 border border-gray-700/60 px-2 py-1 rounded-md transition-colors text-left"
+                      >
+                        {tpl.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <textarea
-                  rows={4}
+                  rows={5}
                   value={aiConfig.knowledgeBase || ""}
                   onChange={(e) =>
                     setAiConfig((prev) => ({
@@ -389,8 +492,13 @@ export default function AutoReply() {
                       knowledgeBase: e.target.value,
                     }))
                   }
+                  placeholder="Ketik atau tempelkan FAQ, daftar harga, katalog produk, atau ketentuan garansi di sini..."
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 font-sans leading-relaxed"
                 />
+                <p className="text-[10px] text-gray-500 mt-1 flex justify-between">
+                  <span>Mendukung teks acuan untuk menjawab pertanyaan pelanggan secara otomatis.</span>
+                  <span>{aiConfig.knowledgeBase?.length || 0} karakter</span>
+                </p>
               </div>
 
               {aiSaveMsg && (

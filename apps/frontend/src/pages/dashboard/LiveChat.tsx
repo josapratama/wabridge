@@ -34,6 +34,7 @@ import {
   Mic,
   MicOff,
   Zap,
+  CheckCircle2,
 } from "lucide-react";
 
 interface Conversation {
@@ -72,6 +73,30 @@ export default function LiveChat() {
   const [recording, setRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+
+  // Chat Filter & Status
+  const [chatFilter, setChatFilter] = useState<"all" | "unread" | "resolved">("all");
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [resolvedJids, setResolvedJids] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("wabridge_resolved_chats");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const toggleResolved = (jid: string) => {
+    setResolvedJids((prev) => {
+      const updated = prev.includes(jid)
+        ? prev.filter((id) => id !== jid)
+        : [...prev, jid];
+      try {
+        localStorage.setItem("wabridge_resolved_chats", JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
 
   const QUICK_REPLIES = [
     {
@@ -286,11 +311,15 @@ export default function LiveChat() {
     return convList;
   })();
 
-  const filteredConversations = conversations.filter(
-    (c) =>
+  const filteredConversations = conversations.filter((c) => {
+    const matchesSearch =
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.phone.includes(searchQuery),
-  );
+      c.phone.includes(searchQuery);
+    if (!matchesSearch) return false;
+    if (chatFilter === "unread") return c.unreadCount > 0;
+    if (chatFilter === "resolved") return resolvedJids.includes(c.jid);
+    return true;
+  });
 
   const activeConv = conversations.find((c) => c.jid === selectedJid);
 
@@ -471,7 +500,7 @@ export default function LiveChat() {
             selectedJid ? "hidden md:flex" : "flex"
           }`}
         >
-          {/* Top Search & Session Selector */}
+          {/* Top Search & Filter Tabs */}
           <div className="p-3 border-b border-gray-800 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -486,6 +515,27 @@ export default function LiveChat() {
                   className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
                 />
               </button>
+            </div>
+
+            {/* Status Filter Tabs */}
+            <div className="flex border border-gray-800 rounded-lg p-0.5 bg-gray-950/60 text-[11px]">
+              {[
+                { id: "all", label: "Semua" },
+                { id: "unread", label: "Belum Dibaca" },
+                { id: "resolved", label: "Selesai" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setChatFilter(tab.id as any)}
+                  className={`flex-1 py-1 text-center font-medium rounded-md transition-colors ${
+                    chatFilter === tab.id
+                      ? "bg-brand-600 text-white shadow-sm"
+                      : "text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
             <div className="relative">
@@ -593,7 +643,23 @@ export default function LiveChat() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* Mark as Resolved Toggle */}
+                  <button
+                    onClick={() => toggleResolved(activeConv.jid)}
+                    className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${
+                      resolvedJids.includes(activeConv.jid)
+                        ? "bg-emerald-950/40 border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/50"
+                        : "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-750"
+                    }`}
+                    title={resolvedJids.includes(activeConv.jid) ? "Tandai Belum Selesai" : "Tandai Percakapan Selesai"}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">
+                      {resolvedJids.includes(activeConv.jid) ? "Selesai" : "Tandai Selesai"}
+                    </span>
+                  </button>
+
                   {/* Provider Connection Status indicator */}
                   <div className="flex items-center gap-1.5">
                     <span
@@ -687,8 +753,8 @@ export default function LiveChat() {
                             <img
                               src={resolveMediaUrl(m.mediaUrl)}
                               alt="Attached image"
-                              className="max-h-60 w-full object-cover cursor-pointer hover:opacity-95"
-                              onClick={() => window.open(resolveMediaUrl(m.mediaUrl), "_blank")}
+                              className="max-h-60 w-full object-cover cursor-pointer hover:opacity-95 rounded-lg"
+                              onClick={() => setLightboxImage(resolveMediaUrl(m.mediaUrl))}
                             />
                           </div>
                         )}
@@ -964,6 +1030,42 @@ export default function LiveChat() {
           )}
         </div>
       </div>
+
+      {/* Fullscreen Image Lightbox Modal */}
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200"
+          onClick={() => setLightboxImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+            <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
+              <a
+                href={lightboxImage}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                onClick={(e) => e.stopPropagation()}
+                className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors shadow-lg"
+                title="Download original"
+              >
+                <Download className="w-5 h-5" />
+              </a>
+              <button
+                onClick={() => setLightboxImage(null)}
+                className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors shadow-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <img
+              src={lightboxImage}
+              alt="Preview"
+              className="max-h-[85vh] max-w-full rounded-2xl object-contain shadow-2xl border border-gray-800"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
