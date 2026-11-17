@@ -275,6 +275,12 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
             setTimeout(() => {
               void this.connectAccount(input);
             }, 2000);
+          } else if (statusCode === 408 || statusCode === DisconnectReason.timedOut) {
+            this.logger.log(
+              `[Session ${config.id}] QR scan timed out (408). Standby until user requests a new QR code.`,
+              "BaileysWhatsAppProvider",
+            );
+            // Standby without infinite reconnection loops
           } else {
             this.logger.log(
               `[Session ${config.id}] Reconnecting in 10 seconds...`,
@@ -732,25 +738,41 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
     configId?: string,
     sessionId?: string,
   ): Promise<ProviderHealthResult> {
-    const inst = this.findSession(configId, sessionId);
-    if (!inst) {
+    if (configId || sessionId) {
+      const inst = this.findSession(configId, sessionId);
+      if (!inst) {
+        return {
+          healthy: false,
+          providerType: PROVIDER_TYPES.BAILEYS,
+          message: "No active Baileys session configured",
+        };
+      }
+
       return {
-        healthy: false,
+        healthy: inst.connectionReady,
         providerType: PROVIDER_TYPES.BAILEYS,
-        message: "No active Baileys session configured",
+        message: inst.connectionReady
+          ? `Connected as ${inst.sock?.user?.id || "active session"}`
+          : inst.qrCodeData
+            ? "Waiting for QR scan"
+            : inst.isConnecting
+              ? "Connecting..."
+              : "Disconnected (Standby)",
       };
     }
 
+    const total = this.sessions.size;
+    const connected = Array.from(this.sessions.values()).filter(
+      (s) => s.connectionReady,
+    ).length;
+
     return {
-      healthy: inst.connectionReady,
+      healthy: true,
       providerType: PROVIDER_TYPES.BAILEYS,
-      message: inst.connectionReady
-        ? `Connected as ${inst.sock?.user?.id || "active session"}`
-        : inst.qrCodeData
-          ? "Waiting for QR scan"
-          : inst.isConnecting
-            ? "Connecting..."
-            : "Disconnected (Standby)",
+      message:
+        total === 0
+          ? "Baileys engine ready (standby, 0 sessions)"
+          : `Baileys engine operational (${connected}/${total} connected)`,
     };
   }
 

@@ -5,6 +5,7 @@ import {
   Message,
   Session,
 } from "../../../api/client";
+import { BASE } from "../../../api/base";
 import { SendForm } from "../constants";
 
 export function useMessages() {
@@ -56,7 +57,7 @@ export function useMessages() {
     if (filters.direction) params.set("direction", filters.direction);
     const token = localStorage.getItem("token");
     const res = await fetch(
-      `http://localhost:3000/export/messages?${params.toString()}`,
+      `${BASE}/export/messages?${params.toString()}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       },

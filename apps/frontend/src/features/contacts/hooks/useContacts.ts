@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { contactsApi, Contact } from "../../../api/client";
+import { BASE } from "../../../api/base";
 
 export type ContactForm = {
   name: string;
@@ -71,7 +72,7 @@ export function useContacts() {
   const exportContacts = async (format: "csv" | "json") => {
     const token = localStorage.getItem("token");
     const res = await fetch(
-      `http://localhost:3000/export/contacts?format=${format}`,
+      `${BASE}/export/contacts?format=${format}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       },

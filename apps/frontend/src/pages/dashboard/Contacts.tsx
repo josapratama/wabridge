@@ -304,6 +304,24 @@ export default function Contacts() {
                 <FileText className="w-4 h-4 text-brand-400" />
                 <span>{t("contacts.upload_csv", "Unggah Berkas .CSV")}</span>
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const content = "name,phone,tags,notes\nBudi Santoso,628123456789,\"VIP,Pelanggan\",Pelanggan setia sejak 2024\nSiti Rahma,628987654321,\"Follow Up\",Minat produk paket A";
+                  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "template-kontak-wabridge.csv";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="btn-secondary text-xs flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300"
+                title={t("contacts.download_template", "Unduh Template CSV")}
+              >
+                <Download className="w-4 h-4" />
+                <span>{t("contacts.download_template", "Unduh Template CSV")}</span>
+              </button>
               <span className="text-[11px] text-gray-500">
                 {t("contacts.or_paste", "atau tempel baris kontak langsung di bawah ini:")}
               </span>

@@ -56,8 +56,15 @@ export default function AutoReply() {
   const [savingAi, setSavingAi] = useState(false);
   const [aiSaveMsg, setAiSaveMsg] = useState("");
   const [testInput, setTestInput] = useState("");
-  const [testReply, setTestReply] = useState("");
   const [testingAi, setTestingAi] = useState(false);
+  const [simulatorChat, setSimulatorChat] = useState<Array<{ role: "user" | "bot"; text: string; time: string }>>([
+    {
+      role: "bot",
+      text: "Halo kak! Saya adalah asisten WhatsApp otomatis Anda. Silakan tanyakan apa saja untuk menguji balasan saya berdasarkan Prompt & Knowledge Base yang Anda atur.",
+      time: "10:00",
+    },
+  ]);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
   const kbFileInputRef = useRef<HTMLInputElement>(null);
 
   const KB_TEMPLATES = [
@@ -166,21 +173,31 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
     }
   };
 
-  const handleTestAi = async () => {
-    if (!testInput.trim()) return;
+  const handleTestAi = async (customPrompt?: string) => {
+    const textToSend = customPrompt || testInput.trim();
+    if (!textToSend || testingAi) return;
+
+    const timeNow = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    setSimulatorChat((prev) => [...prev, { role: "user", text: textToSend, time: timeNow }]);
+    setTestInput("");
     setTestingAi(true);
-    setTestReply("");
+
     try {
-      const res = await aiBotApi.testPrompt(testInput.trim());
-      if (res.data?.reply) {
-        setTestReply(res.data.reply);
-      } else {
-        setTestReply("No reply received. Make sure your API Key is valid.");
-      }
+      const res = await aiBotApi.testPrompt(textToSend);
+      const reply = res.data?.reply || t("autoreply.no_reply_err", "Tidak ada balasan dari model. Pastikan API key aktif.");
+      setSimulatorChat((prev) => [...prev, { role: "bot", text: reply, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
     } catch {
-      setTestReply("Error testing AI response. Please check your API key.");
+      setSimulatorChat((prev) => [
+        ...prev,
+        {
+          role: "bot",
+          text: t("autoreply.test_err", "Gagal memproses pertanyaan ke model AI. Periksa API key dan kuota model Anda."),
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        },
+      ]);
     } finally {
       setTestingAi(false);
+      setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     }
   };
 
@@ -522,48 +539,127 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
             </form>
           </div>
 
-          {/* Right Panel: Live Test Simulator */}
-          <div className="card p-6 flex flex-col justify-between space-y-4">
-            <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-brand-400" />
-                Prompt Simulator
-              </h3>
-              <p className="text-xs text-gray-400 mt-1">
-                Test how the AI assistant replies before publishing to customers.
-              </p>
-
-              <div className="mt-4 space-y-3">
-                <input
-                  type="text"
-                  value={testInput}
-                  onChange={(e) => setTestInput(e.target.value)}
-                  placeholder="Type a sample customer question..."
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
-                />
-
-                <button
-                  type="button"
-                  onClick={handleTestAi}
-                  disabled={testingAi || !testInput.trim()}
-                  className="w-full btn-secondary text-xs flex items-center justify-center gap-2"
-                >
-                  <Send className={`w-3.5 h-3.5 ${testingAi ? "animate-spin" : ""}`} />
-                  <span>{testingAi ? "Generating..." : "Simulate Response"}</span>
-                </button>
-              </div>
-
-              {testReply && (
-                <div className="mt-4 p-3 rounded-xl bg-gray-800/70 border border-gray-700/60 text-xs space-y-1">
-                  <p className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">
-                    AI Response:
+          {/* Right Panel: WhatsApp Chat Simulator */}
+          <div className="card p-0 flex flex-col h-[650px] overflow-hidden border-gray-750 shadow-2xl">
+            {/* Simulator Header */}
+            <div className="px-4 py-3 bg-emerald-950/40 border-b border-emerald-900/40 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-emerald-600/30 border border-emerald-500/40 flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-white leading-tight">
+                    {t("autoreply.simulator_title", "WhatsApp Bot Simulator")}
                   </p>
-                  <p className="text-gray-200 whitespace-pre-wrap leading-relaxed">
-                    {testReply}
+                  <p className="text-[10px] text-emerald-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Online • {aiConfig.provider} ({aiConfig.model})
                   </p>
                 </div>
-              )}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setSimulatorChat([
+                    {
+                      role: "bot",
+                      text: "Percakapan telah direset. Silakan ajukan pertanyaan baru!",
+                      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                    },
+                  ])
+                }
+                className="text-[11px] text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors"
+                title="Reset riwayat simulasi"
+              >
+                Reset
+              </button>
             </div>
+
+            {/* Quick Questions Pills */}
+            <div className="px-3 py-2 bg-gray-900/60 border-b border-gray-800/60 flex items-center gap-1.5 overflow-x-auto">
+              <span className="text-[10px] text-gray-500 shrink-0">Tes cepat:</span>
+              {[
+                "Berapa harga paket?",
+                "Jam berapa buka?",
+                "Bisa transfer bank?",
+                "Ada diskon gak?",
+              ].map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => void handleTestAi(q)}
+                  disabled={testingAi}
+                  className="px-2 py-0.5 rounded-full bg-gray-800 hover:bg-gray-750 text-[10px] text-gray-300 border border-gray-700/60 whitespace-nowrap transition-colors"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+
+            {/* Chat Messages Body */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-950/80">
+              {simulatorChat.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs shadow-md space-y-1 ${
+                      msg.role === "user"
+                        ? "bg-emerald-700 text-white rounded-tr-none"
+                        : "bg-gray-800 text-gray-200 border border-gray-700/60 rounded-tl-none"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                    <p
+                      className={`text-[9px] text-right font-mono ${
+                        msg.role === "user" ? "text-emerald-200/70" : "text-gray-400"
+                      }`}
+                    >
+                      {msg.time}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {testingAi && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-800 border border-gray-700/60 rounded-2xl rounded-tl-none px-3.5 py-2 text-xs text-gray-400 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.4s]" />
+                    <span className="text-[11px] ml-1">AI sedang merespons...</span>
+                  </div>
+                </div>
+              )}
+              <div ref={chatBottomRef} />
+            </div>
+
+            {/* Input Bar */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handleTestAi();
+              }}
+              className="p-3 bg-gray-900 border-t border-gray-800 flex items-center gap-2"
+            >
+              <input
+                type="text"
+                value={testInput}
+                onChange={(e) => setTestInput(e.target.value)}
+                placeholder="Ketik pertanyaan untuk bot..."
+                disabled={testingAi}
+                className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+              />
+              <button
+                type="submit"
+                disabled={testingAi || !testInput.trim()}
+                className="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition-colors"
+                title="Kirim pesan simulasi"
+              >
+                <Send className={`w-4 h-4 ${testingAi ? "animate-spin" : ""}`} />
+              </button>
+            </form>
           </div>
         </div>
       )}
