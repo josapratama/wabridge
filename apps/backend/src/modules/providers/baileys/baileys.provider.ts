@@ -501,6 +501,13 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                   } catch {
                     // ignore lookup error
                   }
+                  const promptJid = from.includes("@")
+                    ? from
+                    : `${from}@s.whatsapp.net`;
+                  try {
+                    await sock.sendPresenceUpdate("composing", promptJid);
+                  } catch {}
+
                   replyContent = await this.aiBotService.generateReply(
                     content,
                     from,

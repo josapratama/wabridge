@@ -619,7 +619,8 @@
     "ai_total_replies": "Total Balasan AI",
     "ai_status_active": "AI Aktif",
     "ai_status_disabled": "AI Nonaktif",
-    "ai_last_replied": "Balasan Terakhir"
+    "ai_last_replied": "Balasan Terakhir",
+    "ai_automation_ratio": "Rasio Otomasi AI"
   },
   "analytics": {
     "title": "Analitik & Metrik",
@@ -706,7 +707,11 @@
     "model_custom_opt": "✏️ Model Kustom / Input Manual...",
     "model_custom_placeholder": "Ketik model ID spesifik (contoh: gemini-2.0-flash-lite, o3-mini)",
     "model_active_note": "Hanya model aktif resmi non-deprecated yang disediakan untuk stabilitas koneksi.",
-    "upload_kb_title_all": "Upload dokumen pengetahuan (.txt, .md, .csv, .json, .pdf)"
+    "upload_kb_title_all": "Upload dokumen pengetahuan (.txt, .md, .csv, .json, .pdf)",
+    "kb_tokens_est": "Perkiraan Konsumsi Prompt:",
+    "kb_optimal": "Optimal",
+    "kb_medium": "Cukup Besar",
+    "kb_heavy": "Mendekati Batas"
   },
   "contacts": {
     "title": "Buku Kontak",
@@ -911,7 +916,13 @@
     "contact_tags_label": "Label / Tag Pelanggan (pisahkan dengan koma)",
     "contact_notes_label": "Catatan Internal Staf",
     "contact_notes_placeholder": "Catatan khusus tentang pelanggan ini (hanya terlihat tim internal)...",
-    "contact_saved_success": "Data kontak berhasil disimpan!"
+    "contact_saved_success": "Data kontak berhasil disimpan!",
+    "export_chat": "Export Chat",
+    "export_chat_title": "Unduh riwayat percakapan ke file teks (.txt)",
+    "manage_quick_replies": "Kelola Template",
+    "add_quick_reply": "+ Tambah Template Cepat",
+    "filter_all_tags": "Semua Tag",
+    "filter_by_tag": "Filter Tag:"
   },
   "api_keys": {
     "created_title": "API Key Berhasil Dibuat",

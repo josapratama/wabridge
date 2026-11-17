@@ -619,7 +619,8 @@
     "ai_total_replies": "AI返信総数",
     "ai_status_active": "AI 有効",
     "ai_status_disabled": "AI 無効",
-    "ai_last_replied": "最終返信"
+    "ai_last_replied": "最終返信",
+    "ai_automation_ratio": "AI自動化率"
   },
   "analytics": {
     "title": "分析とメトリクス",
@@ -706,7 +707,11 @@
     "model_custom_opt": "✏️ カスタムモデル / 手動入力...",
     "model_custom_placeholder": "特定のモデルIDを入力（例: gemini-2.0-flash-lite, o3-mini）",
     "model_active_note": "接続の安定性のため、廃止されていない公式のアクティブモデルのみが表示されます。",
-    "upload_kb_title_all": "ナレッジドキュメントをアップロード（.txt, .md, .csv, .json, .pdf）"
+    "upload_kb_title_all": "ナレッジドキュメントをアップロード（.txt, .md, .csv, .json, .pdf）",
+    "kb_tokens_est": "推定プロンプト使用量:",
+    "kb_optimal": "最適",
+    "kb_medium": "中程度",
+    "kb_heavy": "上限に近い"
   },
   "contacts": {
     "title": "連絡先",
@@ -911,7 +916,13 @@
     "contact_tags_label": "顧客ラベル / タグ（カンマ区切り）",
     "contact_notes_label": "社内メモ",
     "contact_notes_placeholder": "この顧客に関する特記事項（社内チームのみ閲覧可能）...",
-    "contact_saved_success": "連絡先情報が正常に保存されました！"
+    "contact_saved_success": "連絡先情報が正常に保存されました！",
+    "export_chat": "チャット出力",
+    "export_chat_title": "チャット履歴をテキストファイルに出力 (.txt)",
+    "manage_quick_replies": "テンプレート管理",
+    "add_quick_reply": "+ クイック返信を追加",
+    "filter_all_tags": "すべてのタグ",
+    "filter_by_tag": "タグで絞り込み:"
   },
   "api_keys": {
     "created_title": "APIキーが作成されました",

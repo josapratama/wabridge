@@ -1096,18 +1096,37 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                   )}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 font-sans leading-relaxed"
                 />
-                <p className="text-[10px] text-gray-500 mt-1 flex justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-gray-500 mt-1.5 gap-1.5">
                   <span>
                     {t(
                       "autoreply.kb_help",
                       "Mendukung teks acuan untuk menjawab pertanyaan pelanggan secara otomatis.",
                     )}
                   </span>
-                  <span>
-                    {aiConfig.knowledgeBase?.length || 0}{" "}
-                    {t("common.characters", "karakter")}
-                  </span>
-                </p>
+                  <div className="flex items-center gap-2 font-mono shrink-0">
+                    <span className="text-gray-400">
+                      {(aiConfig.knowledgeBase || "").length.toLocaleString()}{" "}
+                      {t("common.characters", "karakter")}
+                    </span>
+                    <span>•</span>
+                    <span className="text-purple-300">
+                      ~{Math.ceil(((aiConfig.knowledgeBase || "").length) / 4).toLocaleString()} tokens
+                    </span>
+                    {Math.ceil(((aiConfig.knowledgeBase || "").length) / 4) < 8000 ? (
+                      <span className="text-[10px] font-sans px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-800/50">
+                        {t("autoreply.kb_optimal", "Optimal")}
+                      </span>
+                    ) : Math.ceil(((aiConfig.knowledgeBase || "").length) / 4) < 16000 ? (
+                      <span className="text-[10px] font-sans px-1.5 py-0.5 rounded bg-yellow-950/60 text-yellow-300 border border-yellow-800/50">
+                        {t("autoreply.kb_medium", "Cukup Besar")}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-sans px-1.5 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-800/50">
+                        {t("autoreply.kb_heavy", "Mendekati Batas")}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Handover & Duration */}

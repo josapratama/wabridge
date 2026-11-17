@@ -619,7 +619,8 @@
     "ai_total_replies": "Total AI Replies",
     "ai_status_active": "AI Active",
     "ai_status_disabled": "AI Disabled",
-    "ai_last_replied": "Last Replied"
+    "ai_last_replied": "Last Replied",
+    "ai_automation_ratio": "AI Automation Ratio"
   },
   "analytics": {
     "title": "Analytics & Metrics",
@@ -706,7 +707,11 @@
     "model_custom_opt": "✏️ Custom Model / Manual Input...",
     "model_custom_placeholder": "Enter specific model ID (e.g. gemini-2.0-flash-lite, o3-mini)",
     "model_active_note": "Only officially active, non-deprecated models are listed for maximum stability.",
-    "upload_kb_title_all": "Upload knowledge documents (.txt, .md, .csv, .json, .pdf)"
+    "upload_kb_title_all": "Upload knowledge documents (.txt, .md, .csv, .json, .pdf)",
+    "kb_tokens_est": "Estimated Prompt Usage:",
+    "kb_optimal": "Optimal",
+    "kb_medium": "Moderate",
+    "kb_heavy": "Near Limit"
   },
   "contacts": {
     "title": "Contacts",
@@ -911,7 +916,13 @@
     "contact_tags_label": "Customer Labels / Tags (comma separated)",
     "contact_notes_label": "Internal Staff Notes",
     "contact_notes_placeholder": "Private notes about this customer (visible to internal team only)...",
-    "contact_saved_success": "Contact details saved successfully!"
+    "contact_saved_success": "Contact details saved successfully!",
+    "export_chat": "Export Chat",
+    "export_chat_title": "Download chat transcript to text file (.txt)",
+    "manage_quick_replies": "Manage Templates",
+    "add_quick_reply": "+ Add Quick Reply",
+    "filter_all_tags": "All Tags",
+    "filter_by_tag": "Filter by Tag:"
   },
   "api_keys": {
     "created_title": "API Key Created",

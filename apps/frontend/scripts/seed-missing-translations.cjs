@@ -1738,5 +1738,60 @@ module.exports = { TRANSLATIONS: {
     "id": "Upload dokumen pengetahuan (.txt, .md, .csv, .json, .pdf)",
     "en": "Upload knowledge documents (.txt, .md, .csv, .json, .pdf)",
     "ja": "ナレッジドキュメントをアップロード（.txt, .md, .csv, .json, .pdf）"
+  },
+  "livechat.export_chat": {
+    "id": "Export Chat",
+    "en": "Export Chat",
+    "ja": "チャット出力"
+  },
+  "livechat.export_chat_title": {
+    "id": "Unduh riwayat percakapan ke file teks (.txt)",
+    "en": "Download chat transcript to text file (.txt)",
+    "ja": "チャット履歴をテキストファイルに出力 (.txt)"
+  },
+  "livechat.manage_quick_replies": {
+    "id": "Kelola Template",
+    "en": "Manage Templates",
+    "ja": "テンプレート管理"
+  },
+  "livechat.add_quick_reply": {
+    "id": "+ Tambah Template Cepat",
+    "en": "+ Add Quick Reply",
+    "ja": "+ クイック返信を追加"
+  },
+  "livechat.filter_all_tags": {
+    "id": "Semua Tag",
+    "en": "All Tags",
+    "ja": "すべてのタグ"
+  },
+  "livechat.filter_by_tag": {
+    "id": "Filter Tag:",
+    "en": "Filter by Tag:",
+    "ja": "タグで絞り込み:"
+  },
+  "autoreply.kb_tokens_est": {
+    "id": "Perkiraan Konsumsi Prompt:",
+    "en": "Estimated Prompt Usage:",
+    "ja": "推定プロンプト使用量:"
+  },
+  "autoreply.kb_optimal": {
+    "id": "Optimal",
+    "en": "Optimal",
+    "ja": "最適"
+  },
+  "autoreply.kb_medium": {
+    "id": "Cukup Besar",
+    "en": "Moderate",
+    "ja": "中程度"
+  },
+  "autoreply.kb_heavy": {
+    "id": "Mendekati Batas",
+    "en": "Near Limit",
+    "ja": "上限に近い"
+  },
+  "dashboard.ai_automation_ratio": {
+    "id": "Rasio Otomasi AI",
+    "en": "AI Automation Ratio",
+    "ja": "AI自動化率"
   }
 } };

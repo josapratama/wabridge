@@ -41,6 +41,8 @@ import {
   Tag,
   UserPlus,
   Edit2,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 interface Conversation {
@@ -128,33 +130,45 @@ export default function LiveChat() {
     }
   };
 
-  const QUICK_REPLIES = [
-    {
-      cmd: "salam",
-      title: "👋 Salam Pembuka",
-      text: "Halo kak! Terima kasih telah menghubungi kami. Ada yang bisa kami bantu hari ini?",
-    },
-    {
-      cmd: "rekening",
-      title: "💳 Info Rekening Transfer",
-      text: "Pembayaran dapat ditransfer ke:\n🏦 BCA: 1234567890 a/n WaBridge Indonesia\nSilakan konfirmasi bukti transfer jika sudah membayar ya kak.",
-    },
-    {
-      cmd: "order",
-      title: "📦 Format Pemesanan",
-      text: "Silakan melengkapi format order berikut ya kak:\n- Nama:\n- No. HP:\n- Alamat Lengkap:\n- Produk & Jumlah:",
-    },
-    {
-      cmd: "jam",
-      title: "⏱️ Jam Operasional CS",
-      text: "Jam operasional kami adalah Senin - Sabtu pukul 08.00 - 17.00 WIB. Pertanyaan di luar jam kerja akan kami balas secepatnya.",
-    },
-    {
-      cmd: "thanks",
-      title: "🙏 Ucapan Terima Kasih",
-      text: "Terima kasih banyak kak atas pesanannya! Semoga harimu menyenangkan. Jangan ragu hubungi kami lagi jika ada pertanyaan.",
-    },
-  ];
+interface QuickReplyItem {
+  id: string;
+  cmd: string;
+  title: string;
+  text: string;
+}
+
+const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
+  {
+    id: "qr-1",
+    cmd: "salam",
+    title: "👋 Salam Pembuka",
+    text: "Halo kak! Terima kasih telah menghubungi kami. Ada yang bisa kami bantu hari ini?",
+  },
+  {
+    id: "qr-2",
+    cmd: "rekening",
+    title: "💳 Info Rekening Transfer",
+    text: "Pembayaran dapat ditransfer ke:\n🏦 BCA: 1234567890 a/n WaBridge Indonesia\nSilakan konfirmasi bukti transfer jika sudah membayar ya kak.",
+  },
+  {
+    id: "qr-3",
+    cmd: "order",
+    title: "📦 Format Pemesanan",
+    text: "Silakan melengkapi format order berikut ya kak:\n- Nama:\n- No. HP:\n- Alamat Lengkap:\n- Produk & Jumlah:",
+  },
+  {
+    id: "qr-4",
+    cmd: "jam",
+    title: "⏱️ Jam Operasional CS",
+    text: "Jam operasional kami adalah Senin - Sabtu pukul 08.00 - 17.00 WIB. Pertanyaan di luar jam kerja akan kami balas secepatnya.",
+  },
+  {
+    id: "qr-5",
+    cmd: "thanks",
+    title: "🙏 Ucapan Terima Kasih",
+    text: "Terima kasih banyak kak atas pesanannya! Semoga harimu menyenangkan. Jangan ragu hubungi kami lagi jika ada pertanyaan.",
+  },
+];
 
   const resolveMediaUrl = (url?: string) => {
     if (!url) return "";
@@ -346,17 +360,128 @@ export default function LiveChat() {
     return convList;
   })();
 
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string>("all");
+
+  // Collect all unique tags across all contacts
+  const allAvailableTags = Array.from(
+    new Set(contacts.flatMap((c) => c.tags || []).filter(Boolean)),
+  );
+
   const filteredConversations = conversations.filter((c) => {
+    const contact = contacts.find(
+      (cnt) => cnt.phone.replace(/\D/g, "") === c.phone.replace(/\D/g, ""),
+    );
+
+    const query = searchQuery.trim().toLowerCase();
     const matchesSearch =
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.phone.includes(searchQuery);
+      !query ||
+      c.name.toLowerCase().includes(query) ||
+      c.phone.includes(query) ||
+      contact?.tags?.some((t) => t.toLowerCase().includes(query)) ||
+      contact?.notes?.toLowerCase().includes(query) ||
+      c.lastMessage.content?.toLowerCase().includes(query);
+
     if (!matchesSearch) return false;
+
+    if (selectedTagFilter !== "all") {
+      const hasTag = contact?.tags?.some(
+        (t) => t.toLowerCase() === selectedTagFilter.toLowerCase(),
+      );
+      if (!hasTag) return false;
+    }
+
     if (chatFilter === "unread") return c.unreadCount > 0;
     if (chatFilter === "resolved") return resolvedJids.includes(c.jid);
     return true;
   });
 
   const activeConv = conversations.find((c) => c.jid === selectedJid);
+
+  // Custom Quick Replies State
+  const [quickReplies, setQuickReplies] = useState<QuickReplyItem[]>(() => {
+    try {
+      const raw = localStorage.getItem("wabridge_custom_quick_replies");
+      return raw ? JSON.parse(raw) : DEFAULT_QUICK_REPLIES;
+    } catch {
+      return DEFAULT_QUICK_REPLIES;
+    }
+  });
+  const [showManageQuickReplies, setShowManageQuickReplies] = useState(false);
+  const [newQrCmd, setNewQrCmd] = useState("");
+  const [newQrTitle, setNewQrTitle] = useState("");
+  const [newQrText, setNewQrText] = useState("");
+
+  const saveQuickReplies = (items: QuickReplyItem[]) => {
+    setQuickReplies(items);
+    try {
+      localStorage.setItem("wabridge_custom_quick_replies", JSON.stringify(items));
+    } catch {}
+  };
+
+  const handleAddQuickReply = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newQrCmd.trim() || !newQrText.trim()) return;
+    const newItem: QuickReplyItem = {
+      id: `qr-${Date.now()}`,
+      cmd: newQrCmd.trim().replace(/^\//, "").toLowerCase(),
+      title: newQrTitle.trim() || `/${newQrCmd.trim()}`,
+      text: newQrText.trim(),
+    };
+    saveQuickReplies([...quickReplies, newItem]);
+    setNewQrCmd("");
+    setNewQrTitle("");
+    setNewQrText("");
+  };
+
+  const handleDeleteQuickReply = (id: string) => {
+    saveQuickReplies(quickReplies.filter((qr) => qr.id !== id));
+  };
+
+  // Export Chat History as text file
+  const handleExportChat = () => {
+    if (!activeConv) return;
+    const exportLines: string[] = [
+      "==================================================",
+      "WABRIDGE - RIWAYAT PERCAKAPAN WHATSAPP",
+      "==================================================",
+      `Kontak       : ${activeConv.name}`,
+      `Nomor HP     : +${activeConv.phone}`,
+      `JID          : ${activeConv.jid}`,
+      `Waktu Ekspor : ${new Date().toLocaleString()}`,
+      `Total Pesan  : ${activeConv.messages.length}`,
+      "==================================================",
+      "",
+    ];
+
+    for (const m of activeConv.messages) {
+      const sender = m.direction === "outbound" ? "Anda / CS" : activeConv.name;
+      const timeStr = new Date(m.createdAt).toLocaleString();
+      const statusStr = m.direction === "outbound" ? ` [${m.status}]` : "";
+      exportLines.push(`[${timeStr}] ${sender}${statusStr}:`);
+      if (m.mediaUrl) {
+        exportLines.push(`  [Media: ${m.type || "file"}] ${m.mediaCaption || m.mediaUrl}`);
+      }
+      if (m.content) {
+        exportLines.push(`  ${m.content}`);
+      }
+      exportLines.push("");
+    }
+
+    exportLines.push("==================================================");
+    exportLines.push("Akhir dari riwayat percakapan.");
+
+    const blob = new Blob([exportLines.join("\n")], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chat_${activeConv.phone}_${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   // AI Takeover status per selected conversation
   const [aiPaused, setAiPaused] = useState(false);
@@ -690,6 +815,39 @@ export default function LiveChat() {
                 className="w-full bg-gray-800/80 border border-gray-700/60 rounded-lg pl-9 pr-3 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-brand-500"
               />
             </div>
+
+            {/* Tag Filter Chips (Scrollable) */}
+            {allAvailableTags.length > 0 && (
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTagFilter("all")}
+                  className={`px-2 py-0.5 rounded-md shrink-0 font-medium transition-colors ${
+                    selectedTagFilter === "all"
+                      ? "bg-purple-600 text-white"
+                      : "bg-gray-800 text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  {t("livechat.filter_all_tags", "Semua Tag")}
+                </button>
+                {allAvailableTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() =>
+                      setSelectedTagFilter(selectedTagFilter === tag ? "all" : tag)
+                    }
+                    className={`px-2 py-0.5 rounded-md shrink-0 font-medium transition-colors ${
+                      selectedTagFilter === tag
+                        ? "bg-purple-600 text-white"
+                        : "bg-purple-950/50 text-purple-300 border border-purple-800/40 hover:bg-purple-900/60"
+                    }`}
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Conversations Scrollable List */}
@@ -894,6 +1052,16 @@ export default function LiveChat() {
                       )}
                     </button>
                   )}
+
+                  {/* Export Chat History */}
+                  <button
+                    onClick={handleExportChat}
+                    className="text-xs px-2 sm:px-2.5 py-1 rounded-lg border border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-750 font-medium transition-colors flex items-center gap-1.5"
+                    title={t("livechat.export_chat_title", "Unduh riwayat percakapan ke file teks (.txt)")}
+                  >
+                    <Download className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="hidden xl:inline">{t("livechat.export_chat", "Export Chat")}</span>
+                  </button>
 
                   {/* Mark as Resolved Toggle */}
                   <button
@@ -1140,19 +1308,29 @@ export default function LiveChat() {
                 <div className="p-3 bg-gray-900 border-t border-gray-800 animate-in slide-in-from-bottom-2">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-semibold text-gray-400 flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-amber-400" /> {t("livechat.quick_replies")}
+                      <Zap className="w-3.5 h-3.5 text-amber-400" /> {t("livechat.quick_replies", "Template Pesan Cepat")}
                     </span>
-                    <button
-                      onClick={() => setShowQuickReplies(false)}
-                      className="text-gray-500 hover:text-gray-300"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowManageQuickReplies(true)}
+                        className="text-[11px] text-amber-400 hover:text-amber-300 font-medium px-2 py-0.5 rounded bg-amber-950/40 border border-amber-800/50 transition-colors flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>{t("livechat.manage_quick_replies", "Kelola Template")}</span>
+                      </button>
+                      <button
+                        onClick={() => setShowQuickReplies(false)}
+                        className="text-gray-500 hover:text-gray-300"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-                    {QUICK_REPLIES.map((qr, idx) => (
+                    {quickReplies.map((qr) => (
                       <button
-                        key={idx}
+                        key={qr.id}
                         type="button"
                         onClick={() => {
                           setInputText(qr.text);
@@ -1198,17 +1376,24 @@ export default function LiveChat() {
                         <Zap className="w-3.5 h-3.5 text-amber-400" />
                         Quick Reply (Slash Command)
                       </span>
-                      <span className="text-[10px] text-gray-500">Tekan Tab atau klik template</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowManageQuickReplies(true)}
+                        className="text-[10px] text-amber-400 hover:underline flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>{t("livechat.manage_quick_replies", "Kelola Template")}</span>
+                      </button>
                     </div>
                     <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                      {QUICK_REPLIES.filter(
+                      {quickReplies.filter(
                         (qr) =>
                           qr.cmd.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
                           qr.title.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
                           qr.text.toLowerCase().includes(inputText.slice(1).toLowerCase())
                       ).map((qr) => (
                         <button
-                          key={qr.cmd}
+                          key={qr.id}
                           type="button"
                           onClick={() => setInputText(qr.text)}
                           className="w-full text-left p-2 rounded-lg bg-gray-800/70 hover:bg-gray-800 border border-transparent hover:border-brand-500/40 transition-all flex items-start justify-between gap-3 group"
@@ -1231,7 +1416,7 @@ export default function LiveChat() {
                           </span>
                         </button>
                       ))}
-                      {QUICK_REPLIES.filter(
+                      {quickReplies.filter(
                         (qr) =>
                           qr.cmd.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
                           qr.title.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
@@ -1318,7 +1503,7 @@ export default function LiveChat() {
                   }}
                   onKeyDown={(e) => {
                     if (inputText.startsWith("/")) {
-                      const matches = QUICK_REPLIES.filter(
+                      const matches = quickReplies.filter(
                         (qr) =>
                           qr.cmd.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
                           qr.title.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
@@ -1555,6 +1740,116 @@ export default function LiveChat() {
           <span>
             {t("livechat.contact_saved_success", "Data kontak berhasil disimpan!")}
           </span>
+        </div>
+      )}
+
+      {/* Manage Custom Quick Replies Modal */}
+      {showManageQuickReplies && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-lg p-5 shadow-2xl relative flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {t("livechat.manage_quick_replies", "Kelola Template Pesan Cepat")}
+                  </h3>
+                  <p className="text-[11px] text-gray-400">
+                    Akses cepat menggunakan perintah <code className="text-amber-300 font-mono">/shortcut</code> di kolom chat
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowManageQuickReplies(false)}
+                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form to Add New Quick Reply */}
+            <form onSubmit={handleAddQuickReply} className="mt-3.5 p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 space-y-2.5 shrink-0">
+              <span className="text-[11px] font-semibold text-gray-200 block">
+                {t("livechat.add_quick_reply", "+ Tambah Template Baru")}
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <input
+                    type="text"
+                    value={newQrCmd}
+                    onChange={(e) => setNewQrCmd(e.target.value)}
+                    placeholder="Shortcut (contoh: promo, ongkir)"
+                    required
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={newQrTitle}
+                    onChange={(e) => setNewQrTitle(e.target.value)}
+                    placeholder="Judul (contoh: 🎁 Promo Diskon)"
+                    required
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+              <textarea
+                rows={2}
+                value={newQrText}
+                onChange={(e) => setNewQrText(e.target.value)}
+                placeholder="Isi pesan lengkap template..."
+                required
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 leading-relaxed"
+              />
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="btn-primary text-xs px-3 py-1 flex items-center gap-1 shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Simpan Template</span>
+                </button>
+              </div>
+            </form>
+
+            {/* List of Existing Quick Replies */}
+            <div className="mt-3 overflow-y-auto flex-1 space-y-2 pr-1">
+              <span className="text-[10px] uppercase font-semibold text-gray-400 tracking-wider">
+                Daftar Template Tersimpan ({quickReplies.length})
+              </span>
+              {quickReplies.map((qr) => (
+                <div
+                  key={qr.id}
+                  className="p-2.5 rounded-xl bg-gray-800/60 border border-gray-750 flex items-start justify-between gap-3 group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-semibold text-amber-300 bg-amber-950/70 px-1.5 py-0.5 rounded border border-amber-800/40">
+                        /{qr.cmd}
+                      </span>
+                      <span className="text-xs font-semibold text-white truncate">
+                        {qr.title}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 whitespace-pre-wrap mt-1 leading-relaxed">
+                      {qr.text}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteQuickReply(qr.id)}
+                    className="text-gray-500 hover:text-red-400 p-1 rounded hover:bg-gray-700/50 transition-colors shrink-0"
+                    title="Hapus template"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

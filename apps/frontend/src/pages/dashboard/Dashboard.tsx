@@ -94,6 +94,9 @@ export default function Dashboard() {
 
   const activeSessions = sessions.filter((s) => s.status === "active").length;
   const failedMessages = messages.filter((m) => m.status === "failed").length;
+  const inboundCount = messages.filter((m) => m.direction === "inbound").length;
+  const aiCount = aiStats?.totalReplies ?? 0;
+  const aiRatio = inboundCount > 0 ? Math.min(100, Math.round((aiCount / inboundCount) * 100)) : (aiCount > 0 ? 100 : 0);
 
   return (
     <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-6">
@@ -235,6 +238,14 @@ export default function Dashboard() {
             </p>
             <p className="text-lg sm:text-xl font-bold text-white font-mono">
               {aiStats?.totalReplies ?? 0}
+            </p>
+          </div>
+          <div className="text-left sm:text-right">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
+              {t("dashboard.ai_automation_ratio", "Rasio Otomasi AI")}
+            </p>
+            <p className="text-lg sm:text-xl font-bold text-purple-400 font-mono">
+              {aiRatio}%
             </p>
           </div>
           <div className="text-left sm:text-right">
