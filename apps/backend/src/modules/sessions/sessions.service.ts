@@ -25,17 +25,23 @@ export class SessionsService {
     private readonly logger: AppLogger,
   ) {}
 
-  async create(dto: CreateSessionDto): Promise<Session> {
+  async create(userId: string, dto: CreateSessionDto): Promise<Session> {
     const config = await this.configRepo.findById(dto.providerConfigId);
     if (!config) {
       throw new BadRequestException(
         `ProviderConfig ${dto.providerConfigId} not found`,
       );
     }
+    if (config.userId && config.userId !== userId) {
+      throw new BadRequestException(
+        `ProviderConfig ${dto.providerConfigId} does not belong to your account`,
+      );
+    }
 
     const now = new Date().toISOString();
     const session: Session = {
       id: uuidv4(),
+      userId,
       name: dto.name,
       providerType: config.providerType,
       providerConfigId: dto.providerConfigId,
@@ -48,19 +54,24 @@ export class SessionsService {
     return this.sessionRepo.save(session);
   }
 
-  async findAll(): Promise<Session[]> {
+  async findAll(userId?: string): Promise<Session[]> {
+    if (userId) {
+      return this.sessionRepo.findAllByUserId(userId);
+    }
     return this.sessionRepo.findAll();
   }
 
-  async findById(id: string): Promise<Session> {
+  async findById(id: string, userId?: string): Promise<Session> {
     const session = await this.sessionRepo.findById(id);
     if (!session) throw new NotFoundException(`Session ${id} not found`);
+    if (userId && session.userId && session.userId !== userId) {
+      throw new NotFoundException(`Session ${id} not found`);
+    }
     return session;
   }
 
-  async activate(id: string): Promise<Session> {
-    const session = await this.sessionRepo.findById(id);
-    if (!session) throw new NotFoundException(`Session ${id} not found`);
+  async activate(id: string, userId?: string): Promise<Session> {
+    const session = await this.findById(id, userId);
 
     const config = await this.configRepo.findById(session.providerConfigId);
     if (!config) throw new NotFoundException(`ProviderConfig not found`);
@@ -87,15 +98,15 @@ export class SessionsService {
     return updated!;
   }
 
-  async deactivate(id: string): Promise<Session> {
+  async deactivate(id: string, userId?: string): Promise<Session> {
+    await this.findById(id, userId);
     const updated = await this.sessionRepo.update(id, { status: "inactive" });
     if (!updated) throw new NotFoundException(`Session ${id} not found`);
     return updated;
   }
 
-  async getGroups(id: string) {
-    const session = await this.sessionRepo.findById(id);
-    if (!session) throw new NotFoundException(`Session ${id} not found`);
+  async getGroups(id: string, userId?: string) {
+    const session = await this.findById(id, userId);
     const provider = this.routingService.getProvider(session.providerType);
     if ("getGroups" in provider && typeof (provider as any).getGroups === "function") {
       return (provider as any).getGroups(id, session.providerConfigId);

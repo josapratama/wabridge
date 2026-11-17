@@ -14,6 +14,10 @@ export class InMemoryProviderConfigRepository extends ProviderConfigRepository {
     return Array.from(this.store.values());
   }
 
+  async findAllByUserId(userId: string): Promise<ProviderConfig[]> {
+    return Array.from(this.store.values()).filter((c) => c.userId === userId);
+  }
+
   async save(entity: ProviderConfig): Promise<ProviderConfig> {
     this.store.set(entity.id, { ...entity });
     return entity;

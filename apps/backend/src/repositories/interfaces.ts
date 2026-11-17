@@ -42,6 +42,7 @@ export abstract class UserRepository extends BaseRepository<User> {
 
 export abstract class SessionRepository extends BaseRepository<Session> {
   abstract findByProviderConfigId(providerConfigId: string): Promise<Session[]>;
+  abstract findAllByUserId(userId: string): Promise<Session[]>;
 }
 
 export abstract class MessageRepository extends BaseRepository<Message> {
@@ -62,6 +63,7 @@ export abstract class ProviderConfigRepository extends BaseRepository<ProviderCo
   abstract findActiveByProviderType(
     providerType: string,
   ): Promise<ProviderConfig | null>;
+  abstract findAllByUserId(userId: string): Promise<ProviderConfig[]>;
 }
 
 export abstract class ApiKeyRepository {

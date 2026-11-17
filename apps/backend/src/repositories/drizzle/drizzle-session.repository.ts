@@ -54,11 +54,25 @@ export class DrizzleSessionRepository implements SessionRepository {
     })) as Session[];
   }
 
+  async findAllByUserId(userId: string): Promise<Session[]> {
+    const results = await this.db
+      .select()
+      .from(schema.sessions)
+      .where(eq(schema.sessions.userId, userId));
+    return results.map((s) => ({
+      ...s,
+      metadata: (s.metadata as Record<string, unknown>) || {},
+      createdAt: s.createdAt.toISOString(),
+      updatedAt: s.updatedAt.toISOString(),
+    })) as Session[];
+  }
+
   async save(entity: Session): Promise<Session> {
     const results = await this.db
       .insert(schema.sessions)
       .values({
         id: entity.id,
+        userId: entity.userId,
         name: entity.name,
         providerType: entity.providerType,
         providerConfigId: entity.providerConfigId,
@@ -80,6 +94,7 @@ export class DrizzleSessionRepository implements SessionRepository {
     const results = await this.db
       .update(schema.sessions)
       .set({
+        userId: partial.userId,
         name: partial.name,
         providerType: partial.providerType,
         providerConfigId: partial.providerConfigId,

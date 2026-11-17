@@ -34,6 +34,7 @@ export const apiKeys = pgTable("ApiKey", {
 
 export const providerConfigs = pgTable("ProviderConfig", {
   id: text("id").primaryKey(),
+  userId: text("userId").references(() => users.id, { onDelete: "cascade" }),
   providerType: text("providerType").notNull(),
   name: text("name").notNull(),
   baseUrl: text("baseUrl"),
@@ -50,6 +51,7 @@ export const providerConfigs = pgTable("ProviderConfig", {
 
 export const sessions = pgTable("Session", {
   id: text("id").primaryKey(),
+  userId: text("userId").references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   providerType: text("providerType").notNull(),
   providerConfigId: text("providerConfigId")

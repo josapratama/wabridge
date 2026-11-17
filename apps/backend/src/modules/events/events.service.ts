@@ -50,8 +50,12 @@ export class EventsService {
     return updated;
   }
 
-  async findAll(): Promise<ProviderEvent[]> {
-    return this.repo.findAll();
+  async findAll(sessionIds?: string[]): Promise<ProviderEvent[]> {
+    const all = await this.repo.findAll();
+    if (sessionIds) {
+      return all.filter((e) => e.sessionId && sessionIds.includes(e.sessionId));
+    }
+    return all;
   }
 
   async findById(id: string): Promise<ProviderEvent> {

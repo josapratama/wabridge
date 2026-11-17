@@ -74,11 +74,24 @@ export class DrizzleProviderConfigRepository implements ProviderConfigRepository
     })) as ProviderConfig[];
   }
 
+  async findAllByUserId(userId: string): Promise<ProviderConfig[]> {
+    const results = await this.db
+      .select()
+      .from(schema.providerConfigs)
+      .where(eq(schema.providerConfigs.userId, userId));
+    return results.map((c) => ({
+      ...c,
+      createdAt: c.createdAt.toISOString(),
+      updatedAt: c.updatedAt.toISOString(),
+    })) as ProviderConfig[];
+  }
+
   async save(entity: ProviderConfig): Promise<ProviderConfig> {
     const results = await this.db
       .insert(schema.providerConfigs)
       .values({
         id: entity.id,
+        userId: entity.userId,
         providerType: entity.providerType,
         name: entity.name,
         baseUrl: entity.baseUrl,
@@ -107,6 +120,7 @@ export class DrizzleProviderConfigRepository implements ProviderConfigRepository
     const results = await this.db
       .update(schema.providerConfigs)
       .set({
+        userId: partial.userId,
         providerType: partial.providerType,
         name: partial.name,
         baseUrl: partial.baseUrl,

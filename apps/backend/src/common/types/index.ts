@@ -30,6 +30,7 @@ export type MessageStatus =
 
 export interface Session {
   id: string;
+  userId?: string;
   name: string;
   providerType: ProviderType;
   providerConfigId: string;
@@ -69,6 +70,7 @@ export interface ProviderEvent {
 
 export interface ProviderConfig {
   id: string;
+  userId?: string;
   providerType: ProviderType;
   name: string;
   baseUrl?: string;

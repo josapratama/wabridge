@@ -14,6 +14,10 @@ export class InMemorySessionRepository extends SessionRepository {
     return Array.from(this.store.values());
   }
 
+  async findAllByUserId(userId: string): Promise<Session[]> {
+    return Array.from(this.store.values()).filter((s) => s.userId === userId);
+  }
+
   async save(entity: Session): Promise<Session> {
     this.store.set(entity.id, { ...entity });
     return entity;

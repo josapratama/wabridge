@@ -6,6 +6,7 @@ import {
   Body,
   Param,
   UseGuards,
+  Request,
 } from "@nestjs/common";
 import { ProviderConfigsService } from "./provider-configs.service";
 import { CreateProviderConfigDto } from "./dto/create-provider-config.dto";
@@ -26,31 +27,38 @@ export class ProviderConfigsController {
   ) {}
 
   @Post()
-  create(@Body() dto: CreateProviderConfigDto): Promise<ProviderConfig> {
-    return this.service.create(dto);
+  create(
+    @Request() req: any,
+    @Body() dto: CreateProviderConfigDto,
+  ): Promise<ProviderConfig> {
+    return this.service.create(req.user.id, dto);
   }
 
   @Get()
-  list(): Promise<ProviderConfig[]> {
-    return this.service.findAll();
+  list(@Request() req: any): Promise<ProviderConfig[]> {
+    return this.service.findAll(req.user.id);
   }
 
   @Get(":id")
-  get(@Param("id") id: string): Promise<ProviderConfig> {
-    return this.service.findById(id);
+  get(@Param("id") id: string, @Request() req: any): Promise<ProviderConfig> {
+    return this.service.findById(id, req.user.id);
   }
 
   @Patch(":id")
   update(
     @Param("id") id: string,
+    @Request() req: any,
     @Body() dto: UpdateProviderConfigDto,
   ): Promise<ProviderConfig> {
-    return this.service.update(id, dto);
+    return this.service.update(id, req.user.id, dto);
   }
 
   @Patch(":id/activate")
-  async activate(@Param("id") id: string): Promise<ProviderConfig> {
-    const config = await this.service.activate(id);
+  async activate(
+    @Param("id") id: string,
+    @Request() req: any,
+  ): Promise<ProviderConfig> {
+    const config = await this.service.activate(id, req.user.id);
     if (config.providerType === PROVIDER_TYPES.BAILEYS) {
       const baileysProvider = this.providerRoutingService.getProvider(
         PROVIDER_TYPES.BAILEYS,
@@ -66,13 +74,19 @@ export class ProviderConfigsController {
   }
 
   @Patch(":id/deactivate")
-  async deactivate(@Param("id") id: string): Promise<ProviderConfig> {
-    return this.service.deactivate(id);
+  async deactivate(
+    @Param("id") id: string,
+    @Request() req: any,
+  ): Promise<ProviderConfig> {
+    return this.service.deactivate(id, req.user.id);
   }
 
   @Get(":id/qr")
-  async getQrCode(@Param("id") id: string): Promise<QrCodeDto> {
-    const config = await this.service.findById(id);
+  async getQrCode(
+    @Param("id") id: string,
+    @Request() req: any,
+  ): Promise<QrCodeDto> {
+    const config = await this.service.findById(id, req.user.id);
     if (config.providerType === PROVIDER_TYPES.BAILEYS) {
       const baileysProvider = this.providerRoutingService.getProvider(
         PROVIDER_TYPES.BAILEYS,
@@ -97,9 +111,10 @@ export class ProviderConfigsController {
   @Post(":id/pairing-code")
   async requestPairingCode(
     @Param("id") id: string,
+    @Request() req: any,
     @Body() body: { phoneNumber: string },
   ): Promise<{ pairingCode?: string }> {
-    const config = await this.service.findById(id);
+    const config = await this.service.findById(id, req.user.id);
     if (config.providerType === PROVIDER_TYPES.BAILEYS) {
       const baileysProvider = this.providerRoutingService.getProvider(
         PROVIDER_TYPES.BAILEYS,

@@ -42,11 +42,14 @@ export class MessagesService {
     this.retryDelayMs = parseInt(process.env.RETRY_DELAY_MS ?? "1000", 10);
   }
 
-  async send(dto: SendMessageDto): Promise<Message> {
+  async send(dto: SendMessageDto, userId?: string): Promise<Message> {
     // 1. Validate session
     const session = await this.sessionRepo.findById(dto.sessionId);
     if (!session)
       throw new NotFoundException(`Session ${dto.sessionId} not found`);
+    if (userId && session.userId && session.userId !== userId) {
+      throw new BadRequestException(`Session ${dto.sessionId} does not belong to your account`);
+    }
     if (session.status !== "active") {
       throw new BadRequestException(`Session ${dto.sessionId} is not active`);
     }
@@ -182,7 +185,9 @@ export class MessagesService {
   }
 
   async findFiltered(filters: {
+    userId?: string;
     sessionId?: string;
+    sessionIds?: string[];
     status?: string;
     direction?: string;
     from?: string;
@@ -190,7 +195,16 @@ export class MessagesService {
     search?: string;
     limit?: number;
   }): Promise<Message[]> {
+    let allowedSessionIds = filters.sessionIds;
+    if (filters.userId && !allowedSessionIds) {
+      const userSessions = await this.sessionRepo.findAllByUserId(filters.userId);
+      allowedSessionIds = userSessions.map((s) => s.id);
+    }
+
     let messages = await this.messageRepo.findAll();
+    if (allowedSessionIds) {
+      messages = messages.filter((m) => allowedSessionIds!.includes(m.sessionId));
+    }
     if (filters.sessionId)
       messages = messages.filter((m) => m.sessionId === filters.sessionId);
     if (filters.status)
@@ -213,9 +227,15 @@ export class MessagesService {
     return messages.slice(-(filters.limit ?? 100)).reverse();
   }
 
-  async findById(id: string): Promise<Message> {
+  async findById(id: string, userId?: string): Promise<Message> {
     const msg = await this.messageRepo.findById(id);
     if (!msg) throw new NotFoundException(`Message ${id} not found`);
+    if (userId) {
+      const session = await this.sessionRepo.findById(msg.sessionId);
+      if (session && session.userId && session.userId !== userId) {
+        throw new NotFoundException(`Message ${id} not found`);
+      }
+    }
     return msg;
   }
 

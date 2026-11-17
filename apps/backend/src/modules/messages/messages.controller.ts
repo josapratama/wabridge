@@ -6,6 +6,7 @@ import {
   Post,
   Query,
   UseGuards,
+  Request,
 } from "@nestjs/common";
 import { MessagesService } from "./messages.service";
 import { SendMessageDto } from "./dto/send-message.dto";
@@ -17,8 +18,8 @@ export class MessagesController {
   constructor(private readonly service: MessagesService) {}
 
   @Post("send")
-  send(@Body() dto: SendMessageDto) {
-    return this.service.send(dto);
+  send(@Request() req: any, @Body() dto: SendMessageDto) {
+    return this.service.send(dto, req.user.id);
   }
 
   @Post("upload")
@@ -47,6 +48,7 @@ export class MessagesController {
 
   @Get()
   findAll(
+    @Request() req: any,
     @Query("sessionId") sessionId?: string,
     @Query("status") status?: string,
     @Query("direction") direction?: string,
@@ -56,6 +58,7 @@ export class MessagesController {
     @Query("limit") limit?: string,
   ) {
     return this.service.findFiltered({
+      userId: req.user.id,
       sessionId,
       status,
       direction,
@@ -67,7 +70,7 @@ export class MessagesController {
   }
 
   @Get(":id")
-  findById(@Param("id") id: string) {
-    return this.service.findById(id);
+  findById(@Param("id") id: string, @Request() req: any) {
+    return this.service.findById(id, req.user.id);
   }
 }

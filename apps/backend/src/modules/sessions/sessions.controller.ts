@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, UseGuards, Request } from "@nestjs/common";
 import { SessionsService } from "./sessions.service";
 import { CreateSessionDto } from "./dto/create-session.dto";
 import { Session } from "../../common/types";
@@ -10,32 +10,32 @@ export class SessionsController {
   constructor(private readonly service: SessionsService) {}
 
   @Post()
-  create(@Body() dto: CreateSessionDto) {
-    return this.service.create(dto);
+  create(@Request() req: any, @Body() dto: CreateSessionDto) {
+    return this.service.create(req.user.id, dto);
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Request() req: any) {
+    return this.service.findAll(req.user.id);
   }
 
   @Get(":id")
-  findById(@Param("id") id: string) {
-    return this.service.findById(id);
+  findById(@Param("id") id: string, @Request() req: any) {
+    return this.service.findById(id, req.user.id);
   }
 
   @Patch(":id/activate")
-  activate(@Param("id") id: string) {
-    return this.service.activate(id);
+  activate(@Param("id") id: string, @Request() req: any) {
+    return this.service.activate(id, req.user.id);
   }
 
   @Patch(":id/deactivate")
-  deactivate(@Param("id") id: string) {
-    return this.service.deactivate(id);
+  deactivate(@Param("id") id: string, @Request() req: any) {
+    return this.service.deactivate(id, req.user.id);
   }
 
   @Get(":id/groups")
-  getGroups(@Param("id") id: string) {
-    return this.service.getGroups(id);
+  getGroups(@Param("id") id: string, @Request() req: any) {
+    return this.service.getGroups(id, req.user.id);
   }
 }
