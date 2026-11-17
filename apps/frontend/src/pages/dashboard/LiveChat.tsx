@@ -10,6 +10,7 @@ import {
   healthApi,
   HealthResult,
   BASE,
+  aiBotApi,
 } from "../../api/client";
 import { useI18n } from "../../context/I18nContext";
 import BaileysConnectionModal from "../../components/BaileysConnectionModal";
@@ -35,6 +36,7 @@ import {
   MicOff,
   Zap,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 
 interface Conversation {
@@ -96,6 +98,30 @@ export default function LiveChat() {
       } catch {}
       return updated;
     });
+  };
+
+  const [aiDrafting, setAiDrafting] = useState(false);
+
+  const handleAiDraftReply = async () => {
+    if (!selectedJid || aiDrafting) return;
+    setAiDrafting(true);
+    setSendError(null);
+    try {
+      const res = await aiBotApi.draftReply(
+        selectedJid,
+        inputText.trim() || undefined,
+      );
+      if (res.data?.reply) {
+        setInputText(res.data.reply);
+      }
+    } catch (e: any) {
+      console.error("AI draft reply error", e);
+      setSendError(
+        "Gagal merumuskan draf AI. Pastikan API Key aktif di menu Auto-Reply & AI.",
+      );
+    } finally {
+      setAiDrafting(false);
+    }
   };
 
   const QUICK_REPLIES = [
@@ -1067,6 +1093,23 @@ export default function LiveChat() {
                   ) : (
                     <Mic className="w-4 h-4" />
                   )}
+                </button>
+
+                {/* AI Copilot Draft Button */}
+                <button
+                  type="button"
+                  onClick={() => void handleAiDraftReply()}
+                  disabled={aiDrafting || !selectedJid}
+                  className={`p-2 rounded-lg transition-colors flex items-center gap-1 ${
+                    aiDrafting
+                      ? "bg-purple-950/80 text-purple-300 border border-purple-600/50"
+                      : "text-purple-400 hover:text-purple-200 hover:bg-purple-950/40"
+                  }`}
+                  title="✨ Bantu buat draf balasan dengan AI Copilot"
+                >
+                  <Sparkles
+                    className={`w-4 h-4 ${aiDrafting ? "animate-spin text-purple-300" : ""}`}
+                  />
                 </button>
 
                 <textarea

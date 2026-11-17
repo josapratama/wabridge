@@ -21,6 +21,7 @@ export interface AiBotConfig {
   workDays?: number[]; // [1,2,3,4,5] (1=Monday ... 7=Sunday)
   temperature?: number; // 0.1 - 1.0 (default: 0.7)
   maxTokens?: number; // default: 500
+  contextWindow?: number; // default: 8
 }
 
 export type AiBotConfigResponse = Omit<AiBotConfig, "apiKey"> & {
@@ -47,6 +48,7 @@ const DEFAULT_CONFIG: AiBotConfig = {
   workDays: [1, 2, 3, 4, 5],
   temperature: 0.7,
   maxTokens: 500,
+  contextWindow: 8,
 };
 
 @Injectable()
@@ -149,6 +151,7 @@ export class AiBotService {
       workDays: cfg.workDays ?? [1, 2, 3, 4, 5],
       temperature: cfg.temperature ?? 0.7,
       maxTokens: cfg.maxTokens ?? 500,
+      contextWindow: cfg.contextWindow ?? 8,
       apiKeyMasked,
       hasKey,
     };
@@ -172,6 +175,7 @@ export class AiBotService {
     if (update.workDays !== undefined) cfg.workDays = update.workDays;
     if (update.temperature !== undefined) cfg.temperature = update.temperature;
     if (update.maxTokens !== undefined) cfg.maxTokens = update.maxTokens;
+    if (update.contextWindow !== undefined) cfg.contextWindow = update.contextWindow;
 
     if (update.apiKey && update.apiKey.trim() !== "") {
       cfg.apiKey = update.apiKey.trim();
@@ -179,6 +183,58 @@ export class AiBotService {
 
     this.userConfigs.set(userId, cfg);
     this.saveUserConfig(userId);
+  }
+
+  async draftReply(
+    jid: string,
+    lastUserMessage?: string,
+    userId: string = "default",
+  ): Promise<string> {
+    const cfg = this.loadUserConfig(userId);
+    if (!cfg.apiKey) {
+      throw new Error("API Key belum dikonfigurasi pada menu AI Assistant.");
+    }
+
+    let history: Array<{ role: "user" | "assistant"; content: string }> = [];
+    if (this.messageRepo && jid) {
+      try {
+        const recent = await this.messageRepo.findRecentByJid(
+          jid,
+          cfg.contextWindow || 8,
+        );
+        history = recent
+          .filter((m) => m.content && !m.content.startsWith("["))
+          .map((m) => ({
+            role: (m.direction === "inbound" ? "user" : "assistant") as
+              | "user"
+              | "assistant",
+            content: m.content,
+          }));
+      } catch {
+        // ignore history lookup failure
+      }
+    }
+
+    let userMsg = lastUserMessage;
+    if (!userMsg && history.length > 0) {
+      const lastInbound = [...history].reverse().find((h) => h.role === "user");
+      userMsg = lastInbound?.content;
+    }
+    if (!userMsg) userMsg = "Halo kak";
+
+    let draftPrompt =
+      "Anda adalah asisten AI yang bertugas membantu agen Customer Service manusia menyusun draf balasan pesan WhatsApp yang ramah, sopan, akurat, dan ringkas dalam Bahasa Indonesia.\n" +
+      (cfg.systemPrompt || "");
+
+    if (cfg.knowledgeBase && cfg.knowledgeBase.trim() !== "") {
+      draftPrompt += `\n\nKNOWLEDGE BASE & FAQ:\n${cfg.knowledgeBase}\n\nJawablah berdasarkan pengetahuan di atas jika relevan.`;
+    }
+
+    if (cfg.provider === "gemini") {
+      return await this.callGemini(cfg, userMsg, draftPrompt, history);
+    } else {
+      return await this.callOpenAiCompatible(cfg, userMsg, draftPrompt, history);
+    }
   }
 
   private isWithinWorkHours(
@@ -289,7 +345,10 @@ export class AiBotService {
       let history: Array<{ role: "user" | "assistant"; content: string }> = [];
       if (this.messageRepo && fromJid) {
         try {
-          const recent = await this.messageRepo.findRecentByJid(fromJid, 8);
+          const recent = await this.messageRepo.findRecentByJid(
+            fromJid,
+            cfg.contextWindow || 8,
+          );
           history = recent
             .filter((m) => m.content && !m.content.startsWith("["))
             .map((m) => ({

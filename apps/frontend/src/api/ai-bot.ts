@@ -18,6 +18,7 @@ export interface AiBotConfig {
   workDays?: number[];
   temperature?: number;
   maxTokens?: number;
+  contextWindow?: number;
 }
 
 export const aiBotApi = {
@@ -39,6 +40,7 @@ export const aiBotApi = {
     workDays?: number[];
     temperature?: number;
     maxTokens?: number;
+    contextWindow?: number;
   }) =>
     request<{ success: boolean; message: string }>("/ai-bot/config", {
       method: "POST",
@@ -48,5 +50,10 @@ export const aiBotApi = {
     request<{ success: boolean; reply: string }>("/ai-bot/test", {
       method: "POST",
       body: JSON.stringify({ message }),
+    }),
+  draftReply: (jid: string, message?: string) =>
+    request<{ success: boolean; reply: string }>("/ai-bot/draft-reply", {
+      method: "POST",
+      body: JSON.stringify({ jid, message }),
     }),
 };

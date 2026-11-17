@@ -207,6 +207,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
         workDays: aiConfig.workDays,
         temperature: aiConfig.temperature,
         maxTokens: aiConfig.maxTokens,
+        contextWindow: aiConfig.contextWindow,
         apiKey: aiKeyInput.trim() || undefined,
       });
       if (res.data) {
@@ -713,12 +714,12 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                 )}
               </div>
 
-              {/* Sliders: Temperature & Max Tokens */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-xl bg-gray-800/40 border border-gray-700/50">
+              {/* Sliders: Temperature, Max Tokens & Context Window */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-3 rounded-xl bg-gray-800/40 border border-gray-700/50">
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-gray-300 font-medium">
-                      Kreativitas (Temperature)
+                      Kreativitas (Temp)
                     </span>
                     <span className="font-mono text-purple-400 font-semibold">
                       {aiConfig.temperature ?? 0.7}
@@ -740,15 +741,14 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                   />
                   <div className="flex justify-between text-[10px] text-gray-500 mt-1">
                     <span>0.0 Faktual</span>
-                    <span>0.7 Alami</span>
-                    <span>1.0 Sangat Luwes</span>
+                    <span>1.0 Luwes</span>
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-gray-300 font-medium">
-                      Maks. Panjang Balasan (Tokens)
+                      Maks. Tokens
                     </span>
                     <span className="font-mono text-purple-400 font-semibold">
                       {aiConfig.maxTokens ?? 500}
@@ -770,9 +770,36 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                   />
                   <div className="flex justify-between text-[10px] text-gray-500 mt-1">
                     <span>100 Ringkas</span>
-                    <span>500 Sedang</span>
-                    <span>2000 Detail</span>
+                    <span>2000 Panjang</span>
                   </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-300 font-medium">
+                      Memori Chat
+                    </span>
+                    <span className="font-mono text-purple-400 font-semibold">
+                      {aiConfig.contextWindow ?? 8} Pesan
+                    </span>
+                  </div>
+                  <select
+                    value={aiConfig.contextWindow ?? 8}
+                    onChange={(e) =>
+                      setAiConfig((prev) => ({
+                        ...prev,
+                        contextWindow: parseInt(e.target.value),
+                      }))
+                    }
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value={4}>4 Pesan (Hemat Token)</option>
+                    <option value={8}>8 Pesan (Standar)</option>
+                    <option value={12}>12 Pesan (Lanjutan)</option>
+                    <option value={16}>16 Pesan (Konsultasi)</option>
+                    <option value={20}>20 Pesan (Konteks Penuh)</option>
+                  </select>
+                  <p className="text-[10px] text-gray-500 mt-1">Riwayat chat yang dibaca AI</p>
                 </div>
               </div>
 

@@ -30,4 +30,15 @@ export class AiBotController {
     );
     return { success: true, reply };
   }
+
+  @Post("draft-reply")
+  async draftReply(
+    @Req() req: any,
+    @Body("jid") jid: string,
+    @Body("message") message?: string,
+  ) {
+    const userId = req.user?.id || "default";
+    const reply = await this.service.draftReply(jid, message, userId);
+    return { success: true, reply };
+  }
 }

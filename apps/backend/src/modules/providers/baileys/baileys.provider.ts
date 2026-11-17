@@ -518,6 +518,21 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                     ? from
                     : `${from}@s.whatsapp.net`;
                   try {
+                    // 1. Simulate realistic human typing indicator ("composing") & anti-ban delay
+                    try {
+                      await sock.sendPresenceUpdate("composing", replyJid);
+                    } catch {}
+
+                    const delayMs = Math.min(
+                      3000,
+                      Math.max(1200, (replyContent.length || 20) * 20),
+                    );
+                    await new Promise((r) => setTimeout(r, delayMs));
+
+                    try {
+                      await sock.sendPresenceUpdate("paused", replyJid);
+                    } catch {}
+
                     const sentMsg = await sock.sendMessage(replyJid, {
                       text: replyContent,
                     });
