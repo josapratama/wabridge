@@ -21,6 +21,7 @@ export class ExportController {
   /** GET /export/messages?format=csv&sessionId=...&status=...&direction=... */
   @Get("messages")
   async exportMessages(
+    @Request() req: any,
     @Query("format") format: "csv" | "json" = "csv",
     @Query("sessionId") sessionId?: string,
     @Query("status") status?: string,
@@ -28,6 +29,7 @@ export class ExportController {
     @Res() reply: FastifyReplyLike = undefined as any,
   ) {
     const result = await this.exportService.exportMessages({
+      userId: req.user.id,
       format,
       sessionId,
       status,

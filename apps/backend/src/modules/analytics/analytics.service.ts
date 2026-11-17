@@ -2,6 +2,7 @@ import { Injectable, Inject } from "@nestjs/common";
 import {
   MessageRepository,
   UsageRepository,
+  SessionRepository,
 } from "../../repositories/interfaces";
 import { AnalyticsSummary } from "../../common/types";
 
@@ -10,10 +11,15 @@ export class AnalyticsService {
   constructor(
     @Inject(MessageRepository) private readonly messageRepo: MessageRepository,
     @Inject(UsageRepository) private readonly usageRepo: UsageRepository,
+    @Inject(SessionRepository) private readonly sessionRepo: SessionRepository,
   ) {}
 
   async getSummary(userId: string): Promise<AnalyticsSummary> {
-    const messages = await this.messageRepo.findAll();
+    const userSessions = await this.sessionRepo.findAllByUserId(userId);
+    const sessionIds = userSessions.map((s) => s.id);
+
+    let messages = await this.messageRepo.findAll();
+    messages = messages.filter((m) => sessionIds.includes(m.sessionId));
 
     const totalSent = messages.filter((m) => m.direction === "outbound").length;
     const totalReceived = messages.filter(

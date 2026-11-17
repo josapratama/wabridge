@@ -2,6 +2,7 @@ import { Injectable, Inject } from "@nestjs/common";
 import {
   MessageRepository,
   ContactRepository,
+  SessionRepository,
 } from "../../repositories/interfaces";
 import { Message, Contact } from "../../common/types";
 
@@ -16,15 +17,21 @@ export class ExportService {
   constructor(
     @Inject(MessageRepository) private readonly messageRepo: MessageRepository,
     @Inject(ContactRepository) private readonly contactRepo: ContactRepository,
+    @Inject(SessionRepository) private readonly sessionRepo: SessionRepository,
   ) {}
 
   async exportMessages(filters: {
+    userId: string;
     format: "csv" | "json";
     sessionId?: string;
     status?: string;
     direction?: string;
   }): Promise<ExportResult> {
+    const userSessions = await this.sessionRepo.findAllByUserId(filters.userId);
+    const sessionIds = userSessions.map((s) => s.id);
+
     let messages = await this.messageRepo.findAll();
+    messages = messages.filter((m) => sessionIds.includes(m.sessionId));
     if (filters.sessionId)
       messages = messages.filter((m) => m.sessionId === filters.sessionId);
     if (filters.status)
