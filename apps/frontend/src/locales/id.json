@@ -614,7 +614,12 @@
     "view_all": "Lihat Semua",
     "total_count": "Total Jumlah",
     "uptime": "Uptime Sistem",
-    "total_sessions": "Total Sesi"
+    "total_sessions": "Total Sesi",
+    "ai_metrics_title": "Kinerja Asisten Bot AI",
+    "ai_total_replies": "Total Balasan AI",
+    "ai_status_active": "AI Aktif",
+    "ai_status_disabled": "AI Nonaktif",
+    "ai_last_replied": "Balasan Terakhir"
   },
   "analytics": {
     "title": "Analitik & Metrik",
@@ -700,7 +705,8 @@
     "prov_openrouter": "OpenRouter (Claude 3.5 / Llama 3.3)",
     "model_custom_opt": "✏️ Model Kustom / Input Manual...",
     "model_custom_placeholder": "Ketik model ID spesifik (contoh: gemini-2.0-flash-lite, o3-mini)",
-    "model_active_note": "Hanya model aktif resmi non-deprecated yang disediakan untuk stabilitas koneksi."
+    "model_active_note": "Hanya model aktif resmi non-deprecated yang disediakan untuk stabilitas koneksi.",
+    "upload_kb_title_all": "Upload dokumen pengetahuan (.txt, .md, .csv, .json, .pdf)"
   },
   "contacts": {
     "title": "Buku Kontak",
@@ -891,7 +897,21 @@
     "tab_resolved": "Selesai",
     "empty_desc": "Pesan WhatsApp yang dikirim atau diterima melalui sesi aktif akan muncul di sini secara real-time.",
     "send_new_msg": "Kirim Pesan Baru",
-    "mic_permission_err": "Izin akses mikrofon diperlukan untuk merekam voice note."
+    "mic_permission_err": "Izin akses mikrofon diperlukan untuk merekam voice note.",
+    "ai_active_badge": "AI Aktif",
+    "takeover_btn": "Ambil Alih",
+    "ai_paused_badge": "CS Manusia (AI Dijeda)",
+    "resume_btn": "Aktifkan AI",
+    "pause_ai_title": "AI sedang aktif. Klik untuk mengambil alih obrolan ini dan menjeda AI",
+    "resume_ai_title": "AI dijeda untuk kontak ini. Klik untuk mengaktifkan AI kembali",
+    "save_contact_btn": "Simpan Kontak",
+    "edit_contact_btn": "Edit Kontak",
+    "contact_modal_title": "Kelola Data Kontak & CRM",
+    "contact_name_label": "Nama Kontak",
+    "contact_tags_label": "Label / Tag Pelanggan (pisahkan dengan koma)",
+    "contact_notes_label": "Catatan Internal Staf",
+    "contact_notes_placeholder": "Catatan khusus tentang pelanggan ini (hanya terlihat tim internal)...",
+    "contact_saved_success": "Data kontak berhasil disimpan!"
   },
   "api_keys": {
     "created_title": "API Key Berhasil Dibuat",

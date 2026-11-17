@@ -41,4 +41,44 @@ export class AiBotController {
     const reply = await this.service.draftReply(jid, message, userId);
     return { success: true, reply };
   }
+
+  @Post("pause")
+  pauseJid(
+    @Req() req: any,
+    @Body("jid") jid: string,
+    @Body("durationMinutes") durationMinutes?: number,
+  ) {
+    const userId = req.user?.id || "default";
+    const res = this.service.pauseForJid(userId, jid, durationMinutes || 120);
+    return { success: true, ...res };
+  }
+
+  @Post("resume")
+  resumeJid(@Req() req: any, @Body("jid") jid: string) {
+    const userId = req.user?.id || "default";
+    const res = this.service.resumeForJid(userId, jid);
+    return { success: true, ...res };
+  }
+
+  @Get("status")
+  getJidStatus(@Req() req: any, @Req() request: any) {
+    const userId = req.user?.id || "default";
+    const jid = request.query?.jid;
+    if (!jid) return { isPaused: false, pausedUntil: null };
+    return this.service.getJidStatus(userId, jid);
+  }
+
+  @Get("stats")
+  getStats(@Req() req: any) {
+    const userId = req.user?.id || "default";
+    return this.service.getStats(userId);
+  }
+
+  @Post("parse-document")
+  async parseDocument(
+    @Body("base64") base64: string,
+    @Body("filename") filename: string,
+  ) {
+    return this.service.parseDocument(base64, filename);
+  }
 }

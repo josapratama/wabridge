@@ -614,7 +614,12 @@
     "view_all": "View All",
     "total_count": "Total Count",
     "uptime": "System Uptime",
-    "total_sessions": "Total Sessions"
+    "total_sessions": "Total Sessions",
+    "ai_metrics_title": "AI Bot Assistant Performance",
+    "ai_total_replies": "Total AI Replies",
+    "ai_status_active": "AI Active",
+    "ai_status_disabled": "AI Disabled",
+    "ai_last_replied": "Last Replied"
   },
   "analytics": {
     "title": "Analytics & Metrics",
@@ -700,7 +705,8 @@
     "prov_openrouter": "OpenRouter (Claude 3.5 / Llama 3.3)",
     "model_custom_opt": "✏️ Custom Model / Manual Input...",
     "model_custom_placeholder": "Enter specific model ID (e.g. gemini-2.0-flash-lite, o3-mini)",
-    "model_active_note": "Only officially active, non-deprecated models are listed for maximum stability."
+    "model_active_note": "Only officially active, non-deprecated models are listed for maximum stability.",
+    "upload_kb_title_all": "Upload knowledge documents (.txt, .md, .csv, .json, .pdf)"
   },
   "contacts": {
     "title": "Contacts",
@@ -891,7 +897,21 @@
     "tab_resolved": "Resolved",
     "empty_desc": "WhatsApp messages sent or received through active sessions will appear here in real time.",
     "send_new_msg": "Send New Message",
-    "mic_permission_err": "Microphone permission is required to record voice notes."
+    "mic_permission_err": "Microphone permission is required to record voice notes.",
+    "ai_active_badge": "AI Active",
+    "takeover_btn": "Takeover",
+    "ai_paused_badge": "Human CS (AI Paused)",
+    "resume_btn": "Resume AI",
+    "pause_ai_title": "AI is active. Click to take over this chat and pause AI",
+    "resume_ai_title": "AI paused for this contact. Click to resume AI",
+    "save_contact_btn": "Save Contact",
+    "edit_contact_btn": "Edit Contact",
+    "contact_modal_title": "Manage Contact & CRM Details",
+    "contact_name_label": "Contact Name",
+    "contact_tags_label": "Customer Labels / Tags (comma separated)",
+    "contact_notes_label": "Internal Staff Notes",
+    "contact_notes_placeholder": "Private notes about this customer (visible to internal team only)...",
+    "contact_saved_success": "Contact details saved successfully!"
   },
   "api_keys": {
     "created_title": "API Key Created",

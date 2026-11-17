@@ -37,6 +37,10 @@ import {
   Zap,
   CheckCircle2,
   Sparkles,
+  Bot,
+  Tag,
+  UserPlus,
+  Edit2,
 } from "lucide-react";
 
 interface Conversation {
@@ -353,6 +357,111 @@ export default function LiveChat() {
   });
 
   const activeConv = conversations.find((c) => c.jid === selectedJid);
+
+  // AI Takeover status per selected conversation
+  const [aiPaused, setAiPaused] = useState(false);
+  const [togglingAi, setTogglingAi] = useState(false);
+
+  useEffect(() => {
+    if (!selectedJid) return;
+    let isMounted = true;
+    aiBotApi
+      .getJidStatus(selectedJid)
+      .then((res) => {
+        if (isMounted && res.data) {
+          setAiPaused(res.data.isPaused);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedJid]);
+
+  const handleToggleAiPause = async () => {
+    if (!selectedJid || togglingAi) return;
+    setTogglingAi(true);
+    try {
+      if (aiPaused) {
+        await aiBotApi.resumeJid(selectedJid);
+        setAiPaused(false);
+      } else {
+        await aiBotApi.pauseJid(selectedJid, 120);
+        setAiPaused(true);
+      }
+    } catch (e) {
+      console.error("Failed to toggle AI pause", e);
+    } finally {
+      setTogglingAi(false);
+    }
+  };
+
+  // Contact Quick CRM & Tagging modal
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactNameInput, setContactNameInput] = useState("");
+  const [contactTagsInput, setContactTagsInput] = useState("");
+  const [contactNotesInput, setContactNotesInput] = useState("");
+  const [savingContact, setSavingContact] = useState(false);
+  const [contactSavedToast, setContactSavedToast] = useState(false);
+
+  const matchedContact = activeConv
+    ? contacts.find(
+        (c) =>
+          c.phone.replace(/\D/g, "") ===
+          activeConv.phone.replace(/\D/g, ""),
+      )
+    : null;
+
+  const openContactModal = () => {
+    if (!activeConv) return;
+    if (matchedContact) {
+      setContactNameInput(matchedContact.name || "");
+      setContactTagsInput((matchedContact.tags || []).join(", "));
+      setContactNotesInput(matchedContact.notes || "");
+    } else {
+      setContactNameInput(
+        activeConv.name.startsWith("+") ? "" : activeConv.name,
+      );
+      setContactTagsInput("");
+      setContactNotesInput("");
+    }
+    setShowContactModal(true);
+  };
+
+  const handleSaveContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeConv) return;
+    setSavingContact(true);
+    const tags = contactTagsInput
+      .split(/[,]+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    try {
+      if (matchedContact) {
+        await contactsApi.update(matchedContact.id, {
+          name: contactNameInput.trim() || activeConv.phone,
+          tags,
+          notes: contactNotesInput.trim(),
+        });
+      } else {
+        await contactsApi.create({
+          name: contactNameInput.trim() || activeConv.phone,
+          phone: activeConv.phone,
+          tags,
+          notes: contactNotesInput.trim(),
+        });
+      }
+      const refreshed = await contactsApi.list();
+      if (refreshed.data) setContacts(refreshed.data);
+      setShowContactModal(false);
+      setContactSavedToast(true);
+      setTimeout(() => setContactSavedToast(false), 2500);
+    } catch (err) {
+      console.error("Failed to save contact", err);
+    } finally {
+      setSavingContact(false);
+    }
+  };
 
   const selectConversation = (c: Conversation) => {
     setSelectedJid(c.jid);
@@ -675,32 +784,117 @@ export default function LiveChat() {
           {activeConv ? (
             <>
               {/* Chat Header */}
-              <div className="h-16 border-b border-gray-800 bg-gray-900/40 px-4 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
+              <div className="h-16 border-b border-gray-800 bg-gray-900/40 px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   <button
                     onClick={() => setSelectedJid(null)}
                     className="md:hidden text-gray-400 hover:text-white p-1"
                   >
                     ← {t("actions.back", "Back")}
                   </button>
-                  <div className="w-9 h-9 rounded-full bg-brand-600/30 border border-brand-500/40 flex items-center justify-center text-brand-300 font-semibold text-sm">
+                  <div
+                    onClick={!activeConv.isGroup ? openContactModal : undefined}
+                    className={`w-9 h-9 rounded-full bg-brand-600/30 border border-brand-500/40 flex items-center justify-center text-brand-300 font-semibold text-sm shrink-0 ${
+                      !activeConv.isGroup ? "cursor-pointer hover:border-brand-400" : ""
+                    }`}
+                    title={!activeConv.isGroup ? t("livechat.edit_contact_btn", "Edit Kontak") : undefined}
+                  >
                     {activeConv.isGroup ? (
                       <Users className="w-4 h-4" />
                     ) : (
                       activeConv.name.slice(0, 1).toUpperCase()
                     )}
                   </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-white leading-tight">
-                      {activeConv.name}
-                    </h2>
-                    <p className="text-[11px] text-gray-400 font-mono">
-                      {activeConv.isGroup ? activeConv.jid : `+${activeConv.phone}`}
-                    </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h2
+                        onClick={!activeConv.isGroup ? openContactModal : undefined}
+                        className={`text-sm font-bold text-white leading-tight truncate ${
+                          !activeConv.isGroup ? "cursor-pointer hover:underline" : ""
+                        }`}
+                      >
+                        {activeConv.name}
+                      </h2>
+                      {!activeConv.isGroup && (
+                        <button
+                          onClick={openContactModal}
+                          className="text-[10px] text-gray-400 hover:text-brand-300 p-0.5 rounded transition-colors inline-flex items-center gap-1"
+                          title={
+                            matchedContact
+                              ? t("livechat.edit_contact_btn", "Edit Kontak")
+                              : t("livechat.save_contact_btn", "Simpan Kontak")
+                          }
+                        >
+                          {matchedContact ? (
+                            <Edit2 className="w-3 h-3 text-gray-400 hover:text-brand-300" />
+                          ) : (
+                            <UserPlus className="w-3 h-3 text-brand-400" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                      <p className="text-[11px] text-gray-400 font-mono">
+                        {activeConv.isGroup ? activeConv.jid : `+${activeConv.phone}`}
+                      </p>
+                      {matchedContact?.tags && matchedContact.tags.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {matchedContact.tags.slice(0, 2).map((tag, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60 leading-none"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {matchedContact.tags.length > 2 && (
+                            <span className="text-[9px] text-gray-400">
+                              +{matchedContact.tags.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  {/* AI Takeover Button */}
+                  {!activeConv.isGroup && (
+                    <button
+                      onClick={handleToggleAiPause}
+                      disabled={togglingAi}
+                      className={`text-xs px-2 sm:px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${
+                        aiPaused
+                          ? "bg-amber-950/40 border-amber-800/60 text-amber-300 hover:bg-amber-900/50"
+                          : "bg-purple-950/40 border-purple-800/60 text-purple-300 hover:bg-purple-900/50"
+                      }`}
+                      title={
+                        aiPaused
+                          ? t("livechat.resume_ai_title", "AI dijeda untuk kontak ini. Klik untuk mengaktifkan AI kembali")
+                          : t("livechat.pause_ai_title", "AI sedang aktif. Klik untuk mengambil alih obrolan ini dan menjeda AI")
+                      }
+                    >
+                      {aiPaused ? (
+                        <>
+                          <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span className="hidden sm:inline">
+                            {t("livechat.ai_paused_badge", "CS Manusia (AI Dijeda)")}
+                          </span>
+                          <span className="sm:hidden font-semibold">CS</span>
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                          <span className="hidden sm:inline">
+                            {t("livechat.ai_active_badge", "AI Aktif")}
+                          </span>
+                          <span className="sm:hidden font-semibold">AI</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
                   {/* Mark as Resolved Toggle */}
                   <button
                     onClick={() => toggleResolved(activeConv.jid)}
@@ -876,17 +1070,21 @@ export default function LiveChat() {
                                   <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
                                   <span className="text-[10px] underline">{t("actions.retry", "Retry")}</span>
                                 </button>
-                              ) : m.status === "read" || m.status === "delivered" ? (
-                                <span title={m.status === "read" ? "Read" : "Delivered"}>
-                                  <CheckCheck className="w-3.5 h-3.5 text-blue-300" />
+                              ) : m.status === "read" ? (
+                                <span title={t("status.read", "Dibaca")}>
+                                  <CheckCheck className="w-3.5 h-3.5 text-sky-400" />
+                                </span>
+                              ) : m.status === "delivered" ? (
+                                <span title={t("status.delivered", "Tersampaikan")}>
+                                  <CheckCheck className="w-3.5 h-3.5 text-white/70" />
                                 </span>
                               ) : m.status === "sent" ? (
-                                <span title="Sent to server">
-                                  <Check className="w-3.5 h-3.5 text-brand-200" />
+                                <span title={t("status.sent", "Terkirim ke Server")}>
+                                  <Check className="w-3.5 h-3.5 text-white/70" />
                                 </span>
                               ) : (
-                                <span title="Queued">
-                                  <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                <span title={t("status.pending", "Menunggu")}>
+                                  <Clock className="w-3.5 h-3.5 text-white/50" />
                                 </span>
                               )}
                             </span>
@@ -1210,6 +1408,153 @@ export default function LiveChat() {
               onClick={(e) => e.stopPropagation()}
             />
           </div>
+        </div>
+      )}
+
+      {/* Contact Quick CRM & Tagging Modal */}
+      {showContactModal && activeConv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-5 shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {matchedContact
+                      ? t("livechat.edit_contact_btn", "Edit Kontak")
+                      : t("livechat.save_contact_btn", "Simpan Kontak")}
+                  </h3>
+                  <p className="text-[11px] text-gray-400 font-mono">
+                    +{activeConv.phone}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowContactModal(false)}
+                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveContact} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                  {t("livechat.contact_name_label", "Nama Kontak")}
+                </label>
+                <input
+                  type="text"
+                  value={contactNameInput}
+                  onChange={(e) => setContactNameInput(e.target.value)}
+                  placeholder="Contoh: Bpk. Ahmad Pratama"
+                  required
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-gray-300">
+                    {t(
+                      "livechat.contact_tags_label",
+                      "Label / Tag Pelanggan (pisahkan dengan koma)",
+                    )}
+                  </label>
+                </div>
+                <input
+                  type="text"
+                  value={contactTagsInput}
+                  onChange={(e) => setContactTagsInput(e.target.value)}
+                  placeholder="Contoh: VIP, Lead, Prioritas"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                />
+                {/* Quick Tag Chips */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {["VIP", "Lead", "Prospek", "Pelanggan", "Prioritas", "Komplain"].map(
+                    (tag) => {
+                      const currentTags = contactTagsInput
+                        .split(/[,]+/)
+                        .map((t) => t.trim())
+                        .filter(Boolean);
+                      const isSelected = currentTags.includes(tag);
+                      return (
+                        <button
+                          type="button"
+                          key={tag}
+                          onClick={() => {
+                            if (isSelected) {
+                              setContactTagsInput(
+                                currentTags.filter((t) => t !== tag).join(", "),
+                              );
+                            } else {
+                              setContactTagsInput([...currentTags, tag].join(", "));
+                            }
+                          }}
+                          className={`text-[10px] font-medium px-2 py-0.5 rounded-md border transition-colors ${
+                            isSelected
+                              ? "bg-purple-600 text-white border-purple-500 shadow-sm"
+                              : "bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-750"
+                          }`}
+                        >
+                          {isSelected ? `✓ ${tag}` : `+ ${tag}`}
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                  {t("livechat.contact_notes_label", "Catatan Internal Staf")}
+                </label>
+                <textarea
+                  rows={3}
+                  value={contactNotesInput}
+                  onChange={(e) => setContactNotesInput(e.target.value)}
+                  placeholder={t(
+                    "livechat.contact_notes_placeholder",
+                    "Catatan khusus tentang pelanggan ini (hanya terlihat tim internal)...",
+                  )}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => setShowContactModal(false)}
+                  className="btn-secondary text-xs px-3 py-1.5"
+                >
+                  {t("actions.cancel", "Batal")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingContact}
+                  className="btn-primary text-xs px-4 py-1.5 flex items-center gap-1.5 shadow-lg shadow-brand-500/20"
+                >
+                  {savingContact ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>{t("common.save", "Simpan")}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Saved Toast Notification */}
+      {contactSavedToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-600 text-white text-xs px-3.5 py-2 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-bottom duration-200">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>
+            {t("livechat.contact_saved_success", "Data kontak berhasil disimpan!")}
+          </span>
         </div>
       )}
     </div>

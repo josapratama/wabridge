@@ -14,6 +14,7 @@ import {
   Clock,
   RotateCcw,
   Users,
+  Loader2,
 } from "lucide-react";
 import {
   useAutoReply,
@@ -158,18 +159,34 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
     },
   ];
 
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+
   const handleKbFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploadingDoc(true);
     const reader = new FileReader();
-    reader.onload = () => {
-      const text = reader.result as string;
-      setAiConfig((prev) => ({
-        ...prev,
-        knowledgeBase: prev.knowledgeBase ? `${prev.knowledgeBase}\n\n${text}` : text,
-      }));
+    reader.onload = async () => {
+      try {
+        const base64 = (reader.result as string) || "";
+        const res = await aiBotApi.parseDocument(base64, file.name);
+        const extractedText = res.data?.text;
+        if (extractedText) {
+          setAiConfig((prev) => ({
+            ...prev,
+            knowledgeBase: prev.knowledgeBase
+              ? `${prev.knowledgeBase}\n\n[DOKUMEN: ${file.name}]\n${extractedText}`
+              : `[DOKUMEN: ${file.name}]\n${extractedText}`,
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to parse document", err);
+      } finally {
+        setUploadingDoc(false);
+      }
     };
-    reader.readAsText(file);
+    reader.onerror = () => setUploadingDoc(false);
+    reader.readAsDataURL(file);
     if (kbFileInputRef.current) kbFileInputRef.current.value = "";
   };
 
@@ -1015,17 +1032,26 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                       type="file"
                       ref={kbFileInputRef}
                       onChange={handleKbFileUpload}
-                      accept=".txt,.md,.json,.csv"
+                      accept=".txt,.md,.json,.csv,.pdf"
                       className="hidden"
                     />
                     <button
                       type="button"
+                      disabled={uploadingDoc}
                       onClick={() => kbFileInputRef.current?.click()}
-                      className="text-[11px] text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium bg-purple-950/40 border border-purple-800/50 px-2 py-0.5 rounded-md transition-colors"
-                      title={t("autoreply.upload_kb_title", "Upload dokumen pengetahuan (.txt, .md, .csv, .json)")}
+                      className="text-[11px] text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium bg-purple-950/40 border border-purple-800/50 px-2 py-0.5 rounded-md transition-colors disabled:opacity-50"
+                      title={t("autoreply.upload_kb_title", "Upload dokumen pengetahuan (.pdf, .txt, .md, .csv, .json)")}
                     >
-                      <Upload className="w-3 h-3" />
-                      <span>{t("autoreply.upload_doc", "Upload Dokumen")}</span>
+                      {uploadingDoc ? (
+                        <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+                      ) : (
+                        <Upload className="w-3 h-3" />
+                      )}
+                      <span>
+                        {uploadingDoc
+                          ? t("autoreply.extracting_doc", "Mengekstrak...")
+                          : t("autoreply.upload_doc", "Upload Dokumen (.pdf, .txt, .csv)")}
+                      </span>
                     </button>
                   </div>
                 </div>

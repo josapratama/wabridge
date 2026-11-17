@@ -1638,5 +1638,105 @@ module.exports = { TRANSLATIONS: {
     "id": "Hanya model aktif resmi non-deprecated yang disediakan untuk stabilitas koneksi.",
     "en": "Only officially active, non-deprecated models are listed for maximum stability.",
     "ja": "接続の安定性のため、廃止されていない公式のアクティブモデルのみが表示されます。"
+  },
+  "livechat.ai_active_badge": {
+    "id": "AI Aktif",
+    "en": "AI Active",
+    "ja": "AI 有効"
+  },
+  "livechat.takeover_btn": {
+    "id": "Ambil Alih",
+    "en": "Takeover",
+    "ja": "引き継ぐ"
+  },
+  "livechat.ai_paused_badge": {
+    "id": "CS Manusia (AI Dijeda)",
+    "en": "Human CS (AI Paused)",
+    "ja": "有人対応（AI一時停止）"
+  },
+  "livechat.resume_btn": {
+    "id": "Aktifkan AI",
+    "en": "Resume AI",
+    "ja": "AI再開"
+  },
+  "livechat.pause_ai_title": {
+    "id": "AI sedang aktif. Klik untuk mengambil alih obrolan ini dan menjeda AI",
+    "en": "AI is active. Click to take over this chat and pause AI",
+    "ja": "AIが有効です。クリックしてこのチャットを引き継ぎ、AIを一時停止します"
+  },
+  "livechat.resume_ai_title": {
+    "id": "AI dijeda untuk kontak ini. Klik untuk mengaktifkan AI kembali",
+    "en": "AI paused for this contact. Click to resume AI",
+    "ja": "この連絡先のAIは一時停止中です。クリックして再開します"
+  },
+  "livechat.save_contact_btn": {
+    "id": "Simpan Kontak",
+    "en": "Save Contact",
+    "ja": "連絡先を保存"
+  },
+  "livechat.edit_contact_btn": {
+    "id": "Edit Kontak",
+    "en": "Edit Contact",
+    "ja": "連絡先を編集"
+  },
+  "livechat.contact_modal_title": {
+    "id": "Kelola Data Kontak & CRM",
+    "en": "Manage Contact & CRM Details",
+    "ja": "連絡先＆CRM情報の管理"
+  },
+  "livechat.contact_name_label": {
+    "id": "Nama Kontak",
+    "en": "Contact Name",
+    "ja": "連絡先名"
+  },
+  "livechat.contact_tags_label": {
+    "id": "Label / Tag Pelanggan (pisahkan dengan koma)",
+    "en": "Customer Labels / Tags (comma separated)",
+    "ja": "顧客ラベル / タグ（カンマ区切り）"
+  },
+  "livechat.contact_notes_label": {
+    "id": "Catatan Internal Staf",
+    "en": "Internal Staff Notes",
+    "ja": "社内メモ"
+  },
+  "livechat.contact_notes_placeholder": {
+    "id": "Catatan khusus tentang pelanggan ini (hanya terlihat tim internal)...",
+    "en": "Private notes about this customer (visible to internal team only)...",
+    "ja": "この顧客に関する特記事項（社内チームのみ閲覧可能）..."
+  },
+  "livechat.contact_saved_success": {
+    "id": "Data kontak berhasil disimpan!",
+    "en": "Contact details saved successfully!",
+    "ja": "連絡先情報が正常に保存されました！"
+  },
+  "dashboard.ai_metrics_title": {
+    "id": "Kinerja Asisten Bot AI",
+    "en": "AI Bot Assistant Performance",
+    "ja": "AIボットアシスタントの実績"
+  },
+  "dashboard.ai_total_replies": {
+    "id": "Total Balasan AI",
+    "en": "Total AI Replies",
+    "ja": "AI返信総数"
+  },
+  "dashboard.ai_status_active": {
+    "id": "AI Aktif",
+    "en": "AI Active",
+    "ja": "AI 有効"
+  },
+  "dashboard.ai_status_disabled": {
+    "id": "AI Nonaktif",
+    "en": "AI Disabled",
+    "ja": "AI 無効"
+  },
+  "dashboard.ai_last_replied": {
+    "id": "Balasan Terakhir",
+    "en": "Last Replied",
+    "ja": "最終返信"
+  },
+  "autoreply.upload_kb_title_all": {
+    "id": "Upload dokumen pengetahuan (.txt, .md, .csv, .json, .pdf)",
+    "en": "Upload knowledge documents (.txt, .md, .csv, .json, .pdf)",
+    "ja": "ナレッジドキュメントをアップロード（.txt, .md, .csv, .json, .pdf）"
   }
 } };

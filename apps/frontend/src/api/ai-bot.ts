@@ -64,4 +64,23 @@ export const aiBotApi = {
       method: "POST",
       body: JSON.stringify({ jid, message }),
     }),
+  pauseJid: (jid: string, durationMinutes?: number) =>
+    request<{ success: boolean; pausedUntil: number }>("/ai-bot/pause", {
+      method: "POST",
+      body: JSON.stringify({ jid, durationMinutes }),
+    }),
+  resumeJid: (jid: string) =>
+    request<{ success: boolean; resumed: boolean }>("/ai-bot/resume", {
+      method: "POST",
+      body: JSON.stringify({ jid }),
+    }),
+  getJidStatus: (jid: string) =>
+    request<{ isPaused: boolean; pausedUntil: number | null }>(`/ai-bot/status?jid=${encodeURIComponent(jid)}`),
+  getStats: () =>
+    request<{ totalReplies: number; lastReplyAt: string | null; isEnabled: boolean; provider: string; model: string }>("/ai-bot/stats"),
+  parseDocument: (base64: string, filename: string) =>
+    request<{ success: boolean; text: string; filename: string; length: number }>("/ai-bot/parse-document", {
+      method: "POST",
+      body: JSON.stringify({ base64, filename }),
+    }),
 };

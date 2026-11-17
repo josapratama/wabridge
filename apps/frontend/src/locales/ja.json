@@ -614,7 +614,12 @@
     "view_all": "すべて表示",
     "total_count": "合計数",
     "uptime": "稼働時間",
-    "total_sessions": "セッション合計"
+    "total_sessions": "セッション合計",
+    "ai_metrics_title": "AIボットアシスタントの実績",
+    "ai_total_replies": "AI返信総数",
+    "ai_status_active": "AI 有効",
+    "ai_status_disabled": "AI 無効",
+    "ai_last_replied": "最終返信"
   },
   "analytics": {
     "title": "分析とメトリクス",
@@ -700,7 +705,8 @@
     "prov_openrouter": "OpenRouter（Claude 3.5 / Llama 3.3）",
     "model_custom_opt": "✏️ カスタムモデル / 手動入力...",
     "model_custom_placeholder": "特定のモデルIDを入力（例: gemini-2.0-flash-lite, o3-mini）",
-    "model_active_note": "接続の安定性のため、廃止されていない公式のアクティブモデルのみが表示されます。"
+    "model_active_note": "接続の安定性のため、廃止されていない公式のアクティブモデルのみが表示されます。",
+    "upload_kb_title_all": "ナレッジドキュメントをアップロード（.txt, .md, .csv, .json, .pdf）"
   },
   "contacts": {
     "title": "連絡先",
@@ -891,7 +897,21 @@
     "tab_resolved": "完了",
     "empty_desc": "アクティブなセッションを介して送受信されたWhatsAppメッセージがここにリアルタイムで表示されます。",
     "send_new_msg": "新規メッセージ送信",
-    "mic_permission_err": "音声メモを録音するにはマイクの許可が必要です。"
+    "mic_permission_err": "音声メモを録音するにはマイクの許可が必要です。",
+    "ai_active_badge": "AI 有効",
+    "takeover_btn": "引き継ぐ",
+    "ai_paused_badge": "有人対応（AI一時停止）",
+    "resume_btn": "AI再開",
+    "pause_ai_title": "AIが有効です。クリックしてこのチャットを引き継ぎ、AIを一時停止します",
+    "resume_ai_title": "この連絡先のAIは一時停止中です。クリックして再開します",
+    "save_contact_btn": "連絡先を保存",
+    "edit_contact_btn": "連絡先を編集",
+    "contact_modal_title": "連絡先＆CRM情報の管理",
+    "contact_name_label": "連絡先名",
+    "contact_tags_label": "顧客ラベル / タグ（カンマ区切り）",
+    "contact_notes_label": "社内メモ",
+    "contact_notes_placeholder": "この顧客に関する特記事項（社内チームのみ閲覧可能）...",
+    "contact_saved_success": "連絡先情報が正常に保存されました！"
   },
   "api_keys": {
     "created_title": "APIキーが作成されました",

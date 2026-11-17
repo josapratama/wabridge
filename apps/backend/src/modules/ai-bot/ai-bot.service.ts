@@ -253,6 +253,82 @@ export class AiBotService {
     }
   }
 
+  pauseForJid(
+    userId: string = "default",
+    jid: string,
+    durationMinutes: number = 120,
+  ): { pausedUntil: number } {
+    let userPausedMap = this.pausedJids.get(userId);
+    if (!userPausedMap) {
+      userPausedMap = new Map<string, number>();
+      this.pausedJids.set(userId, userPausedMap);
+    }
+    const pausedUntil = Date.now() + durationMinutes * 60 * 1000;
+    userPausedMap.set(jid, pausedUntil);
+    this.logger.log(
+      `AI manually paused for ${jid} (User: ${userId}) until ${new Date(pausedUntil).toISOString()}`,
+      "AiBotService",
+    );
+    return { pausedUntil };
+  }
+
+  resumeForJid(userId: string = "default", jid: string): { resumed: boolean } {
+    const userPausedMap = this.pausedJids.get(userId);
+    if (userPausedMap) {
+      userPausedMap.delete(jid);
+    }
+    this.logger.log(`AI resumed for ${jid} (User: ${userId})`, "AiBotService");
+    return { resumed: true };
+  }
+
+  getJidStatus(
+    userId: string = "default",
+    jid: string,
+  ): { isPaused: boolean; pausedUntil: number | null } {
+    const userPausedMap = this.pausedJids.get(userId);
+    const pausedUntil = userPausedMap?.get(jid);
+    if (pausedUntil && Date.now() < pausedUntil) {
+      return { isPaused: true, pausedUntil };
+    }
+    return { isPaused: false, pausedUntil: null };
+  }
+
+  getStats(userId: string = "default") {
+    const cfg = this.loadUserConfig(userId);
+    const statsPath = path.join(
+      this.configsDir,
+      `${userId.replace(/[^a-zA-Z0-9_-]/g, "_")}_stats.json`,
+    );
+    let stats = { totalReplies: 0, lastReplyAt: null as string | null };
+    try {
+      if (fs.existsSync(statsPath)) {
+        stats = JSON.parse(fs.readFileSync(statsPath, "utf8"));
+      }
+    } catch {}
+    return {
+      ...stats,
+      isEnabled: cfg.isEnabled,
+      provider: cfg.provider,
+      model: cfg.model,
+    };
+  }
+
+  recordReplyStat(userId: string = "default") {
+    try {
+      const statsPath = path.join(
+        this.configsDir,
+        `${userId.replace(/[^a-zA-Z0-9_-]/g, "_")}_stats.json`,
+      );
+      let stats = { totalReplies: 0, lastReplyAt: null as string | null };
+      if (fs.existsSync(statsPath)) {
+        stats = JSON.parse(fs.readFileSync(statsPath, "utf8"));
+      }
+      stats.totalReplies += 1;
+      stats.lastReplyAt = new Date().toISOString();
+      fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2), "utf8");
+    } catch {}
+  }
+
   private isWithinWorkHours(
     startStr?: string,
     endStr?: string,
@@ -424,16 +500,21 @@ export class AiBotService {
         }
       }
 
+      let reply: string | null = null;
       if (cfg.provider === "gemini") {
-        return await this.callGemini(cfg, userMessage, effectiveSystemPrompt, history);
+        reply = await this.callGemini(cfg, userMessage, effectiveSystemPrompt, history);
       } else {
-        return await this.callOpenAiCompatible(
+        reply = await this.callOpenAiCompatible(
           cfg,
           userMessage,
           effectiveSystemPrompt,
           history,
         );
       }
+      if (reply) {
+        this.recordReplyStat(userId);
+      }
+      return reply;
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       this.logger.error(
@@ -557,5 +638,52 @@ export class AiBotService {
     const data = (await res.json()) as any;
     const text = data?.choices?.[0]?.message?.content;
     return text?.trim() || "Maaf, saya sedang tidak dapat merespons saat ini.";
+  }
+
+  async parseDocument(
+    base64: string,
+    filename: string,
+  ): Promise<{ text: string; filename: string; length: number }> {
+    const cleanBase64 = (base64 || "").replace(/^data:[^;]+;base64,/, "");
+    const buffer = Buffer.from(cleanBase64, "base64");
+    const lowerName = (filename || "").toLowerCase();
+
+    let extractedText = "";
+
+    if (lowerName.endsWith(".pdf")) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const pdfParse = require("pdf-parse");
+        const parsed = await pdfParse(buffer);
+        extractedText = parsed.text || "";
+      } catch (err: any) {
+        this.logger.error(`Failed to parse PDF ${filename}: ${err?.message}`);
+        throw new Error(
+          `Gagal membaca file PDF: ${err?.message || "Format tidak valid"}`,
+        );
+      }
+    } else {
+      // txt, md, json, csv
+      extractedText = buffer.toString("utf-8");
+    }
+
+    // Clean up excessive blank lines or carriage returns
+    extractedText = extractedText
+      .replace(/\r\n/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+
+    // Cap at reasonable max length to avoid prompt overflow (50,000 chars)
+    if (extractedText.length > 50000) {
+      extractedText =
+        extractedText.slice(0, 50000) +
+        "\n\n[...Konten dokumen dipotong hingga 50.000 karakter...]";
+    }
+
+    return {
+      text: extractedText,
+      filename,
+      length: extractedText.length,
+    };
   }
 }

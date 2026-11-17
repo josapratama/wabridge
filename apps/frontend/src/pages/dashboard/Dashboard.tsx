@@ -9,6 +9,7 @@ import {
   Message,
   eventsApi,
   ProviderEvent,
+  aiBotApi,
 } from "../../api/client";
 import {
   Activity,
@@ -20,6 +21,7 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
+  Bot,
 } from "lucide-react";
 import StatusBadge from "../../components/StatusBadge";
 import { useI18n } from "../../context/I18nContext";
@@ -60,20 +62,29 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [events, setEvents] = useState<ProviderEvent[]>([]);
+  const [aiStats, setAiStats] = useState<{
+    totalReplies: number;
+    lastReplyAt: string | null;
+    isEnabled: boolean;
+    provider: string;
+    model: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const [h, s, m, e] = await Promise.allSettled([
+    const [h, s, m, e, ai] = await Promise.allSettled([
       healthApi.check(),
       sessionsApi.list(),
       messagesApi.list(),
       eventsApi.list(),
+      aiBotApi.getStats(),
     ]);
     if (h.status === "fulfilled" && h.value.data) setHealth(h.value.data);
     if (s.status === "fulfilled" && s.value.data) setSessions(s.value.data);
     if (m.status === "fulfilled" && m.value.data) setMessages(m.value.data);
     if (e.status === "fulfilled" && e.value.data) setEvents(e.value.data);
+    if (ai.status === "fulfilled" && ai.value.data) setAiStats(ai.value.data);
     setLoading(false);
   };
 
@@ -180,6 +191,71 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* AI Assistant Performance Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl border border-purple-800/40 bg-gradient-to-br from-purple-950/20 via-gray-900 to-gray-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/30 flex items-center justify-center shrink-0">
+            <Bot className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-semibold text-white">
+                {t("dashboard.ai_assistant_title", "AI Assistant WhatsApp")}
+              </span>
+              <span
+                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                  aiStats?.isEnabled
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    : "bg-gray-800 text-gray-400 border border-gray-700"
+                }`}
+              >
+                {aiStats?.isEnabled
+                  ? t("status.active", "Aktif")
+                  : t("status.inactive", "Nonaktif")}
+              </span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-gray-400 mt-0.5 flex flex-wrap items-center gap-2">
+              <span>
+                {t("autoreply.provider", "Provider")}:{" "}
+                <strong className="text-gray-300 capitalize">{aiStats?.provider || "Gemini"}</strong>
+              </span>
+              <span>•</span>
+              <span>
+                Model: <span className="font-mono text-purple-300">{aiStats?.model || "gemini-2.0-flash"}</span>
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 border-gray-800 pt-2.5 sm:pt-0">
+          <div className="text-left sm:text-right">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
+              {t("dashboard.ai_total_replies", "Total Balasan AI")}
+            </p>
+            <p className="text-lg sm:text-xl font-bold text-white font-mono">
+              {aiStats?.totalReplies ?? 0}
+            </p>
+          </div>
+          <div className="text-left sm:text-right">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
+              {t("dashboard.ai_last_active", "Terakhir Aktif")}
+            </p>
+            <p className="text-xs text-gray-300">
+              {aiStats?.lastReplyAt
+                ? new Date(aiStats.lastReplyAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                : t("common.never", "Belum ada")}
+            </p>
+          </div>
+          <Link
+            to="/auto-reply"
+            className="btn-secondary text-xs flex items-center gap-1.5 shrink-0 px-3 py-1.5"
+          >
+            <span>{t("common.settings", "Pengaturan")}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
 
       {/* Stats 2x2 on mobile, 4-col on desktop */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
