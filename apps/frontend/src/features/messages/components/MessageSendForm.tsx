@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Session } from "../../../api/client";
+import { useI18n } from "../../../context/I18nContext";
 import {
   MESSAGE_TYPES,
   TYPE_ICONS,
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
+  const { t } = useI18n();
   const [form, setForm] = useState<SendForm>(EMPTY_SEND_FORM);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
@@ -29,7 +31,7 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
     setSuccess("");
     const res = await onSend(form);
     if (res.success) {
-      setSuccess("Message sent!");
+      setSuccess(t("messages.sent_success", "Pesan berhasil dikirim!"));
       setForm(EMPTY_SEND_FORM);
       setTimeout(() => setSuccess(""), 3000);
     } else {
@@ -42,7 +44,9 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="card w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-white">Send Message</h2>
+          <h2 className="text-base font-semibold text-white">
+            {t("messages.send_title", "Kirim Pesan WhatsApp")}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-300"
@@ -65,14 +69,14 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
           {/* Session */}
           <div>
-            <label className="label">Session *</label>
+            <label className="label">{t("messages.session", "Sesi WhatsApp *")}</label>
             <select
               className="input"
               required
               value={form.sessionId}
               onChange={(e) => setForm({ ...form, sessionId: e.target.value })}
             >
-              <option value="">Select active session…</option>
+              <option value="">{t("messages.select_session", "Pilih sesi aktif…")}</option>
               {sessions.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name} ({s.providerType})
@@ -81,14 +85,14 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
             </select>
             {sessions.length === 0 && (
               <p className="text-xs text-yellow-500 mt-1">
-                No active sessions.
+                {t("messages.no_active_sessions", "Tidak ada sesi WhatsApp aktif.")}
               </p>
             )}
           </div>
 
           {/* To */}
           <div>
-            <label className="label">To (phone number) *</label>
+            <label className="label">{t("messages.recipient_phone", "Nomor Tujuan (WhatsApp) *")}</label>
             <input
               className="input"
               placeholder="628123456789"
@@ -100,21 +104,21 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
 
           {/* Type selector */}
           <div>
-            <label className="label">Message Type</label>
+            <label className="label">{t("messages.message_type", "Tipe Pesan")}</label>
             <div className="grid grid-cols-3 gap-1.5">
-              {MESSAGE_TYPES.map((t) => (
+              {MESSAGE_TYPES.map((tType) => (
                 <button
-                  key={t}
+                  key={tType}
                   type="button"
-                  onClick={() => setForm({ ...form, type: t })}
+                  onClick={() => setForm({ ...form, type: tType })}
                   className={`flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                    form.type === t
+                    form.type === tType
                       ? "bg-brand-600/20 border-brand-700/50 text-brand-300"
                       : "bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200"
                   }`}
                 >
-                  {TYPE_ICONS[t]}
-                  {t}
+                  {TYPE_ICONS[tType]}
+                  {tType}
                 </button>
               ))}
             </div>
@@ -124,9 +128,9 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
           {form.type === "text" && (
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="label mb-0">Message *</label>
+                <label className="label mb-0">{t("messages.content", "Isi Pesan *")}</label>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-gray-500">Quick template:</span>
+                  <span className="text-[10px] text-gray-500">{t("messages.quick_template", "Template:")}</span>
                   <button
                     type="button"
                     onClick={() =>
@@ -160,7 +164,7 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
                 rows={4}
                 required
                 maxLength={4096}
-                placeholder="Type your message…"
+                placeholder={t("messages.type_placeholder", "Ketik pesan Anda…")}
                 value={form.message}
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
               />
@@ -174,7 +178,7 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
           {isMedia && (
             <>
               <div>
-                <label className="label">Media URL *</label>
+                <label className="label">{t("messages.media_url", "URL Media *")}</label>
                 <input
                   className="input"
                   type="url"
@@ -190,10 +194,10 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
                 form.type === "document" ||
                 form.type === "video") && (
                 <div>
-                  <label className="label">Caption</label>
+                  <label className="label">{t("messages.caption", "Keterangan (Caption)")}</label>
                   <input
                     className="input"
-                    placeholder="Optional caption"
+                    placeholder={t("messages.caption_placeholder", "Keterangan opsional")}
                     value={form.mediaCaption}
                     onChange={(e) =>
                       setForm({ ...form, mediaCaption: e.target.value })
@@ -202,7 +206,7 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
                 </div>
               )}
               <div>
-                <label className="label">MIME Type</label>
+                <label className="label">{t("messages.mime_type", "Tipe MIME")}</label>
                 <input
                   className="input"
                   placeholder={
@@ -221,10 +225,10 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
                 />
               </div>
               <div>
-                <label className="label">Message (for record)</label>
+                <label className="label">{t("messages.description_record", "Deskripsi Log Pesan")}</label>
                 <input
                   className="input"
-                  placeholder="Description for message log"
+                  placeholder={t("messages.description_placeholder", "Deskripsi untuk arsip log")}
                   value={form.message}
                   onChange={(e) =>
                     setForm({ ...form, message: e.target.value })
@@ -239,7 +243,7 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label">Latitude *</label>
+                  <label className="label">{t("messages.latitude", "Garis Lintang (Latitude) *")}</label>
                   <input
                     className="input"
                     type="number"
@@ -253,7 +257,7 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="label">Longitude *</label>
+                  <label className="label">{t("messages.longitude", "Garis Bujur (Longitude) *")}</label>
                   <input
                     className="input"
                     type="number"
@@ -268,10 +272,10 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
                 </div>
               </div>
               <div>
-                <label className="label">Location Name</label>
+                <label className="label">{t("messages.location_name", "Nama Lokasi")}</label>
                 <input
                   className="input"
-                  placeholder="e.g. Jakarta, Indonesia"
+                  placeholder={t("messages.location_placeholder", "Contoh: Jakarta, Indonesia")}
                   value={form.locationName}
                   onChange={(e) =>
                     setForm({ ...form, locationName: e.target.value })
@@ -292,10 +296,10 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
               ) : (
                 <Send className="w-4 h-4" />
               )}
-              {sending ? "Sending…" : "Send"}
+              {sending ? t("actions.saving", "Mengirim…") : t("messages.send_btn", "Kirim Pesan")}
             </button>
             <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancel
+              {t("common.cancel", "Batal")}
             </button>
           </div>
         </form>

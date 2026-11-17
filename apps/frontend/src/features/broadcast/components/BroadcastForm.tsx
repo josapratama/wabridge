@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Session, Contact } from "../../../api/client";
+import { useI18n } from "../../../context/I18nContext";
 import { X, Play, RefreshCw } from "lucide-react";
 
 interface Props {
@@ -23,6 +24,7 @@ export default function BroadcastForm({
   onSubmit,
   onClose,
 }: Props) {
+  const { t } = useI18n();
   const [form, setForm] = useState({
     name: "",
     sessionId: "",
@@ -79,7 +81,9 @@ export default function BroadcastForm({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="card w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-white">New Broadcast</p>
+          <p className="text-sm font-semibold text-white">
+            {t("broadcast.new_title", "Buat Siaran Baru")}
+          </p>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-300"
@@ -96,24 +100,24 @@ export default function BroadcastForm({
 
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
           <div>
-            <label className="label">Name *</label>
+            <label className="label">{t("broadcast.name", "Nama Kampanye *")}</label>
             <input
               className="input"
               required
-              placeholder="e.g. Promo April"
+              placeholder={t("broadcast.name_placeholder", "Contoh: Promo Diskon")}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </div>
           <div>
-            <label className="label">Session *</label>
+            <label className="label">{t("broadcast.session", "Sesi WhatsApp *")}</label>
             <select
               className="input"
               required
               value={form.sessionId}
               onChange={(e) => setForm({ ...form, sessionId: e.target.value })}
             >
-              <option value="">Select active session…</option>
+              <option value="">{t("broadcast.select_session", "Pilih sesi aktif…")}</option>
               {sessions.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -123,9 +127,9 @@ export default function BroadcastForm({
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="label mb-0">Message *</label>
+              <label className="label mb-0">{t("broadcast.message", "Pesan Siaran *")}</label>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-gray-400">Sisipkan:</span>
+                <span className="text-[10px] text-gray-400">{t("broadcast.insert", "Sisipkan:")}</span>
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, content: form.content + " {{name}}" })}
@@ -154,7 +158,7 @@ export default function BroadcastForm({
               rows={4}
               required
               maxLength={4096}
-              placeholder="Your broadcast message..."
+              placeholder={t("broadcast.message_placeholder", "Tulis pesan siaran...")}
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
             />
@@ -166,7 +170,7 @@ export default function BroadcastForm({
           {/* Recipients */}
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <label className="label mb-0">Recipients</label>
+              <label className="label mb-0">{t("broadcast.recipients", "Penerima")}</label>
               <div className="flex gap-2 ml-auto">
                 {(["Manual", "From Contacts"] as const).map((mode, i) => (
                   <button
@@ -175,7 +179,7 @@ export default function BroadcastForm({
                     onClick={() => setUseContacts(i === 1)}
                     className={`text-xs px-2.5 py-1 rounded font-medium transition-colors ${(i === 1) === useContacts ? "bg-brand-600 text-white shadow-sm" : "bg-gray-800 text-gray-400 hover:text-gray-200"}`}
                   >
-                    {mode}
+                    {mode === "Manual" ? t("broadcast.manual", "Manual") : t("broadcast.from_contacts", "Dari Kontak")}
                   </button>
                 ))}
               </div>
@@ -192,7 +196,7 @@ export default function BroadcastForm({
                         : "bg-gray-800/80 border border-gray-700 text-gray-400 hover:text-white"
                     }`}
                   >
-                    Semua ({contacts.length})
+                    {t("broadcast.all_contacts", "Semua")} ({contacts.length})
                   </button>
                   {allTags.map((t) => (
                     <button
@@ -210,7 +214,7 @@ export default function BroadcastForm({
                   ))}
                 </div>
                 <div className="p-2.5 bg-gray-900/80 border border-gray-800 rounded-lg flex items-center justify-between text-xs">
-                  <span className="text-gray-400">Total kontak terseleksi:</span>
+                  <span className="text-gray-400">{t("broadcast.selected_count", "Total kontak terseleksi:")}</span>
                   <span className="font-semibold text-brand-400 font-mono">
                     {recipientCount} penerima
                   </span>
@@ -231,7 +235,7 @@ export default function BroadcastForm({
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="label mb-0">Smart Anti-Ban Delay (ms)</label>
+              <label className="label mb-0">{t("broadcast.anti_ban_delay", "Jeda Anti-Ban (ms)")}</label>
               <span className="text-[10px] text-brand-400 font-semibold flex items-center gap-1">
                 🛡️ Anti-Ban Protected
               </span>
@@ -265,7 +269,7 @@ export default function BroadcastForm({
               onChange={(e) => setForm({ ...form, delayMs: e.target.value })}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Estimated campaign duration: ~{Math.ceil(((recipientCount || 1) * parseInt(form.delayMs || "2000")) / 60000)} minutes. Natural jitter will be applied automatically.
+              {t("broadcast.duration_estimate", "Estimasi durasi siaran:")} ~{Math.ceil(((recipientCount || 1) * parseInt(form.delayMs || "2000")) / 60000)} {t("broadcast.minutes", "menit")}.
             </p>
           </div>
 
@@ -280,10 +284,10 @@ export default function BroadcastForm({
               ) : (
                 <Play className="w-4 h-4" />
               )}
-              {saving ? "Starting…" : "Start Broadcast"}
+              {saving ? t("actions.saving", "Memulai…") : t("broadcast.start_btn", "Mulai Siaran")}
             </button>
             <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancel
+              {t("common.cancel", "Batal")}
             </button>
           </div>
         </form>

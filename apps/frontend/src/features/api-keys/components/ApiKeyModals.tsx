@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ApiKey } from "../../../api/client";
+import { useI18n } from "../../../context/I18nContext";
 import {
   Key,
   X,
@@ -18,6 +19,7 @@ interface NewKeyModalProps {
 }
 
 export function NewKeyModal({ apiKey, onClose }: NewKeyModalProps) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
@@ -37,9 +39,11 @@ export function NewKeyModal({ apiKey, onClose }: NewKeyModalProps) {
             <Key className="w-5 h-5 text-brand-400" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">API Key Created</p>
+            <p className="text-sm font-semibold text-white">
+              {t("api_keys.created_title", "API Key Berhasil Dibuat")}
+            </p>
             <p className="text-xs text-gray-500">
-              Copy it now — it won't be shown again
+              {t("api_keys.created_desc", "Salin sekarang — kunci ini tidak akan ditampilkan lagi")}
             </p>
           </div>
         </div>
@@ -47,12 +51,12 @@ export function NewKeyModal({ apiKey, onClose }: NewKeyModalProps) {
         <div className="bg-yellow-900/20 border border-yellow-800/40 rounded-lg px-3 py-2 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
           <p className="text-xs text-yellow-400">
-            Store this key securely. We cannot recover it.
+            {t("api_keys.secure_warning", "Simpan kunci ini di tempat aman. Kunci tidak dapat dipulihkan jika hilang.")}
           </p>
         </div>
 
         <div>
-          <p className="label">Your API Key</p>
+          <p className="label">{t("api_keys.your_key", "API Key Anda")}</p>
           <div className="relative group">
             <div className="input font-mono text-xs text-brand-300 pr-10 break-all select-all">
               {apiKey.key}
@@ -72,17 +76,17 @@ export function NewKeyModal({ apiKey, onClose }: NewKeyModalProps) {
 
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div>
-            <p className="text-gray-600">Name</p>
+            <p className="text-gray-600">{t("api_keys.name", "Nama")}</p>
             <p className="text-gray-300">{apiKey.name}</p>
           </div>
           <div>
-            <p className="text-gray-600">Expires</p>
+            <p className="text-gray-600">{t("api_keys.expires", "Kedaluwarsa")}</p>
             <p className="text-gray-300">{fmt(apiKey.expiresAt)}</p>
           </div>
         </div>
 
         <button onClick={onClose} className="btn-primary w-full justify-center">
-          <Check className="w-4 h-4" /> I've saved the key
+          <Check className="w-4 h-4" /> {t("api_keys.saved_confirm", "Saya sudah menyimpan API Key")}
         </button>
       </div>
     </div>
@@ -100,6 +104,7 @@ interface CreateKeyModalProps {
 }
 
 export function CreateKeyModal({ onClose, onCreate }: CreateKeyModalProps) {
+  const { t } = useI18n();
   const [form, setForm] = useState({ name: "", expiresAt: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -117,7 +122,9 @@ export function CreateKeyModal({ onClose, onCreate }: CreateKeyModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="card w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold text-white">New API Key</p>
+          <p className="text-sm font-semibold text-white">
+            {t("api_keys.new_title", "Buat API Key Baru")}
+          </p>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-300"
@@ -134,10 +141,10 @@ export function CreateKeyModal({ onClose, onCreate }: CreateKeyModalProps) {
 
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
           <div>
-            <label className="label">Key Name *</label>
+            <label className="label">{t("api_keys.key_name", "Nama API Key *")}</label>
             <input
               className="input"
-              placeholder="e.g. Production App"
+              placeholder={t("api_keys.name_placeholder", "Contoh: Production App")}
               required
               minLength={3}
               value={form.name}
@@ -145,7 +152,7 @@ export function CreateKeyModal({ onClose, onCreate }: CreateKeyModalProps) {
             />
           </div>
           <div>
-            <label className="label">Expires At (optional)</label>
+            <label className="label">{t("api_keys.expires_at", "Tanggal Kedaluwarsa (opsional)")}</label>
             <input
               type="date"
               className="input"
@@ -154,7 +161,7 @@ export function CreateKeyModal({ onClose, onCreate }: CreateKeyModalProps) {
               onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
             />
             <p className="text-xs text-gray-600 mt-1">
-              Leave empty for no expiry
+              {t("api_keys.never_expires_hint", "Biarkan kosong jika tanpa masa berlaku")}
             </p>
           </div>
           <div className="flex gap-2 pt-1">
@@ -168,10 +175,10 @@ export function CreateKeyModal({ onClose, onCreate }: CreateKeyModalProps) {
               ) : (
                 <Key className="w-4 h-4" />
               )}
-              {saving ? "Creating…" : "Create Key"}
+              {saving ? t("actions.saving", "Membuat…") : t("api_keys.create_btn", "Buat Key")}
             </button>
             <button type="button" className="btn-secondary" onClick={onClose}>
-              Cancel
+              {t("common.cancel", "Batal")}
             </button>
           </div>
         </form>
@@ -188,25 +195,28 @@ interface RevokeModalProps {
 }
 
 export function RevokeModal({ onConfirm, onCancel }: RevokeModalProps) {
+  const { t } = useI18n();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="card w-full max-w-sm p-6 space-y-4">
-        <p className="text-sm font-semibold text-white">Revoke API Key?</p>
+        <p className="text-sm font-semibold text-white">
+          {t("api_keys.revoke_title", "Cabut API Key?")}
+        </p>
         <p className="text-xs text-gray-400">
-          Any application using this key will immediately lose access.
+          {t("api_keys.revoke_desc", "Semua aplikasi atau sistem yang menggunakan key ini akan langsung kehilangan akses integrasi.")}
         </p>
         <div className="flex gap-2">
           <button
             onClick={onConfirm}
             className="btn-danger flex-1 justify-center"
           >
-            <Trash2 className="w-4 h-4" /> Revoke
+            <Trash2 className="w-4 h-4" /> {t("api_keys.revoke_btn", "Cabut Akses")}
           </button>
           <button
             onClick={onCancel}
             className="btn-secondary flex-1 justify-center"
           >
-            Cancel
+            {t("common.cancel", "Batal")}
           </button>
         </div>
       </div>

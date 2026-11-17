@@ -1,0 +1,1272 @@
+module.exports = { TRANSLATIONS: {
+  "sessions.error_phone": {
+    "id": "Masukkan nomor telepon yang valid lengkap dengan kode negara",
+    "en": "Enter a valid phone number with country code",
+    "ja": "国番号を含む有効な電話番号を入力してください"
+  },
+  "sessions.error_pairing": {
+    "id": "Gagal membuat kode pairing. Silakan coba lagi.",
+    "en": "Failed to generate pairing code. Please try again.",
+    "ja": "ペアリングコードの生成に失敗しました。もう一度お試しください。"
+  },
+  "sessions.error_qr": {
+    "id": "Gagal membuat QR code. Silakan coba lagi.",
+    "en": "Failed to generate QR code. Please try again.",
+    "ja": "QRコードの生成に失敗しました。もう一度お試しください。"
+  },
+  "sessions.scan_qr_desc": {
+    "id": "Pindai kode QR atau gunakan kode pairing untuk menghubungkan",
+    "en": "Scan QR or use pairing code to connect",
+    "ja": "QRコードをスキャンするか、ペアリングコードを使用して接続します"
+  },
+  "sessions.click_generate": {
+    "id": "Klik tombol di bawah untuk membuat QR code",
+    "en": "Click below to generate QR code",
+    "ja": "下をクリックしてQRコードを生成してください"
+  },
+  "sessions.auto_refresh": {
+    "id": "Auto-refresh QR aktif",
+    "en": "Auto-refresh QR active",
+    "ja": "QR自動更新が有効です"
+  },
+  "sessions.qr_expires": {
+    "id": "QR code kedaluwarsa dalam 60 detik. Sistem otomatis memperbarui.",
+    "en": "QR code expires in 60 seconds. Auto-refresh is enabled.",
+    "ja": "QRコードは60秒で有効期限が切れます。自動更新されます。"
+  },
+  "sessions.step_1": {
+    "id": "Buka aplikasi WhatsApp di ponsel Anda",
+    "en": "Open WhatsApp on your phone",
+    "ja": "スマートフォンのWhatsAppを開きます"
+  },
+  "sessions.step_2": {
+    "id": "Ketuk Menu (Android) atau Pengaturan (iOS) → Perangkat Tertaut",
+    "en": "Tap Menu (Android) or Settings (iOS) → Linked Devices",
+    "ja": "メニュー（Android）または設定（iOS）→ リンクされたデバイスをタップ"
+  },
+  "sessions.step_3": {
+    "id": "Ketuk Tautkan Perangkat lalu arahkan kamera ke kode QR ini",
+    "en": "Tap Link a Device and scan this code",
+    "ja": "デバイスをリンクをタップしてこのコードをスキャンします"
+  },
+  "sessions.generate_qr": {
+    "id": "Buat QR Code",
+    "en": "Generate QR Code",
+    "ja": "QRコードを生成"
+  },
+  "sessions.enter_phone": {
+    "id": "Masukkan nomor WhatsApp Anda dengan kode negara (contoh: 628123456789)",
+    "en": "Enter your WhatsApp number with country code (e.g. 628123456789)",
+    "ja": "国番号付きのWhatsApp番号を入力してください（例：628123456789）"
+  },
+  "sessions.get_pairing_code": {
+    "id": "Dapatkan Kode Pairing",
+    "en": "Get Pairing Code",
+    "ja": "ペアリングコードを取得"
+  },
+  "sessions.your_pairing_code": {
+    "id": "Kode pairing Anda",
+    "en": "Your pairing code",
+    "ja": "あなたのペアリングコード"
+  },
+  "sessions.valid_seconds": {
+    "id": "Berlaku selama ~60 detik",
+    "en": "Valid for ~60 seconds",
+    "ja": "有効期限：約60秒"
+  },
+  "sessions.pair_step_1": {
+    "id": "Buka WhatsApp di ponsel Anda",
+    "en": "Open WhatsApp on your phone",
+    "ja": "スマホでWhatsAppを開きます"
+  },
+  "sessions.pair_step_2": {
+    "id": "Buka Pengaturan → Perangkat Tertaut → Tautkan Perangkat",
+    "en": "Go to Settings → Linked Devices → Link a Device",
+    "ja": "設定 → リンクされたデバイス → デバイスをリンクへ移動"
+  },
+  "sessions.pair_step_3": {
+    "id": "Pilih 'Tautkan dengan nomor telepon saja'",
+    "en": "Tap Link with phone number instead",
+    "ja": "「電話番号でリンク」をタップ"
+  },
+  "sessions.pair_step_4": {
+    "id": "Masukkan 8 karakter kode pairing di atas dalam 60 detik",
+    "en": "Enter the 8-character pairing code above within 60 seconds",
+    "ja": "上記の8文字コードを60秒以内に入力してください"
+  },
+  "sessions.request_new_code": {
+    "id": "Minta Kode Baru",
+    "en": "Request New Code",
+    "ja": "新しいコードをリクエスト"
+  },
+  "actions.loading": {
+    "id": "Menyiapkan...",
+    "en": "Loading...",
+    "ja": "読み込み中..."
+  },
+  "actions.saving": {
+    "id": "Menyimpan...",
+    "en": "Saving...",
+    "ja": "保存中..."
+  },
+  "footer.product": {
+    "id": "Produk",
+    "en": "Product",
+    "ja": "製品"
+  },
+  "footer.developers": {
+    "id": "Pengembang",
+    "en": "Developers",
+    "ja": "開発者"
+  },
+  "footer.platform": {
+    "id": "Platform",
+    "en": "Platform",
+    "ja": "プラットフォーム"
+  },
+  "footer.providers_count": {
+    "id": "3 Gateway Provider Terhubung",
+    "en": "3 Connected Providers",
+    "ja": "3つの接続プロバイダー"
+  },
+  "footer.features_count": {
+    "id": "20+ Fitur Automasi WhatsApp",
+    "en": "20+ Automation Features",
+    "ja": "20以上の自動化機能"
+  },
+  "footer.languages_count": {
+    "id": "3 Bahasa Global",
+    "en": "3 Global Languages",
+    "ja": "3つのグローバル言語"
+  },
+  "footer.messages_count": {
+    "id": "Sinkronisasi Multi-Device Cepat",
+    "en": "Fast Multi-Device Sync",
+    "ja": "高速マルチデバイス同期"
+  },
+  "footer.tagline": {
+    "id": "Solusi gateway WhatsApp modern untuk developer dan bisnis masa kini.",
+    "en": "Modern WhatsApp gateway and API bridge for developers and growing businesses.",
+    "ja": "現代の開発者とビジネスのための最新のWhatsAppゲートウェイソリューション。"
+  },
+  "footer.all_rights": {
+    "id": "Semua hak cipta dilindungi undang-undang.",
+    "en": "All rights reserved.",
+    "ja": "無断転載を禁じます。"
+  },
+  "public.features": {
+    "id": "Fitur Unggulan",
+    "en": "Features",
+    "ja": "機能"
+  },
+  "public.how_it_works": {
+    "id": "Cara Kerja",
+    "en": "How It Works",
+    "ja": "使い方"
+  },
+  "public.pricing": {
+    "id": "Paket & Harga",
+    "en": "Pricing",
+    "ja": "料金プラン"
+  },
+  "public.docs": {
+    "id": "Dokumentasi API",
+    "en": "Documentation",
+    "ja": "ドキュメント"
+  },
+  "public.get_started": {
+    "id": "Mulai Sekarang",
+    "en": "Get Started",
+    "ja": "今すぐ始める"
+  },
+  "public.sign_in": {
+    "id": "Masuk",
+    "en": "Sign In",
+    "ja": "ログイン"
+  },
+  "public.register": {
+    "id": "Daftar Akun",
+    "en": "Create Account",
+    "ja": "アカウント登録"
+  },
+  "public.registering": {
+    "id": "Mendaftarkan akun...",
+    "en": "Creating account...",
+    "ja": "登録中..."
+  },
+  "public.signing_in": {
+    "id": "Sedang masuk...",
+    "en": "Signing in...",
+    "ja": "ログイン中..."
+  },
+  "public.back_to_home": {
+    "id": "Kembali ke Beranda",
+    "en": "Back to home",
+    "ja": "ホームに戻る"
+  },
+  "public.hero_title": {
+    "id": "Gateway WhatsApp Modern, Cepat & Tanpa Ribet",
+    "en": "Everything you need to automate WhatsApp",
+    "ja": "WhatsAppを自動化するために必要なすべて"
+  },
+  "public.hero_desc": {
+    "id": "Hubungkan nomor WhatsApp Anda dengan Baileys atau Meta Cloud API, kirim pesan multimedia, dan automasi balasan pelanggan lewat REST API.",
+    "en": "Connect any WhatsApp number, send any message type, and automate replies — all through a simple REST API.",
+    "ja": "WhatsApp番号を接続し、任意のメッセージタイプを送信し、シンプルなREST APIで返信を自動化します。"
+  },
+  "nav.system_operational": {
+    "id": "Semua Sistem Normal",
+    "en": "All Systems Operational",
+    "ja": "全システム正常稼働中"
+  },
+  "nav.system_degraded": {
+    "id": "Sistem Terganggu",
+    "en": "System Degraded",
+    "ja": "システム低下"
+  },
+  "nav.provider_status": {
+    "id": "Status Gateway",
+    "en": "Provider Status",
+    "ja": "プロバイダーステータス"
+  },
+  "nav.checking_providers": {
+    "id": "Memeriksa gateway...",
+    "en": "Checking providers...",
+    "ja": "確認中..."
+  },
+  "nav.no_health_data": {
+    "id": "Tidak ada data kesehatan",
+    "en": "No health data",
+    "ja": "ヘルスデータなし"
+  },
+  "nav.scan_qr": {
+    "id": "Scan WhatsApp QR Code",
+    "en": "Scan WhatsApp QR Code",
+    "ja": "WhatsApp QRコードをスキャン"
+  },
+  "nav.uptime": {
+    "id": "Uptime Server",
+    "en": "Uptime",
+    "ja": "稼働時間"
+  },
+  "nav.api_docs": {
+    "id": "Dokumentasi API",
+    "en": "API Documentation",
+    "ja": "APIドキュメント"
+  },
+  "nav.team_management": {
+    "id": "Manajemen Tim",
+    "en": "Team Management",
+    "ja": "チーム管理"
+  },
+  "nav.sign_out": {
+    "id": "Keluar",
+    "en": "Sign out",
+    "ja": "ログアウト"
+  },
+  "broadcast.progress": {
+    "id": "Progres Pengiriman",
+    "en": "Delivery Progress",
+    "ja": "送信進行状況"
+  },
+  "broadcast.recipients": {
+    "id": "Penerima",
+    "en": "Recipients",
+    "ja": "受信者"
+  },
+  "broadcast.empty_title": {
+    "id": "Belum Ada Siaran",
+    "en": "No Broadcasts Yet",
+    "ja": "配信はまだありません"
+  },
+  "broadcast.empty_desc": {
+    "id": "Buat kampanye pesan siaran baru untuk menjangkau kontak Anda secara massal.",
+    "en": "Create a new broadcast campaign to reach contacts in bulk.",
+    "ja": "連絡先に一括メッセージを送信するための新しい配信を作成します。"
+  },
+  "contacts.delete_confirm_title": {
+    "id": "Hapus Kontak",
+    "en": "Delete Contact",
+    "ja": "連絡先を削除"
+  },
+  "contacts.empty": {
+    "id": "Belum ada kontak",
+    "en": "No contacts found",
+    "ja": "連絡先が見つかりません"
+  },
+  "provider_configs.webhook_secret": {
+    "id": "Webhook Secret",
+    "en": "Webhook Secret",
+    "ja": "Webhookシークレット"
+  },
+  "provider_configs.webhook_secret_placeholder": {
+    "id": "Kunci rahasia validasi signature webhook",
+    "en": "Secret key for signature verification",
+    "ja": "署名検証用のシークレットキー"
+  },
+  "provider_configs.save_success": {
+    "id": "Konfigurasi provider berhasil disimpan",
+    "en": "Provider configuration saved successfully",
+    "ja": "プロバイダー構成が保存されました"
+  },
+  "provider_configs.save_failed": {
+    "id": "Gagal menyimpan konfigurasi provider",
+    "en": "Failed to save provider configuration",
+    "ja": "プロバイダー構成の保存に失敗しました"
+  },
+  "provider_configs.delete_confirm_title": {
+    "id": "Hapus Konfigurasi Provider",
+    "en": "Delete Provider Configuration",
+    "ja": "プロバイダー構成を削除"
+  },
+  "provider_configs.delete_confirm_desc": {
+    "id": "Apakah Anda yakin ingin menghapus konfigurasi provider ini? Sesi terkait akan terputus.",
+    "en": "Are you sure you want to delete this provider configuration? Associated sessions will be disconnected.",
+    "ja": "このプロバイダー構成を削除してもよろしいですか？関連するセッションは切断されます。"
+  },
+  "provider_configs.view_qr": {
+    "id": "Lihat QR",
+    "en": "View QR",
+    "ja": "QRを表示"
+  },
+  "provider_configs.connected": {
+    "id": "Terhubung",
+    "en": "Connected",
+    "ja": "接続済み"
+  },
+  "webhooks.dispatched_success": {
+    "id": "Webhook berhasil dikirim ulang",
+    "en": "Webhook redelivered successfully",
+    "ja": "Webhookが再送信されました"
+  },
+  "webhooks.retry_failed": {
+    "id": "Gagal mengirim ulang webhook",
+    "en": "Failed to retry webhook",
+    "ja": "Webhookの再試行に失敗しました"
+  },
+  "webhooks.delete_confirm_title": {
+    "id": "Hapus Webhook",
+    "en": "Delete Webhook",
+    "ja": "Webhookを削除"
+  },
+  "webhooks.delete_confirm_desc": {
+    "id": "Apakah Anda yakin ingin menghapus endpoint webhook ini?",
+    "en": "Are you sure you want to delete this webhook endpoint?",
+    "ja": "このWebhookエンドポイントを削除してもよろしいですか？"
+  },
+  "webhooks.no_logs": {
+    "id": "Belum ada riwayat aktivitas webhook",
+    "en": "No webhook activity logs found",
+    "ja": "Webhookのアクティビティログはありません"
+  },
+  "webhooks.event_type": {
+    "id": "Tipe Event",
+    "en": "Event Type",
+    "ja": "イベントタイプ"
+  },
+  "webhooks.response_code": {
+    "id": "Kode Status",
+    "en": "Status Code",
+    "ja": "ステータスコード"
+  },
+  "webhooks.duration": {
+    "id": "Durasi (ms)",
+    "en": "Duration (ms)",
+    "ja": "所要時間 (ms)"
+  },
+  "webhooks.attempt": {
+    "id": "Percobaan",
+    "en": "Attempt",
+    "ja": "試行回数"
+  },
+  "webhooks.timestamp": {
+    "id": "Waktu Pengiriman",
+    "en": "Timestamp",
+    "ja": "タイムスタンプ"
+  },
+  "webhooks.delivered": {
+    "id": "Terkirim",
+    "en": "Delivered",
+    "ja": "配信完了"
+  },
+  "webhooks.failed": {
+    "id": "Gagal",
+    "en": "Failed",
+    "ja": "失敗"
+  },
+  "webhooks.no_response": {
+    "id": "Tidak ada respon",
+    "en": "No response",
+    "ja": "応答なし"
+  },
+  "webhooks.inspect": {
+    "id": "Detail Log",
+    "en": "Inspect",
+    "ja": "詳細"
+  },
+  "webhooks.retry": {
+    "id": "Kirim Ulang",
+    "en": "Retry",
+    "ja": "再試行"
+  },
+  "webhooks.modal_title": {
+    "id": "Detail Eksekusi Webhook",
+    "en": "Webhook Delivery Details",
+    "ja": "Webhook配信の詳細"
+  },
+  "webhooks.payload_json": {
+    "id": "Payload Event (JSON)",
+    "en": "Event Payload (JSON)",
+    "ja": "イベントペイロード (JSON)"
+  },
+  "webhooks.server_response": {
+    "id": "Respon Server Tujuan",
+    "en": "Target Server Response",
+    "ja": "対象サーバーの応答"
+  },
+  "webhooks.retry_now": {
+    "id": "Kirim Ulang Sekarang",
+    "en": "Retry Delivery Now",
+    "ja": "今すぐ再試行"
+  },
+  "webhooks.empty_title": {
+    "id": "Belum Ada Webhook",
+    "en": "No Webhooks Configured",
+    "ja": "Webhookが設定されていません"
+  },
+  "webhooks.empty_desc": {
+    "id": "Daftarkan URL endpoint Anda untuk menerima event pesan masuk dan status WhatsApp secara real-time.",
+    "en": "Register your endpoint URL to receive incoming messages and WhatsApp status events in real-time.",
+    "ja": "着信メッセージやステータスイベントをリアルタイムで受信するためのエンドポイントURLを登録します。"
+  },
+  "landing.hero_badge": {
+    "id": "🚀 Enterprise WhatsApp API Gateway",
+    "en": "🚀 Enterprise WhatsApp API Gateway",
+    "ja": "🚀 エンタープライズWhatsApp APIゲートウェイ"
+  },
+  "landing.explore_docs": {
+    "id": "Pelajari Dokumentasi",
+    "en": "Explore Documentation",
+    "ja": "ドキュメントを見る"
+  },
+  "landing.ready_title": {
+    "id": "Siap Mengotomasi Komunikasi WhatsApp Anda?",
+    "en": "Ready to Automate WhatsApp?",
+    "ja": "WhatsAppを自動化する準備はできましたか？"
+  },
+  "landing.ready_subtitle": {
+    "id": "Mulai integrasi dalam hitungan menit dengan SDK dan REST API kami.",
+    "en": "Start integrating in minutes with our robust SDK and REST APIs.",
+    "ja": "SDKとREST APIを使用して数分で統合を開始できます。"
+  },
+  "landing.cta_button": {
+    "id": "Daftar & Hubungkan Sekarang",
+    "en": "Get Started Free",
+    "ja": "無料で始める"
+  },
+  "landing.cta_contact": {
+    "id": "Hubungi Dukungan",
+    "en": "Contact Support",
+    "ja": "サポートに連絡"
+  },
+  "messages.send_new": {
+    "id": "Kirim Pesan Baru",
+    "en": "Send Message",
+    "ja": "新規メッセージ送信"
+  },
+  "messages.empty": {
+    "id": "Belum ada riwayat pesan tercatat",
+    "en": "No messages recorded yet",
+    "ja": "メッセージ履歴はまだありません"
+  },
+  "messages.recipient": {
+    "id": "Nomor Penerima",
+    "en": "Recipient Number",
+    "ja": "宛先番号"
+  },
+  "messages.content": {
+    "id": "Isi Pesan *",
+    "en": "Message *",
+    "ja": "メッセージ内容 *"
+  },
+  "dashboard.recent_messages": {
+    "id": "Pesan Terbaru",
+    "en": "Recent Messages",
+    "ja": "最近のメッセージ"
+  },
+  "dashboard.active_sessions_count": {
+    "id": "Sesi WhatsApp Terhubung",
+    "en": "Connected Sessions",
+    "ja": "接続中のセッション"
+  },
+  "dashboard.view_all": {
+    "id": "Lihat Semua",
+    "en": "View All",
+    "ja": "すべて表示"
+  },
+  "events.provider": {
+    "id": "Provider",
+    "en": "Provider",
+    "ja": "プロバイダー"
+  },
+  "events.event_type": {
+    "id": "Tipe Event",
+    "en": "Event Type",
+    "ja": "イベントタイプ"
+  },
+  "events.session": {
+    "id": "Sesi",
+    "en": "Session",
+    "ja": "セッション"
+  },
+  "events.status": {
+    "id": "Status",
+    "en": "Status",
+    "ja": "ステータス"
+  },
+  "events.timestamp": {
+    "id": "Waktu",
+    "en": "Timestamp",
+    "ja": "日時"
+  },
+  "events.processed": {
+    "id": "Diproses",
+    "en": "Processed",
+    "ja": "処理済み"
+  },
+  "events.pending": {
+    "id": "Menunggu",
+    "en": "Pending",
+    "ja": "保留中"
+  },
+  "events.empty": {
+    "id": "Belum ada event tercatat",
+    "en": "No events recorded",
+    "ja": "記録されたイベントはありません"
+  },
+  "groups.title": {
+    "id": "Grup WhatsApp",
+    "en": "WhatsApp Groups",
+    "ja": "WhatsAppグループ"
+  },
+  "groups.subtitle": {
+    "id": "Kelola dan pantau grup WhatsApp yang terhubung pada sesi aktif",
+    "en": "Manage and monitor WhatsApp groups connected to active sessions",
+    "ja": "アクティブなセッションに接続されているグループを管理および監視します"
+  },
+  "groups.new": {
+    "id": "Buat Grup Baru",
+    "en": "Create Group",
+    "ja": "新しいグループを作成"
+  },
+  "groups.participants": {
+    "id": "Anggota",
+    "en": "Participants",
+    "ja": "参加者"
+  },
+  "groups.group_name": {
+    "id": "Nama Grup",
+    "en": "Group Name",
+    "ja": "グループ名"
+  },
+  "groups.group_id": {
+    "id": "ID Grup (JID)",
+    "en": "Group JID",
+    "ja": "グループID"
+  },
+  "groups.created_at": {
+    "id": "Dibuat",
+    "en": "Created",
+    "ja": "作成日"
+  },
+  "groups.empty_title": {
+    "id": "Belum Ada Grup",
+    "en": "No Groups Found",
+    "ja": "グループが見つかりません"
+  },
+  "groups.empty_desc": {
+    "id": "Sesi WhatsApp belum terhubung ke grup manapun atau belum ada grup yang dibuat.",
+    "en": "No WhatsApp groups found for this session yet.",
+    "ja": "このセッションにはまだWhatsAppグループが見つかりません。"
+  },
+  "templates.delete_confirm_title": {
+    "id": "Hapus Template Pesan",
+    "en": "Delete Message Template",
+    "ja": "メッセージテンプレートを削除"
+  },
+  "templates.delete_confirm_desc": {
+    "id": "Apakah Anda yakin ingin menghapus template ini?",
+    "en": "Are you sure you want to delete this template?",
+    "ja": "このテンプレートを削除してもよろしいですか？"
+  },
+  "livechat.reply_via": {
+    "id": "Balas melalui sesi",
+    "en": "Reply via session",
+    "ja": "セッション経由で返信"
+  },
+  "livechat.offline_banner": {
+    "id": "Sesi ini sedang offline. Hubungkan kembali sesi untuk mengirim pesan.",
+    "en": "This session is offline. Reconnect the session to send messages.",
+    "ja": "このセッションはオフラインです。メッセージを送信するにはセッションを再接続してください。"
+  },
+  "livechat.download_document": {
+    "id": "Unduh Dokumen",
+    "en": "Download Document",
+    "ja": "ドキュメントをダウンロード"
+  },
+  "livechat.failed_retry": {
+    "id": "Gagal mengirim pesan. Klik untuk coba lagi.",
+    "en": "Failed to send message. Click to retry.",
+    "ja": "メッセージの送信に失敗しました。再試行するにはクリックしてください。"
+  },
+  "livechat.quick_replies": {
+    "id": "Template Cepat",
+    "en": "Quick Replies",
+    "ja": "クイック返信"
+  },
+  "livechat.recording": {
+    "id": "Merekam pesan suara...",
+    "en": "Recording voice note...",
+    "ja": "音声メモを録音中..."
+  },
+  "livechat.stop_recording": {
+    "id": "Berhenti & Kirim",
+    "en": "Stop & Send",
+    "ja": "停止して送信"
+  },
+  "livechat.attach_file": {
+    "id": "Lampirkan Dokumen / Gambar",
+    "en": "Attach Document / Image",
+    "ja": "添付ファイル"
+  },
+  "livechat.voice_note": {
+    "id": "Rekam Pesan Suara",
+    "en": "Voice Note",
+    "ja": "音声メッセージ"
+  },
+  "livechat.input_placeholder": {
+    "id": "Ketik pesan atau / untuk template cepat...",
+    "en": "Type a message or / for quick replies...",
+    "ja": "メッセージを入力するか、/でクイック返信..."
+  },
+  "livechat.send": {
+    "id": "Kirim",
+    "en": "Send",
+    "ja": "送信"
+  },
+  "livechat.select_conversation": {
+    "id": "Pilih percakapan dari daftar di sebelah kiri untuk mulai mengobrol",
+    "en": "Select a conversation from the list to start chatting",
+    "ja": "チャットを開始するには一覧から会話を選択してください"
+  },
+  "livechat.tabs.all": {
+    "id": "Semua",
+    "en": "All",
+    "ja": "すべて"
+  },
+  "livechat.tabs.unread": {
+    "id": "Belum Dibaca",
+    "en": "Unread",
+    "ja": "未読"
+  },
+  "livechat.tabs.resolved": {
+    "id": "Selesai",
+    "en": "Resolved",
+    "ja": "完了"
+  },
+  "livechat.mark_resolved": {
+    "id": "Tandai Selesai",
+    "en": "Mark Resolved",
+    "ja": "完了にする"
+  },
+  "livechat.unresolve": {
+    "id": "Buka Kembali",
+    "en": "Reopen",
+    "ja": "再オープン"
+  },
+  "scheduled.schedule_button": {
+    "id": "Jadwalkan Pesan",
+    "en": "Schedule Message",
+    "ja": "メッセージを予約"
+  },
+  "scheduled.session": {
+    "id": "Sesi Pengirim",
+    "en": "Sender Session",
+    "ja": "送信元セッション"
+  },
+  "scheduled.recipient": {
+    "id": "Nomor Penerima",
+    "en": "Recipient Number",
+    "ja": "受信者番号"
+  },
+  "scheduled.content": {
+    "id": "Isi Pesan",
+    "en": "Message Content",
+    "ja": "メッセージ内容"
+  },
+  "scheduled.scheduled_for": {
+    "id": "Waktu Pengiriman",
+    "en": "Scheduled For",
+    "ja": "送信予定日時"
+  },
+  "scheduled.empty_title": {
+    "id": "Belum Ada Pesan Terjadwal",
+    "en": "No Scheduled Messages",
+    "ja": "予約メッセージはありません"
+  },
+  "scheduled.empty_desc": {
+    "id": "Jadwalkan pesan otomatis untuk dikirim pada tanggal dan jam tertentu di masa mendatang.",
+    "en": "Schedule automated messages to be delivered at a specific future date and time.",
+    "ja": "将来の特定の日時に送信される自動メッセージを予約します。"
+  },
+  "scheduled.cancel": {
+    "id": "Batalkan Jadwal",
+    "en": "Cancel Schedule",
+    "ja": "予約をキャンセル"
+  },
+  "session_health.latency": {
+    "id": "Latensi Gateway",
+    "en": "Gateway Latency",
+    "ja": "ゲートウェイ遅延"
+  },
+  "session_health.last_heartbeat": {
+    "id": "Detak Jantung Terakhir",
+    "en": "Last Heartbeat",
+    "ja": "最終ハートビート"
+  },
+  "team.email": {
+    "id": "Alamat Email",
+    "en": "Email Address",
+    "ja": "メールアドレス"
+  },
+  "team.role": {
+    "id": "Peran Akses",
+    "en": "Access Role",
+    "ja": "アクセス権限"
+  },
+  "team.delete_confirm_title": {
+    "id": "Hapus Anggota Tim",
+    "en": "Remove Team Member",
+    "ja": "チームメンバーを削除"
+  },
+  "team.remove": {
+    "id": "Hapus",
+    "en": "Remove",
+    "ja": "削除"
+  },
+  "auth.sso_failed_desc": {
+    "id": "Tidak dapat menyelesaikan proses sign-in SSO dengan AuthHub.",
+    "en": "Could not complete SSO sign-in with AuthHub.",
+    "ja": "AuthHubでのSSOサインインを完了できませんでした。"
+  },
+  "broadcast.failed": {
+    "id": "Gagal",
+    "en": "Failed",
+    "ja": "失敗"
+  },
+  "broadcast.start": {
+    "id": "Mulai Siaran",
+    "en": "Start broadcast",
+    "ja": "配信を開始"
+  },
+  "contacts.tags": {
+    "id": "Tag / Label",
+    "en": "Tags",
+    "ja": "タグ"
+  },
+  "contacts.notes": {
+    "id": "Catatan",
+    "en": "Notes",
+    "ja": "メモ"
+  },
+  "provider_configs.form_desc": {
+    "id": "Atur kredensial integrasi WhatsApp Anda",
+    "en": "Configure your WhatsApp integration credentials",
+    "ja": "WhatsApp統合の認証情報を設定します"
+  },
+  "provider_configs.docs_link": {
+    "id": "Dokumentasi",
+    "en": "Documentation",
+    "ja": "ドキュメント"
+  },
+  "provider_configs.token_not_required": {
+    "id": "Tidak diperlukan untuk Baileys",
+    "en": "Not required for Baileys",
+    "ja": "Baileysには不要です"
+  },
+  "provider_configs.token_bsp_placeholder": {
+    "id": "API Key dari penyedia BSP Anda",
+    "en": "API Key from your BSP provider",
+    "ja": "BSPプロバイダーのAPIキー"
+  },
+  "provider_configs.baileys_title": {
+    "id": "Koneksi WhatsApp Web (Baileys)",
+    "en": "WhatsApp Web Connection",
+    "ja": "WhatsApp Web接続"
+  },
+  "provider_configs.baileys_desc": {
+    "id": "Setelah membuat konfigurasi, aktifkan untuk membuat QR code lalu scan dengan aplikasi WhatsApp HP Anda.",
+    "en": "After creating this config, activate it to generate a QR code. Scan with your WhatsApp mobile app.",
+    "ja": "この構成を作成したら、有効化してQRコードを生成し、WhatsAppモバイルアプリでスキャンします。"
+  },
+  "provider_configs.verify_token_help": {
+    "id": "Buat string unik acak untuk validasi endpoint webhook Meta.",
+    "en": "Create a random unique string for Meta webhook validation.",
+    "ja": "Meta Webhook検証用のランダムな一意の文字列を作成します。"
+  },
+  "provider_configs.create_btn": {
+    "id": "Buat Konfigurasi",
+    "en": "Create Config",
+    "ja": "構成を作成"
+  },
+  "webhooks.test": {
+    "id": "Uji Webhook",
+    "en": "Test Webhook",
+    "ja": "Webhookをテスト"
+  },
+  "webhooks.logs": {
+    "id": "Riwayat Log",
+    "en": "Logs",
+    "ja": "ログ"
+  },
+  "landing.cta_title": {
+    "id": "Siap Menghubungkan WhatsApp ke Aplikasi Anda?",
+    "en": "Ready to Connect WhatsApp to Your Apps?",
+    "ja": "WhatsAppをアプリに接続する準備はできましたか？"
+  },
+  "landing.cta_desc": {
+    "id": "Dapatkan akses API cepat dan andal sekarang juga.",
+    "en": "Get fast and reliable API access right now.",
+    "ja": "今すぐ高速で信頼性の高いAPIアクセスを取得してください。"
+  },
+  "landing.view_docs": {
+    "id": "Lihat Dokumentasi API",
+    "en": "View Documentation",
+    "ja": "ドキュメントを見る"
+  },
+  "landing.badge": {
+    "id": "🚀 Gateway WhatsApp Generasi Baru",
+    "en": "🚀 Next-Gen WhatsApp API Gateway",
+    "ja": "🚀 次世代WhatsApp APIゲートウェイ"
+  },
+  "landing.title": {
+    "id": "Integrasikan WhatsApp ke Bisnis Anda dalam Hitungan Menit",
+    "en": "Integrate WhatsApp into Your Business in Minutes",
+    "ja": "数分でWhatsAppをビジネスに統合"
+  },
+  "landing.description": {
+    "id": "Kirim pesan teks, gambar, video, dokumen, broadcast massal, dan balas otomatis dengan REST API yang mudah digunakan.",
+    "en": "Send text, images, videos, documents, bulk broadcasts, and automate replies with an easy-to-use REST API.",
+    "ja": "使いやすいREST APIでテキスト、画像、動画、ドキュメント、一括配信、自動返信を送信します。"
+  },
+  "messages.sent_tab": {
+    "id": "Pesan Keluar",
+    "en": "Outbound Messages",
+    "ja": "送信メッセージ"
+  },
+  "messages.received_tab": {
+    "id": "Pesan Masuk",
+    "en": "Total Received",
+    "ja": "受信メッセージ"
+  },
+  "dashboard.total_count": {
+    "id": "Total Jumlah",
+    "en": "Total Count",
+    "ja": "合計数"
+  },
+  "dashboard.uptime": {
+    "id": "Uptime Sistem",
+    "en": "System Uptime",
+    "ja": "稼働時間"
+  },
+  "dashboard.total_sessions": {
+    "id": "Total Sesi",
+    "en": "Total Sessions",
+    "ja": "セッション合計"
+  },
+  "groups.select_session": {
+    "id": "Pilih Sesi WhatsApp Aktif",
+    "en": "Select Active Session",
+    "ja": "アクティブなセッションを選択"
+  },
+  "groups.refresh_groups": {
+    "id": "Perbarui Daftar Grup",
+    "en": "Refresh Groups",
+    "ja": "グループを更新"
+  },
+  "groups.members_count": {
+    "id": "anggota",
+    "en": "members",
+    "ja": "メンバー"
+  },
+  "groups.copy_jid": {
+    "id": "Salin ID JID",
+    "en": "Copy JID",
+    "ja": "JIDをコピー"
+  },
+  "groups.copied": {
+    "id": "Tersalin!",
+    "en": "Copied!",
+    "ja": "コピーしました！"
+  },
+  "groups.send_message": {
+    "id": "Kirim Pesan ke Grup",
+    "en": "Send Message to Group",
+    "ja": "グループにメッセージを送信"
+  },
+  "groups.modal_title": {
+    "id": "Kirim Pesan Grup",
+    "en": "Send Group Message",
+    "ja": "グループメッセージ送信"
+  },
+  "templates.content": {
+    "id": "Isi Template Pesan",
+    "en": "Message Content",
+    "ja": "メッセージ内容"
+  },
+  "livechat.search_placeholder": {
+    "id": "Cari kontak, nomor, atau isi pesan...",
+    "en": "Search contacts, phone, or messages...",
+    "ja": "連絡先、番号、メッセージを検索..."
+  },
+  "livechat.no_conversations": {
+    "id": "Belum ada riwayat percakapan",
+    "en": "No conversations found",
+    "ja": "会話が見つかりません"
+  },
+  "livechat.connected": {
+    "id": "Terhubung",
+    "en": "Connected",
+    "ja": "接続中"
+  },
+  "livechat.disconnected": {
+    "id": "Terputus",
+    "en": "Disconnected",
+    "ja": "切断済み"
+  },
+  "livechat.reconnect_qr": {
+    "id": "Sambungkan Ulang via QR",
+    "en": "Reconnect via QR",
+    "ja": "QRで再接続"
+  },
+  "api_keys.created_title": {
+    "id": "API Key Berhasil Dibuat",
+    "en": "API Key Created",
+    "ja": "APIキーが作成されました"
+  },
+  "api_keys.created_desc": {
+    "id": "Salin sekarang — kunci ini tidak akan ditampilkan lagi",
+    "en": "Copy it now — it won't be shown again",
+    "ja": "今すぐコピーしてください。再表示されません。"
+  },
+  "api_keys.secure_warning": {
+    "id": "Simpan kunci ini di tempat aman. Kunci tidak dapat dipulihkan jika hilang.",
+    "en": "Store this key securely. We cannot recover it.",
+    "ja": "このキーを安全に保管してください。復元できません。"
+  },
+  "api_keys.your_key": {
+    "id": "API Key Anda",
+    "en": "Your API Key",
+    "ja": "あなたのAPIキー"
+  },
+  "api_keys.name": {
+    "id": "Nama",
+    "en": "Name",
+    "ja": "名前"
+  },
+  "api_keys.expires": {
+    "id": "Kedaluwarsa",
+    "en": "Expires",
+    "ja": "有効期限"
+  },
+  "api_keys.saved_confirm": {
+    "id": "Saya sudah menyimpan API Key",
+    "en": "I've saved the key",
+    "ja": "キーを保存しました"
+  },
+  "api_keys.new_title": {
+    "id": "Buat API Key Baru",
+    "en": "New API Key",
+    "ja": "新しいAPIキー"
+  },
+  "api_keys.key_name": {
+    "id": "Nama API Key *",
+    "en": "Key Name *",
+    "ja": "キー名 *"
+  },
+  "api_keys.name_placeholder": {
+    "id": "Contoh: Production App",
+    "en": "e.g. Production App",
+    "ja": "例：本番環境アプリ"
+  },
+  "api_keys.expires_at": {
+    "id": "Tanggal Kedaluwarsa (opsional)",
+    "en": "Expires At (optional)",
+    "ja": "有効期限（任意）"
+  },
+  "api_keys.never_expires_hint": {
+    "id": "Biarkan kosong jika tanpa masa berlaku",
+    "en": "Leave empty for no expiry",
+    "ja": "無期限の場合は空のままにします"
+  },
+  "api_keys.create_btn": {
+    "id": "Buat Key",
+    "en": "Create Key",
+    "ja": "キーを作成"
+  },
+  "api_keys.revoke_title": {
+    "id": "Cabut API Key?",
+    "en": "Revoke API Key?",
+    "ja": "APIキーを取り消しますか？"
+  },
+  "api_keys.revoke_desc": {
+    "id": "Semua aplikasi atau sistem yang menggunakan key ini akan langsung kehilangan akses integrasi.",
+    "en": "Any application using this key will immediately lose access.",
+    "ja": "このキーを使用しているアプリケーションは直ちにアクセス権を失います。"
+  },
+  "api_keys.revoke_btn": {
+    "id": "Cabut Akses",
+    "en": "Revoke",
+    "ja": "アクセスを取り消す"
+  },
+  "broadcast.new_title": {
+    "id": "Buat Siaran Baru",
+    "en": "New Broadcast",
+    "ja": "新しい配信"
+  },
+  "broadcast.name": {
+    "id": "Nama Kampanye *",
+    "en": "Name *",
+    "ja": "キャンペーン名 *"
+  },
+  "broadcast.name_placeholder": {
+    "id": "Contoh: Promo Diskon Akhir Bulan",
+    "en": "e.g. Promo Campaign",
+    "ja": "例：プロモーション配信"
+  },
+  "broadcast.session": {
+    "id": "Sesi WhatsApp *",
+    "en": "Session *",
+    "ja": "セッション *"
+  },
+  "broadcast.select_session": {
+    "id": "Pilih sesi aktif…",
+    "en": "Select active session…",
+    "ja": "アクティブなセッションを選択…"
+  },
+  "broadcast.message": {
+    "id": "Pesan Siaran *",
+    "en": "Message *",
+    "ja": "メッセージ *"
+  },
+  "broadcast.message_placeholder": {
+    "id": "Tulis pesan siaran Anda di sini...",
+    "en": "Your broadcast message...",
+    "ja": "配信メッセージを入力してください..."
+  },
+  "broadcast.insert": {
+    "id": "Sisipkan:",
+    "en": "Insert:",
+    "ja": "挿入："
+  },
+  "broadcast.manual": {
+    "id": "Manual",
+    "en": "Manual",
+    "ja": "手動"
+  },
+  "broadcast.from_contacts": {
+    "id": "Dari Kontak",
+    "en": "From Contacts",
+    "ja": "連絡先から"
+  },
+  "broadcast.all_contacts": {
+    "id": "Semua",
+    "en": "All",
+    "ja": "すべて"
+  },
+  "broadcast.selected_count": {
+    "id": "Total kontak terseleksi:",
+    "en": "Total recipients selected:",
+    "ja": "選択された連絡先："
+  },
+  "broadcast.anti_ban_delay": {
+    "id": "Jeda Anti-Ban (ms)",
+    "en": "Smart Anti-Ban Delay (ms)",
+    "ja": "スマートBAN防止遅延 (ms)"
+  },
+  "broadcast.duration_estimate": {
+    "id": "Estimasi durasi siaran:",
+    "en": "Estimated campaign duration:",
+    "ja": "推定配信時間："
+  },
+  "broadcast.minutes": {
+    "id": "menit",
+    "en": "minutes",
+    "ja": "分"
+  },
+  "broadcast.start_btn": {
+    "id": "Mulai Siaran",
+    "en": "Start Broadcast",
+    "ja": "配信を開始"
+  },
+  "messages.send_title": {
+    "id": "Kirim Pesan WhatsApp",
+    "en": "Send Message",
+    "ja": "メッセージを送信"
+  },
+  "messages.session": {
+    "id": "Sesi WhatsApp *",
+    "en": "Session *",
+    "ja": "セッション *"
+  },
+  "messages.select_session": {
+    "id": "Pilih sesi aktif…",
+    "en": "Select active session…",
+    "ja": "アクティブなセッションを選択…"
+  },
+  "messages.no_active_sessions": {
+    "id": "Tidak ada sesi WhatsApp aktif.",
+    "en": "No active sessions.",
+    "ja": "アクティブなセッションがありません。"
+  },
+  "messages.recipient_phone": {
+    "id": "Nomor Tujuan (WhatsApp) *",
+    "en": "To (phone number) *",
+    "ja": "宛先番号 *"
+  },
+  "messages.message_type": {
+    "id": "Tipe Pesan",
+    "en": "Message Type",
+    "ja": "メッセージタイプ"
+  },
+  "messages.quick_template": {
+    "id": "Template:",
+    "en": "Quick template:",
+    "ja": "テンプレート："
+  },
+  "messages.type_placeholder": {
+    "id": "Ketik pesan Anda…",
+    "en": "Type your message…",
+    "ja": "メッセージを入力…"
+  },
+  "messages.media_url": {
+    "id": "URL Media *",
+    "en": "Media URL *",
+    "ja": "メディアURL *"
+  },
+  "messages.caption": {
+    "id": "Keterangan (Caption)",
+    "en": "Caption",
+    "ja": "キャプション"
+  },
+  "messages.caption_placeholder": {
+    "id": "Keterangan opsional",
+    "en": "Optional caption",
+    "ja": "任意のキャプション"
+  },
+  "messages.mime_type": {
+    "id": "Tipe MIME",
+    "en": "MIME Type",
+    "ja": "MIMEタイプ"
+  },
+  "messages.description_record": {
+    "id": "Deskripsi Log Pesan",
+    "en": "Message (for record)",
+    "ja": "ログ用説明"
+  },
+  "messages.description_placeholder": {
+    "id": "Deskripsi untuk arsip log",
+    "en": "Description for message log",
+    "ja": "メッセージログの説明"
+  },
+  "messages.latitude": {
+    "id": "Garis Lintang (Latitude) *",
+    "en": "Latitude *",
+    "ja": "緯度 *"
+  },
+  "messages.longitude": {
+    "id": "Garis Bujur (Longitude) *",
+    "en": "Longitude *",
+    "ja": "経度 *"
+  },
+  "messages.location_name": {
+    "id": "Nama Lokasi",
+    "en": "Location Name",
+    "ja": "場所の名前"
+  },
+  "messages.location_placeholder": {
+    "id": "Contoh: Jakarta, Indonesia",
+    "en": "e.g. Jakarta, Indonesia",
+    "ja": "例：東京都"
+  },
+  "messages.send_btn": {
+    "id": "Kirim Pesan",
+    "en": "Send",
+    "ja": "送信"
+  },
+  "messages.sent_success": {
+    "id": "Pesan berhasil dikirim!",
+    "en": "Message sent!",
+    "ja": "メッセージを送信しました！"
+  },
+  "autoreply.upload_doc": {
+    "id": "Upload Dokumen",
+    "en": "Upload Document",
+    "ja": "ドキュメントをアップロード"
+  },
+  "autoreply.upload_kb_title": {
+    "id": "Upload dokumen pengetahuan (.txt, .md, .csv, .json)",
+    "en": "Upload knowledge base document (.txt, .md, .csv, .json)",
+    "ja": "ナレッジドキュメントをアップロード (.txt, .md, .csv, .json)"
+  },
+  "autoreply.use_ready_template": {
+    "id": "Gunakan template siap pakai:",
+    "en": "Use ready-made template:",
+    "ja": "テンプレートを使用："
+  },
+  "autoreply.kb_placeholder": {
+    "id": "Ketik atau tempelkan FAQ, daftar harga, katalog produk, atau ketentuan garansi di sini...",
+    "en": "Type or paste FAQ, pricing, catalog, or warranty terms here...",
+    "ja": "FAQ、価格表、カタログ、保証条件などをここに入力または貼り付けます..."
+  },
+  "autoreply.kb_help": {
+    "id": "Mendukung teks acuan untuk menjawab pertanyaan pelanggan secara otomatis.",
+    "en": "Supports reference text for auto-answering customer inquiries.",
+    "ja": "顧客からの質問に自動で回答するための参照テキストをサポートします。"
+  },
+  "contacts.upload_csv": {
+    "id": "Unggah Berkas .CSV",
+    "en": "Upload .CSV File",
+    "ja": ".CSVファイルをアップロード"
+  },
+  "contacts.or_paste": {
+    "id": "atau tempel baris kontak langsung di bawah ini:",
+    "en": "or paste raw lines directly below:",
+    "ja": "または以下に直接貼り付けます："
+  },
+  "groups.sent_success": {
+    "id": "Pesan berhasil terkirim ke grup!",
+    "en": "Message sent successfully to group!",
+    "ja": "グループにメッセージを送信しました！"
+  },
+  "events.filter_placeholder": {
+    "id": "Cari berdasarkan tipe event atau provider…",
+    "en": "Filter by event type or provider…",
+    "ja": "イベントタイプまたはプロバイダーで検索…"
+  },
+  "livechat.you": {
+    "id": "Anda",
+    "en": "You",
+    "ja": "あなた"
+  },
+  "livechat.slash_hint": {
+    "id": "Tekan Tab atau klik template",
+    "en": "Press Tab or click template",
+    "ja": "Tabキーを押すかテンプレートをクリック"
+  },
+  "common.characters": {
+    "id": "karakter",
+    "en": "characters",
+    "ja": "文字"
+  }
+} };

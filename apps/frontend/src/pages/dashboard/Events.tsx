@@ -38,7 +38,9 @@ function EventRow({ event }: { event: ProviderEvent }) {
             <span
               className={`w-1.5 h-1.5 rounded-full ${event.processed ? "bg-brand-400" : "bg-yellow-400"}`}
             />
-            {event.processed ? t("events.processed") : t("events.pending")}
+            {event.processed
+              ? t("events.processed", "Diproses")
+              : t("events.pending", "Menunggu")}
           </span>
         </td>
         <td className="px-5 py-3 text-gray-500 text-xs">
@@ -85,7 +87,7 @@ export default function Events() {
     <div className="p-6 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
-          {t("events.subtitle")}
+          {t("events.subtitle", "Pantau riwayat event gateway WhatsApp seperti koneksi, pesan masuk, dan webhook")}
         </p>
         <button
           onClick={() => void load()}
@@ -100,7 +102,7 @@ export default function Events() {
       {/* Filter */}
       <input
         className="input max-w-xs"
-        placeholder={t("common.search", "Filter by event type or provider…")}
+        placeholder={t("events.filter_placeholder", "Cari berdasarkan tipe event atau provider…")}
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
       />
@@ -113,8 +115,8 @@ export default function Events() {
         ) : filtered.length === 0 ? (
           <EmptyState
             icon={Activity}
-            title={t("events.empty")}
-            description={t("events.subtitle")}
+            title={t("events.empty", "Belum ada event tercatat")}
+            description={t("events.subtitle", "Pantau riwayat event gateway WhatsApp seperti koneksi, pesan masuk, dan webhook")}
           />
         ) : (
           <table className="w-full text-sm">
@@ -122,19 +124,19 @@ export default function Events() {
               <tr className="border-b border-gray-800">
                 <th className="px-5 py-3 w-8" />
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  {t("events.provider")}
+                  {t("events.provider", "Provider")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  {t("events.event_type")}
+                  {t("events.event_type", "Tipe Event")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  {t("events.session")}
+                  {t("events.session", "Sesi")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  {t("events.status")}
+                  {t("events.status", "Status")}
                 </th>
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  {t("events.timestamp")}
+                  {t("events.timestamp", "Waktu")}
                 </th>
               </tr>
             </thead>

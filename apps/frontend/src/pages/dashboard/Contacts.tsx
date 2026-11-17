@@ -302,10 +302,10 @@ export default function Contacts() {
                 className="btn-secondary text-xs flex items-center gap-1.5"
               >
                 <FileText className="w-4 h-4 text-brand-400" />
-                <span>Upload .CSV File</span>
+                <span>{t("contacts.upload_csv", "Unggah Berkas .CSV")}</span>
               </button>
               <span className="text-[11px] text-gray-500">
-                or paste raw lines directly below:
+                {t("contacts.or_paste", "atau tempel baris kontak langsung di bawah ini:")}
               </span>
             </div>
 

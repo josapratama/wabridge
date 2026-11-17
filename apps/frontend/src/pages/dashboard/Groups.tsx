@@ -254,7 +254,7 @@ export default function Groups() {
               {sendSuccess && (
                 <div className="p-2.5 rounded-lg bg-brand-950/60 border border-brand-800/60 text-xs text-brand-300 flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>Message sent successfully to group!</span>
+                  <span>{t("groups.sent_success", "Pesan berhasil terkirim ke grup!")}</span>
                 </div>
               )}
 

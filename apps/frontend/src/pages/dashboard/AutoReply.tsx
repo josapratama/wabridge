@@ -452,17 +452,19 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                       type="button"
                       onClick={() => kbFileInputRef.current?.click()}
                       className="text-[11px] text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium bg-purple-950/40 border border-purple-800/50 px-2 py-0.5 rounded-md transition-colors"
-                      title="Upload dokumen pengetahuan (.txt, .md, .csv)"
+                      title={t("autoreply.upload_kb_title", "Upload dokumen pengetahuan (.txt, .md, .csv, .json)")}
                     >
                       <Upload className="w-3 h-3" />
-                      <span>Upload Dokumen</span>
+                      <span>{t("autoreply.upload_doc", "Upload Dokumen")}</span>
                     </button>
                   </div>
                 </div>
 
                 {/* Quick Templates */}
                 <div className="mb-2">
-                  <p className="text-[10px] text-gray-400 mb-1">Gunakan template siap pakai:</p>
+                  <p className="text-[10px] text-gray-400 mb-1">
+                    {t("autoreply.use_ready_template", "Gunakan template siap pakai:")}
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
                     {KB_TEMPLATES.map((tpl, i) => (
                       <button
@@ -492,12 +494,12 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                       knowledgeBase: e.target.value,
                     }))
                   }
-                  placeholder="Ketik atau tempelkan FAQ, daftar harga, katalog produk, atau ketentuan garansi di sini..."
+                  placeholder={t("autoreply.kb_placeholder", "Ketik atau tempelkan FAQ, daftar harga, katalog produk, atau ketentuan garansi di sini...")}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 font-sans leading-relaxed"
                 />
                 <p className="text-[10px] text-gray-500 mt-1 flex justify-between">
-                  <span>Mendukung teks acuan untuk menjawab pertanyaan pelanggan secara otomatis.</span>
-                  <span>{aiConfig.knowledgeBase?.length || 0} karakter</span>
+                  <span>{t("autoreply.kb_help", "Mendukung teks acuan untuk menjawab pertanyaan pelanggan secara otomatis.")}</span>
+                  <span>{aiConfig.knowledgeBase?.length || 0} {t("common.characters", "karakter")}</span>
                 </p>
               </div>
 
