@@ -2,7 +2,7 @@ import { request } from "./base";
 
 export interface AiBotConfig {
   isEnabled: boolean;
-  provider: "gemini" | "openai" | "openrouter";
+  provider: "gemini" | "openai" | "openrouter" | "deepseek";
   apiKeyMasked: string;
   hasKey: boolean;
   model: string;
@@ -10,19 +10,35 @@ export interface AiBotConfig {
   knowledgeBase?: string;
   handoverKeywords?: string[];
   handoverMessage?: string;
+  handoverDurationMinutes?: number;
+  targetSessionIds?: string[];
+  scheduleMode?: "always" | "after_hours";
+  workHoursStart?: string;
+  workHoursEnd?: string;
+  workDays?: number[];
+  temperature?: number;
+  maxTokens?: number;
 }
 
 export const aiBotApi = {
   getConfig: () => request<AiBotConfig>("/ai-bot/config"),
   updateConfig: (body: {
     isEnabled?: boolean;
-    provider?: "gemini" | "openai" | "openrouter";
+    provider?: "gemini" | "openai" | "openrouter" | "deepseek";
     apiKey?: string;
     model?: string;
     systemPrompt?: string;
     knowledgeBase?: string;
     handoverKeywords?: string[];
     handoverMessage?: string;
+    handoverDurationMinutes?: number;
+    targetSessionIds?: string[];
+    scheduleMode?: "always" | "after_hours";
+    workHoursStart?: string;
+    workHoursEnd?: string;
+    workDays?: number[];
+    temperature?: number;
+    maxTokens?: number;
   }) =>
     request<{ success: boolean; message: string }>("/ai-bot/config", {
       method: "POST",

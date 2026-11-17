@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Req, UseGuards } from "@nestjs/common";
 import { AiBotService, AiBotConfig } from "./ai-bot.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
@@ -8,19 +8,26 @@ export class AiBotController {
   constructor(private readonly service: AiBotService) {}
 
   @Get("config")
-  getConfig() {
-    return this.service.getConfig();
+  getConfig(@Req() req: any) {
+    const userId = req.user?.id || "default";
+    return this.service.getConfig(userId);
   }
 
   @Post("config")
-  updateConfig(@Body() body: Partial<AiBotConfig>) {
-    this.service.updateConfig(body);
+  updateConfig(@Req() req: any, @Body() body: Partial<AiBotConfig>) {
+    const userId = req.user?.id || "default";
+    this.service.updateConfig(userId, body);
     return { success: true, message: "AI Bot configuration updated" };
   }
 
   @Post("test")
-  async testPrompt(@Body("message") message: string) {
-    const reply = await this.service.generateReply(message || "Halo, apa saja layanan yang tersedia?");
+  async testPrompt(@Req() req: any, @Body("message") message: string) {
+    const userId = req.user?.id || "default";
+    const reply = await this.service.generateReply(
+      message || "Halo, apa saja layanan yang tersedia?",
+      undefined,
+      userId,
+    );
     return { success: true, reply };
   }
 }

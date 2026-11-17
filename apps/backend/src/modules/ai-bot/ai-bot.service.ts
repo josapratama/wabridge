@@ -6,32 +6,56 @@ import * as path from "path";
 
 export interface AiBotConfig {
   isEnabled: boolean;
-  provider: "gemini" | "openai" | "openrouter";
+  provider: "gemini" | "openai" | "openrouter" | "deepseek";
   apiKey: string;
   model: string;
   systemPrompt: string;
   knowledgeBase?: string;
   handoverKeywords?: string[];
   handoverMessage?: string;
+  handoverDurationMinutes?: number; // default: 120
+  targetSessionIds?: string[]; // empty array or undefined = all sessions
+  scheduleMode?: "always" | "after_hours";
+  workHoursStart?: string; // e.g. "08:00"
+  workHoursEnd?: string; // e.g. "17:00"
+  workDays?: number[]; // [1,2,3,4,5] (1=Monday ... 7=Sunday)
+  temperature?: number; // 0.1 - 1.0 (default: 0.7)
+  maxTokens?: number; // default: 500
 }
+
+export type AiBotConfigResponse = Omit<AiBotConfig, "apiKey"> & {
+  apiKeyMasked: string;
+  hasKey: boolean;
+};
+
+const DEFAULT_CONFIG: AiBotConfig = {
+  isEnabled: false,
+  provider: "gemini",
+  apiKey: "",
+  model: "gemini-2.0-flash",
+  systemPrompt:
+    "Anda adalah asisten virtual WhatsApp yang ramah, profesional, dan membantu. Jawab pertanyaan pengguna dengan jelas, sopan, dan ringkas dalam Bahasa Indonesia.",
+  knowledgeBase: "",
+  handoverKeywords: ["cs", "admin", "human", "manusia", "bantuan", "operator"],
+  handoverMessage:
+    "Baik kak, pesan Anda telah dialihkan ke Tim Customer Service (Manusia). Mohon tunggu sebentar ya kak.",
+  handoverDurationMinutes: 120,
+  targetSessionIds: [],
+  scheduleMode: "always",
+  workHoursStart: "08:00",
+  workHoursEnd: "17:00",
+  workDays: [1, 2, 3, 4, 5],
+  temperature: 0.7,
+  maxTokens: 500,
+};
 
 @Injectable()
 export class AiBotService {
-  private configPath = path.join(process.cwd(), "ai_bot_config.json");
-  private pausedJids = new Map<string, number>();
-
-  private config: AiBotConfig = {
-    isEnabled: false,
-    provider: "gemini",
-    apiKey: "",
-    model: "gemini-1.5-flash",
-    systemPrompt:
-      "Anda adalah asisten virtual WhatsApp yang ramah, profesional, dan membantu. Jawab pertanyaan pengguna dengan jelas, sopan, dan ringkas dalam Bahasa Indonesia.",
-    knowledgeBase: "",
-    handoverKeywords: ["cs", "admin", "human", "manusia", "bantuan", "operator"],
-    handoverMessage:
-      "Baik kak, pesan Anda telah dialihkan ke Tim Customer Service (Manusia). Mohon tunggu sebentar ya kak.",
-  };
+  private configsDir = path.join(process.cwd(), "data", "ai_bot_configs");
+  private legacyConfigPath = path.join(process.cwd(), "ai_bot_config.json");
+  private userConfigs = new Map<string, AiBotConfig>();
+  // userId -> Map(fromJid -> pausedUntil)
+  private pausedJids = new Map<string, Map<string, number>>();
 
   constructor(
     private readonly logger: AppLogger,
@@ -39,120 +63,226 @@ export class AiBotService {
     @Inject(MessageRepository)
     private readonly messageRepo?: MessageRepository,
   ) {
-    this.loadConfig();
+    this.ensureDir();
   }
 
-  private loadConfig() {
+  private ensureDir() {
     try {
-      if (fs.existsSync(this.configPath)) {
-        const raw = fs.readFileSync(this.configPath, "utf-8");
-        this.config = { ...this.config, ...JSON.parse(raw) };
+      if (!fs.existsSync(this.configsDir)) {
+        fs.mkdirSync(this.configsDir, { recursive: true });
       }
     } catch (e) {
-      this.logger.warn("Could not load AI bot config file", "AiBotService");
+      this.logger.warn(`Could not create configs dir: ${e}`, "AiBotService");
     }
   }
 
-  private saveConfig() {
+  private getUserConfigPath(userId: string = "default"): string {
+    const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+    return path.join(this.configsDir, `${safeUserId}.json`);
+  }
+
+  private loadUserConfig(userId: string = "default"): AiBotConfig {
+    if (this.userConfigs.has(userId)) {
+      return this.userConfigs.get(userId)!;
+    }
+
+    const filePath = this.getUserConfigPath(userId);
+    let cfg: AiBotConfig = { ...DEFAULT_CONFIG };
+
     try {
-      fs.writeFileSync(
-        this.configPath,
-        JSON.stringify(this.config, null, 2),
-        "utf-8",
+      if (fs.existsSync(filePath)) {
+        const raw = fs.readFileSync(filePath, "utf-8");
+        cfg = { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+      } else if (userId === "default" && fs.existsSync(this.legacyConfigPath)) {
+        const raw = fs.readFileSync(this.legacyConfigPath, "utf-8");
+        cfg = { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
+      }
+    } catch (e) {
+      this.logger.warn(
+        `Could not load AI bot config for user ${userId}`,
+        "AiBotService",
       );
+    }
+
+    this.userConfigs.set(userId, cfg);
+    return cfg;
+  }
+
+  private saveUserConfig(userId: string = "default"): void {
+    const cfg = this.userConfigs.get(userId);
+    if (!cfg) return;
+
+    this.ensureDir();
+    const filePath = this.getUserConfigPath(userId);
+
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(cfg, null, 2), "utf-8");
     } catch (e) {
       this.logger.error(
-        "Could not save AI bot config file",
+        `Could not save AI bot config for user ${userId}`,
         undefined,
         "AiBotService",
       );
     }
   }
 
-  getConfig(): Omit<AiBotConfig, "apiKey"> & {
-    apiKeyMasked: string;
-    hasKey: boolean;
-  } {
-    const hasKey = !!this.config.apiKey;
+  getConfig(userId: string = "default"): AiBotConfigResponse {
+    const cfg = this.loadUserConfig(userId);
+    const hasKey = !!cfg.apiKey && cfg.apiKey.trim().length > 0;
     const apiKeyMasked = hasKey
-      ? `${this.config.apiKey.slice(0, 4)}...${this.config.apiKey.slice(-4)}`
+      ? `${cfg.apiKey.slice(0, 4)}...${cfg.apiKey.slice(-4)}`
       : "";
+
     return {
-      isEnabled: this.config.isEnabled,
-      provider: this.config.provider,
-      model: this.config.model,
-      systemPrompt: this.config.systemPrompt,
-      knowledgeBase: this.config.knowledgeBase ?? "",
-      handoverKeywords: this.config.handoverKeywords ?? [],
-      handoverMessage: this.config.handoverMessage ?? "",
+      isEnabled: cfg.isEnabled,
+      provider: cfg.provider,
+      model: cfg.model,
+      systemPrompt: cfg.systemPrompt,
+      knowledgeBase: cfg.knowledgeBase ?? "",
+      handoverKeywords: cfg.handoverKeywords ?? [],
+      handoverMessage: cfg.handoverMessage ?? "",
+      handoverDurationMinutes: cfg.handoverDurationMinutes ?? 120,
+      targetSessionIds: cfg.targetSessionIds ?? [],
+      scheduleMode: cfg.scheduleMode ?? "always",
+      workHoursStart: cfg.workHoursStart ?? "08:00",
+      workHoursEnd: cfg.workHoursEnd ?? "17:00",
+      workDays: cfg.workDays ?? [1, 2, 3, 4, 5],
+      temperature: cfg.temperature ?? 0.7,
+      maxTokens: cfg.maxTokens ?? 500,
       apiKeyMasked,
       hasKey,
     };
   }
 
-  updateConfig(update: Partial<AiBotConfig>): void {
-    if (update.isEnabled !== undefined) this.config.isEnabled = update.isEnabled;
-    if (update.provider !== undefined) this.config.provider = update.provider;
-    if (update.model !== undefined) this.config.model = update.model;
-    if (update.systemPrompt !== undefined)
-      this.config.systemPrompt = update.systemPrompt;
-    if (update.knowledgeBase !== undefined)
-      this.config.knowledgeBase = update.knowledgeBase;
-    if (update.handoverKeywords !== undefined)
-      this.config.handoverKeywords = update.handoverKeywords;
-    if (update.handoverMessage !== undefined)
-      this.config.handoverMessage = update.handoverMessage;
+  updateConfig(userId: string = "default", update: Partial<AiBotConfig>): void {
+    const cfg = this.loadUserConfig(userId);
+
+    if (update.isEnabled !== undefined) cfg.isEnabled = update.isEnabled;
+    if (update.provider !== undefined) cfg.provider = update.provider;
+    if (update.model !== undefined) cfg.model = update.model;
+    if (update.systemPrompt !== undefined) cfg.systemPrompt = update.systemPrompt;
+    if (update.knowledgeBase !== undefined) cfg.knowledgeBase = update.knowledgeBase;
+    if (update.handoverKeywords !== undefined) cfg.handoverKeywords = update.handoverKeywords;
+    if (update.handoverMessage !== undefined) cfg.handoverMessage = update.handoverMessage;
+    if (update.handoverDurationMinutes !== undefined) cfg.handoverDurationMinutes = update.handoverDurationMinutes;
+    if (update.targetSessionIds !== undefined) cfg.targetSessionIds = update.targetSessionIds;
+    if (update.scheduleMode !== undefined) cfg.scheduleMode = update.scheduleMode;
+    if (update.workHoursStart !== undefined) cfg.workHoursStart = update.workHoursStart;
+    if (update.workHoursEnd !== undefined) cfg.workHoursEnd = update.workHoursEnd;
+    if (update.workDays !== undefined) cfg.workDays = update.workDays;
+    if (update.temperature !== undefined) cfg.temperature = update.temperature;
+    if (update.maxTokens !== undefined) cfg.maxTokens = update.maxTokens;
+
     if (update.apiKey && update.apiKey.trim() !== "") {
-      this.config.apiKey = update.apiKey.trim();
+      cfg.apiKey = update.apiKey.trim();
     }
-    this.saveConfig();
+
+    this.userConfigs.set(userId, cfg);
+    this.saveUserConfig(userId);
+  }
+
+  private isWithinWorkHours(
+    startStr?: string,
+    endStr?: string,
+    workDays?: number[],
+  ): boolean {
+    if (!startStr || !endStr) return true;
+    const now = new Date();
+    // JavaScript getDay(): 0=Sun, 1=Mon, ..., 6=Sat. Normalize to 1=Mon..7=Sun
+    const currentDay = now.getDay() === 0 ? 7 : now.getDay();
+
+    if (workDays && workDays.length > 0 && !workDays.includes(currentDay)) {
+      return false; // Not a working day -> after hours!
+    }
+
+    const [startH, startM] = startStr.split(":").map(Number);
+    const [endH, endM] = endStr.split(":").map(Number);
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const startMinutes = startH * 60 + (startM || 0);
+    const endMinutes = endH * 60 + (endM || 0);
+
+    return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
   }
 
   async generateReply(
     userMessage: string,
     fromJid?: string,
+    userId: string = "default",
+    sessionId?: string,
   ): Promise<string | null> {
-    if (!this.config.isEnabled || !this.config.apiKey) {
+    const cfg = this.loadUserConfig(userId);
+
+    if (!cfg.isEnabled || !cfg.apiKey) {
       return null;
     }
 
-    // Check if this contact has requested human handover
+    // 1. Session Binding check: if configured, only reply on targeted sessions
+    if (
+      sessionId &&
+      cfg.targetSessionIds &&
+      cfg.targetSessionIds.length > 0 &&
+      !cfg.targetSessionIds.includes(sessionId)
+    ) {
+      return null;
+    }
+
+    // 2. Schedule Mode check: if "after_hours", only reply when OUTSIDE work hours
+    if (cfg.scheduleMode === "after_hours") {
+      const isWorkHours = this.isWithinWorkHours(
+        cfg.workHoursStart,
+        cfg.workHoursEnd,
+        cfg.workDays,
+      );
+      if (isWorkHours) {
+        // During working hours, human CS is active, so AI does not auto-reply
+        return null;
+      }
+    }
+
+    // 3. Human Handover check for this contact
     if (fromJid) {
-      const pausedUntil = this.pausedJids.get(fromJid);
+      let userPausedMap = this.pausedJids.get(userId);
+      if (!userPausedMap) {
+        userPausedMap = new Map<string, number>();
+        this.pausedJids.set(userId, userPausedMap);
+      }
+
+      const pausedUntil = userPausedMap.get(fromJid);
       if (pausedUntil && Date.now() < pausedUntil) {
         return null;
       }
 
       // Check keywords for handover
       const lower = userMessage.toLowerCase();
-      const keywords = this.config.handoverKeywords || [];
+      const keywords = cfg.handoverKeywords || [];
       const isHandover = keywords.some(
         (kw) => kw && lower.includes(kw.toLowerCase().trim()),
       );
 
       if (isHandover) {
-        // Pause bot for this user for 2 hours
-        this.pausedJids.set(fromJid, Date.now() + 2 * 60 * 60 * 1000);
+        const pauseMinutes = cfg.handoverDurationMinutes || 120;
+        userPausedMap.set(fromJid, Date.now() + pauseMinutes * 60 * 1000);
         this.logger.log(
-          `Human handover requested by ${fromJid}. Bot paused for 2 hours.`,
+          `Human handover triggered for ${fromJid} (User: ${userId}). AI paused for ${pauseMinutes}m.`,
           "AiBotService",
         );
         return (
-          this.config.handoverMessage ||
-          "Pesan Anda telah diteruskan ke Customer Service. Mohon ditunggu ya."
+          cfg.handoverMessage ||
+          "Baik kak, pesan Anda telah dialihkan ke Tim Customer Service (Manusia). Mohon tunggu sebentar ya kak."
         );
       }
     }
 
     try {
       this.logger.log(
-        `Generating AI reply using provider ${this.config.provider} (${this.config.model})`,
+        `Generating AI reply for User ${userId} via ${cfg.provider} (${cfg.model})`,
         "AiBotService",
       );
 
-      let effectiveSystemPrompt = this.config.systemPrompt;
-      if (this.config.knowledgeBase && this.config.knowledgeBase.trim() !== "") {
-        effectiveSystemPrompt += `\n\nKNOWLEDGE BASE & INFORMASI BISNIS/FAQ:\n${this.config.knowledgeBase}\n\nJawablah berdasarkan pengetahuan di atas jika relevan.`;
+      let effectiveSystemPrompt = cfg.systemPrompt;
+      if (cfg.knowledgeBase && cfg.knowledgeBase.trim() !== "") {
+        effectiveSystemPrompt += `\n\nKNOWLEDGE BASE & INFORMASI BISNIS/FAQ:\n${cfg.knowledgeBase}\n\nJawablah berdasarkan pengetahuan di atas jika relevan.`;
       }
 
       // Fetch recent conversation history for multi-turn context
@@ -173,10 +303,11 @@ export class AiBotService {
         }
       }
 
-      if (this.config.provider === "gemini") {
-        return await this.callGemini(userMessage, effectiveSystemPrompt, history);
+      if (cfg.provider === "gemini") {
+        return await this.callGemini(cfg, userMessage, effectiveSystemPrompt, history);
       } else {
         return await this.callOpenAiCompatible(
+          cfg,
           userMessage,
           effectiveSystemPrompt,
           history,
@@ -185,7 +316,7 @@ export class AiBotService {
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       this.logger.error(
-        `AI generation error: ${errMsg}`,
+        `AI generation error (User: ${userId}): ${errMsg}`,
         undefined,
         "AiBotService",
       );
@@ -194,11 +325,13 @@ export class AiBotService {
   }
 
   private async callGemini(
+    cfg: AiBotConfig,
     userMessage: string,
     systemPrompt: string,
     history: Array<{ role: "user" | "assistant"; content: string }> = [],
   ): Promise<string> {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model || "gemini-1.5-flash"}:generateContent?key=${this.config.apiKey}`;
+    const model = cfg.model || "gemini-2.0-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cfg.apiKey}`;
 
     const contents: any[] = [];
     for (const h of history) {
@@ -226,6 +359,10 @@ export class AiBotService {
           parts: [{ text: systemPrompt }],
         },
         contents,
+        generationConfig: {
+          temperature: cfg.temperature ?? 0.7,
+          maxOutputTokens: cfg.maxTokens ?? 500,
+        },
       }),
       signal: AbortSignal.timeout(15000),
     });
@@ -244,14 +381,27 @@ export class AiBotService {
   }
 
   private async callOpenAiCompatible(
+    cfg: AiBotConfig,
     userMessage: string,
     systemPrompt: string,
     history: Array<{ role: "user" | "assistant"; content: string }> = [],
   ): Promise<string> {
-    const baseUrl =
-      this.config.provider === "openrouter"
-        ? "https://openrouter.ai/api/v1/chat/completions"
-        : "https://api.openai.com/v1/chat/completions";
+    let baseUrl = "https://api.openai.com/v1/chat/completions";
+    let defaultModel = "gpt-4o-mini";
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${cfg.apiKey}`,
+    };
+
+    if (cfg.provider === "openrouter") {
+      baseUrl = "https://openrouter.ai/api/v1/chat/completions";
+      defaultModel = "anthropic/claude-3.5-sonnet";
+      headers["HTTP-Referer"] = "https://wabridge.josapratama.com";
+      headers["X-Title"] = "WaBridge AI Assistant";
+    } else if (cfg.provider === "deepseek") {
+      baseUrl = "https://api.deepseek.com/chat/completions";
+      defaultModel = "deepseek-chat";
+    }
 
     const messages: Array<{ role: string; content: string }> = [
       { role: "system", content: systemPrompt },
@@ -268,21 +418,19 @@ export class AiBotService {
 
     const res = await fetch(baseUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.config.apiKey}`,
-      },
+      headers,
       body: JSON.stringify({
-        model: this.config.model || "gpt-4o-mini",
+        model: cfg.model || defaultModel,
         messages,
-        max_tokens: 500,
+        temperature: cfg.temperature ?? 0.7,
+        max_tokens: cfg.maxTokens ?? 500,
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(18000),
     });
 
     if (!res.ok) {
       const errText = await res.text();
-      throw new Error(`LLM API error ${res.status}: ${errText}`);
+      throw new Error(`${cfg.provider.toUpperCase()} API error ${res.status}: ${errText}`);
     }
 
     const data = (await res.json()) as any;

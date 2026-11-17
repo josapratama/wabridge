@@ -9,10 +9,10 @@ import {
   Key,
   Send,
   CheckCircle2,
-  HelpCircle,
   Upload,
-  FileText,
-  BookOpen,
+  Smartphone,
+  Clock,
+  RotateCcw,
 } from "lucide-react";
 import {
   useAutoReply,
@@ -21,6 +21,28 @@ import {
 import AutoReplyForm from "../../features/auto-reply/components/AutoReplyForm";
 import AutoReplyTable from "../../features/auto-reply/components/AutoReplyTable";
 import { useI18n } from "../../context/I18nContext";
+
+const PROVIDER_MODELS: Record<string, Array<{ id: string; name: string; desc: string }>> = {
+  gemini: [
+    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash (Recommended)", desc: "Tercepat & cerdas dari Google" },
+    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", desc: "Model cepat standar" },
+    { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", desc: "Penalaran tinggi dan konteks luas" },
+  ],
+  deepseek: [
+    { id: "deepseek-chat", name: "DeepSeek-V3 (Chat)", desc: "Cerdas, natural, dan sangat hemat biaya" },
+    { id: "deepseek-reasoner", name: "DeepSeek-R1 (Reasoning)", desc: "Kemampuan penalaran mendalam" },
+  ],
+  openai: [
+    { id: "gpt-4o-mini", name: "GPT-4o Mini (Recommended)", desc: "Cepat, cerdas, efisien biaya" },
+    { id: "gpt-4o", name: "GPT-4o Omni", desc: "Model flagship OpenAI paling cerdas" },
+  ],
+  openrouter: [
+    { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", desc: "Bahasa sangat luwes dan natural" },
+    { id: "deepseek/deepseek-r1", name: "DeepSeek R1", desc: "Penalaran tinggi via OpenRouter" },
+    { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B", desc: "Model open-source terkuat" },
+    { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash", desc: "Akses Gemini via OpenRouter" },
+  ],
+};
 
 export default function AutoReply() {
   const { t } = useI18n();
@@ -48,16 +70,31 @@ export default function AutoReply() {
     provider: "gemini",
     apiKeyMasked: "",
     hasKey: false,
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash",
     systemPrompt:
-      "Anda adalah customer support WhatsApp yang ramah dan solutif. Jawab pertanyaan pelanggan dengan singkat, sopan, dan jelas.",
+      "Anda adalah asisten virtual WhatsApp yang ramah, profesional, dan membantu. Jawab pertanyaan pengguna dengan jelas, sopan, dan ringkas dalam Bahasa Indonesia.",
+    knowledgeBase: "",
+    handoverKeywords: ["cs", "admin", "human", "manusia", "bantuan", "operator"],
+    handoverMessage:
+      "Baik kak, pesan Anda telah dialihkan ke Tim Customer Service (Manusia). Mohon tunggu sebentar ya kak.",
+    handoverDurationMinutes: 120,
+    targetSessionIds: [],
+    scheduleMode: "always",
+    workHoursStart: "08:00",
+    workHoursEnd: "17:00",
+    workDays: [1, 2, 3, 4, 5],
+    temperature: 0.7,
+    maxTokens: 500,
   });
+
   const [aiKeyInput, setAiKeyInput] = useState("");
   const [savingAi, setSavingAi] = useState(false);
   const [aiSaveMsg, setAiSaveMsg] = useState("");
   const [testInput, setTestInput] = useState("");
   const [testingAi, setTestingAi] = useState(false);
-  const [simulatorChat, setSimulatorChat] = useState<Array<{ role: "user" | "bot"; text: string; time: string }>>([
+  const [simulatorChat, setSimulatorChat] = useState<
+    Array<{ role: "user" | "bot"; text: string; time: string }>
+  >([
     {
       role: "bot",
       text: "Halo kak! Saya adalah asisten WhatsApp otomatis Anda. Silakan tanyakan apa saja untuk menguji balasan saya berdasarkan Prompt & Knowledge Base yang Anda atur.",
@@ -70,7 +107,8 @@ export default function AutoReply() {
   const KB_TEMPLATES = [
     {
       label: "🛍️ Toko Online / E-Commerce",
-      prompt: "Anda adalah customer support toko online yang ramah, sopan, dan solutif. Bantu calon pembeli memilih produk, menjawab info harga, ongkir, serta cara pembayaran.",
+      prompt:
+        "Anda adalah customer support toko online yang ramah, sopan, dan solutif. Bantu calon pembeli memilih produk, menjawab info harga, ongkir, serta cara pembayaran.",
       kb: `[PRODUK & HARGA]
 - Paket Basic: Rp 99.000 (1 Akun, 1000 pesan/hari)
 - Paket Pro: Rp 199.000 (3 Akun, Broadcast tanpa batas)
@@ -86,7 +124,8 @@ export default function AutoReply() {
     },
     {
       label: "🏢 Customer Support Umum",
-      prompt: "Anda adalah AI Assistant WaBridge. Berikan informasi yang akurat, ringkas, dan jelas sesuai basis pengetahuan perusahaan.",
+      prompt:
+        "Anda adalah AI Assistant WaBridge. Berikan informasi yang akurat, ringkas, dan jelas sesuai basis pengetahuan perusahaan.",
       kb: `[PROFIL PERUSAHAAN]
 WaBridge adalah platform gateway WhatsApp API dan automasi pesan untuk bisnis di Indonesia.
 
@@ -98,7 +137,8 @@ WaBridge adalah platform gateway WhatsApp API dan automasi pesan untuk bisnis di
     },
     {
       label: "🩺 Klinik & Booking Janji Temu",
-      prompt: "Anda adalah asisten administrasi klinik. Bantu pasien mengetahui jadwal dokter, biaya konsultasi, dan alur pendaftaran.",
+      prompt:
+        "Anda adalah asisten administrasi klinik. Bantu pasien mengetahui jadwal dokter, biaya konsultasi, dan alur pendaftaran.",
       kb: `[JADWAL PRAKTIK DOKTER]
 - dr. Spesialis Anak: Senin - Jumat, 09.00 - 13.00
 - dr. Gigi & Mulut: Selasa & Kamis, 14.00 - 18.00
@@ -150,18 +190,29 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
         model: aiConfig.model,
         systemPrompt: aiConfig.systemPrompt,
         knowledgeBase: aiConfig.knowledgeBase,
-        handoverKeywords:
-          typeof aiConfig.handoverKeywords === "string"
+        handoverKeywords: Array.isArray(aiConfig.handoverKeywords)
+          ? aiConfig.handoverKeywords
+          : typeof aiConfig.handoverKeywords === "string"
             ? (aiConfig.handoverKeywords as string)
                 .split(",")
                 .map((k) => k.trim())
                 .filter(Boolean)
-            : aiConfig.handoverKeywords,
+            : [],
         handoverMessage: aiConfig.handoverMessage,
+        handoverDurationMinutes: aiConfig.handoverDurationMinutes,
+        targetSessionIds: aiConfig.targetSessionIds,
+        scheduleMode: aiConfig.scheduleMode,
+        workHoursStart: aiConfig.workHoursStart,
+        workHoursEnd: aiConfig.workHoursEnd,
+        workDays: aiConfig.workDays,
+        temperature: aiConfig.temperature,
+        maxTokens: aiConfig.maxTokens,
         apiKey: aiKeyInput.trim() || undefined,
       });
       if (res.data) {
-        setAiSaveMsg(t("toast.saved_success", "AI Bot configuration saved successfully!"));
+        setAiSaveMsg(
+          t("toast.saved_success", "Konfigurasi AI Bot berhasil disimpan!"),
+        );
         setAiKeyInput("");
         void loadAiConfig();
         setTimeout(() => setAiSaveMsg(""), 3000);
@@ -177,27 +228,57 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
     const textToSend = customPrompt || testInput.trim();
     if (!textToSend || testingAi) return;
 
-    const timeNow = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    setSimulatorChat((prev) => [...prev, { role: "user", text: textToSend, time: timeNow }]);
+    const timeNow = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    setSimulatorChat((prev) => [
+      ...prev,
+      { role: "user", text: textToSend, time: timeNow },
+    ]);
     setTestInput("");
     setTestingAi(true);
 
     try {
       const res = await aiBotApi.testPrompt(textToSend);
-      const reply = res.data?.reply || t("autoreply.no_reply_err", "Tidak ada balasan dari model. Pastikan API key aktif.");
-      setSimulatorChat((prev) => [...prev, { role: "bot", text: reply, time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
+      const reply =
+        res.data?.reply ||
+        t(
+          "autoreply.no_reply_err",
+          "Tidak ada balasan dari model. Pastikan API key aktif.",
+        );
+      setSimulatorChat((prev) => [
+        ...prev,
+        {
+          role: "bot",
+          text: reply,
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        },
+      ]);
     } catch {
       setSimulatorChat((prev) => [
         ...prev,
         {
           role: "bot",
-          text: t("autoreply.test_err", "Gagal memproses pertanyaan ke model AI. Periksa API key dan kuota model Anda."),
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          text: t(
+            "autoreply.test_err",
+            "Gagal memproses pertanyaan ke model AI. Periksa API key dan kuota model Anda.",
+          ),
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
         },
       ]);
     } finally {
       setTestingAi(false);
-      setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      setTimeout(
+        () => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }),
+        100,
+      );
     }
   };
 
@@ -226,52 +307,57 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
   };
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-5">
       {/* Action Bar & Tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-800 pb-3 sm:pb-4">
         {/* Navigation Tabs */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab("rules")}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-2 px-3 py-1.5 sm:px-3.5 rounded-lg text-xs font-semibold transition-colors ${
               activeTab === "rules"
                 ? "bg-brand-600/20 text-brand-400 border border-brand-500/30"
                 : "text-gray-400 hover:text-white hover:bg-gray-800"
             }`}
           >
             <Bot className="w-4 h-4" />
-            <span>Keyword Rules ({rules.length})</span>
+            <span>Aturan Kata Kunci ({rules.length})</span>
           </button>
           <button
             onClick={() => setActiveTab("ai")}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-2 px-3 py-1.5 sm:px-3.5 rounded-lg text-xs font-semibold transition-colors ${
               activeTab === "ai"
                 ? "bg-purple-600/20 text-purple-300 border border-purple-500/30"
                 : "text-gray-400 hover:text-white hover:bg-gray-800"
             }`}
           >
             <Sparkles className="w-4 h-4 text-purple-400" />
-            <span>AI Assistant Bot</span>
+            <span>AI Bot Assistant</span>
             {aiConfig.isEnabled && (
-              <span className="w-2 h-2 rounded-full bg-brand-400" />
+              <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
             )}
           </button>
         </div>
 
-        {/* Right Actions */}
+        {/* Right Actions for Keyword Rules */}
         {activeTab === "rules" && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 self-start sm:self-auto">
             <button
               onClick={() => void load()}
-              className="btn-secondary"
+              className="btn-secondary text-xs"
               disabled={loading}
+              title="Refresh"
             >
               <RefreshCw
-                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? "animate-spin" : ""}`}
               />
             </button>
-            <button onClick={openCreate} className="btn-primary">
-              <Plus className="w-4 h-4" /> {t("autoreply.add_rule", "New Rule")}
+            <button
+              onClick={openCreate}
+              className="btn-primary text-xs shadow-lg shadow-brand-500/20"
+            >
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>{t("autoreply.add_rule", "Tambah Aturan")}</span>
             </button>
           </div>
         )}
@@ -283,11 +369,14 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
           {rules.length === 0 && !loading ? (
             <EmptyState
               icon={Bot}
-              title={t("autoreply.title", "No auto-reply rules")}
-              description={t("autoreply.subtitle", "Create rules to automatically reply when inbound messages match specific keywords.")}
+              title={t("autoreply.title", "Belum ada aturan auto-reply")}
+              description={t(
+                "autoreply.subtitle",
+                "Buat aturan pesan otomatis berdasarkan kecocokan kata kunci dari pengirim WhatsApp.",
+              )}
               action={
-                <button onClick={openCreate} className="btn-primary">
-                  <Plus className="w-4 h-4" /> {t("autoreply.add_rule", "Create Rule")}
+                <button onClick={openCreate} className="btn-primary text-xs shadow-lg shadow-brand-500/20">
+                  <Plus className="w-4 h-4" /> {t("autoreply.add_rule", "Buat Aturan Baru")}
                 </button>
               }
             />
@@ -312,24 +401,26 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
 
           {/* Delete Confirm */}
           {deleteId && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-              <div className="card p-6 max-w-sm w-full space-y-4">
-                <h3 className="text-base font-bold text-white">{t("confirm.delete_title", "Delete Rule")}</h3>
-                <p className="text-sm text-gray-400">
-                  {t("confirm.delete_desc", "Are you sure you want to delete this auto-reply rule?")}
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+              <div className="card p-6 max-w-sm w-full space-y-4 shadow-2xl border-gray-750">
+                <h3 className="text-sm sm:text-base font-bold text-white">
+                  {t("confirm.delete_title", "Hapus Aturan")}
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
+                  {t("confirm.delete_desc", "Apakah Anda yakin ingin menghapus aturan pesan otomatis ini?")}
                 </p>
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 pt-2">
                   <button
                     onClick={() => setDeleteId(null)}
-                    className="btn-secondary"
+                    className="btn-secondary text-xs"
                   >
-                    {t("actions.cancel", "Cancel")}
+                    {t("actions.cancel", "Batal")}
                   </button>
                   <button
                     onClick={() => void handleDelete(deleteId)}
-                    className="btn-danger"
+                    className="btn-danger text-xs"
                   >
-                    {t("actions.delete", "Delete")}
+                    {t("actions.delete", "Hapus")}
                   </button>
                 </div>
               </div>
@@ -342,7 +433,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
       {activeTab === "ai" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Form: Settings */}
-          <div className="lg:col-span-2 card p-6 space-y-5">
+          <div className="lg:col-span-2 card p-4 sm:p-6 space-y-5">
             <div className="flex items-center justify-between pb-4 border-b border-gray-800">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -350,12 +441,12 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                   AI WhatsApp Assistant (LLM Auto-Responder)
                 </h3>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  When enabled, incoming messages that do not match manual keywords will be answered intelligently by AI.
+                  Pesan masuk yang tidak cocok dengan kata kunci manual akan dijawab cerdas oleh AI secara otomatis.
                 </p>
               </div>
 
               {/* Master Toggle */}
-              <label className="relative inline-flex items-center cursor-pointer">
+              <label className="relative inline-flex items-center cursor-pointer shrink-0 ml-3">
                 <input
                   type="checkbox"
                   checked={aiConfig.isEnabled}
@@ -372,50 +463,57 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
             </div>
 
             <form onSubmit={handleSaveAiConfig} className="space-y-4">
+              {/* Provider & Model Selection */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1">
+                  <label className="block text-xs font-semibold text-gray-300 mb-1">
                     AI Provider
                   </label>
                   <select
                     value={aiConfig.provider}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const newProv = e.target.value as any;
+                      const defaultMod =
+                        PROVIDER_MODELS[newProv]?.[0]?.id || "gemini-2.0-flash";
                       setAiConfig((prev) => ({
                         ...prev,
-                        provider: e.target.value as any,
-                        model:
-                          e.target.value === "gemini"
-                            ? "gemini-1.5-flash"
-                            : "gpt-4o-mini",
-                      }))
-                    }
+                        provider: newProv,
+                        model: defaultMod,
+                      }));
+                    }}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
                   >
-                    <option value="gemini">Google Gemini (Recommended)</option>
-                    <option value="openai">OpenAI (ChatGPT)</option>
-                    <option value="openrouter">OpenRouter (Claude/DeepSeek)</option>
+                    <option value="gemini">Google Gemini (Gratis / Cepat)</option>
+                    <option value="deepseek">DeepSeek Direct API (Hemat & Pintar)</option>
+                    <option value="openai">OpenAI (ChatGPT 4o)</option>
+                    <option value="openrouter">OpenRouter (Claude 3.5 / Llama)</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-1">
-                    Model
+                  <label className="block text-xs font-semibold text-gray-300 mb-1">
+                    Model AI
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={aiConfig.model}
                     onChange={(e) =>
                       setAiConfig((prev) => ({ ...prev, model: e.target.value }))
                     }
-                    placeholder="e.g. gemini-1.5-flash, gpt-4o-mini"
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
-                  />
+                  >
+                    {(PROVIDER_MODELS[aiConfig.provider] || []).map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
+              {/* API Key */}
               <div>
-                <label className="block text-xs font-medium text-gray-300 mb-1">
-                  API Key {aiConfig.hasKey && "(Configured)"}
+                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                  API Key {aiConfig.hasKey && "(Tersimpan)"}
                 </label>
                 <div className="relative">
                   <Key className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
@@ -425,20 +523,264 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     onChange={(e) => setAiKeyInput(e.target.value)}
                     placeholder={
                       aiConfig.hasKey
-                        ? `Stored: ${aiConfig.apiKeyMasked} (leave blank to keep unchanged)`
-                        : "Enter API Key..."
+                        ? `Tersimpan: ${aiConfig.apiKeyMasked} (kosongkan jika tidak diubah)`
+                        : `Masukkan API Key ${aiConfig.provider.toUpperCase()}...`
                     }
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                   />
                 </div>
+                <p className="text-[10px] text-gray-500 mt-1">
+                  Kunci API Anda dienkripsi dan disimpan khusus untuk akun Anda sendiri (terisolasi).
+                </p>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-gray-300">
-                    System Prompt
+              {/* Session Binding */}
+              <div className="p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 space-y-2.5">
+                <label className="block text-xs font-semibold text-gray-200 flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Cakupan Nomor Sesi WhatsApp</span>
+                </label>
+                <div className="flex flex-wrap items-center gap-4 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                    <input
+                      type="radio"
+                      name="sessionBindingMode"
+                      checked={
+                        !aiConfig.targetSessionIds ||
+                        aiConfig.targetSessionIds.length === 0
+                      }
+                      onChange={() =>
+                        setAiConfig((prev) => ({
+                          ...prev,
+                          targetSessionIds: [],
+                        }))
+                      }
+                      className="text-purple-600 focus:ring-purple-500"
+                    />
+                    <span>Semua Sesi Aktif ({sessions.length})</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                    <input
+                      type="radio"
+                      name="sessionBindingMode"
+                      checked={
+                        !!(
+                          aiConfig.targetSessionIds &&
+                          aiConfig.targetSessionIds.length > 0
+                        )
+                      }
+                      onChange={() => {
+                        if (
+                          sessions.length > 0 &&
+                          (!aiConfig.targetSessionIds ||
+                            aiConfig.targetSessionIds.length === 0)
+                        ) {
+                          setAiConfig((prev) => ({
+                            ...prev,
+                            targetSessionIds: [sessions[0].id],
+                          }));
+                        }
+                      }}
+                      className="text-purple-600 focus:ring-purple-500"
+                    />
+                    <span>Pilih Sesi Tertentu Saja</span>
                   </label>
                 </div>
+
+                {aiConfig.targetSessionIds &&
+                  aiConfig.targetSessionIds.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-700/50">
+                      {sessions.map((s) => {
+                        const isChecked = aiConfig.targetSessionIds?.includes(
+                          s.id,
+                        );
+                        return (
+                          <label
+                            key={s.id}
+                            className={`flex items-center gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition-colors ${
+                              isChecked
+                                ? "bg-purple-950/40 border-purple-800/60 text-purple-200"
+                                : "bg-gray-900/60 border-gray-800 text-gray-400 hover:border-gray-700"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                const curr = aiConfig.targetSessionIds || [];
+                                const next = e.target.checked
+                                  ? [...curr, s.id]
+                                  : curr.filter((id) => id !== s.id);
+                                setAiConfig((prev) => ({
+                                  ...prev,
+                                  targetSessionIds: next,
+                                }));
+                              }}
+                              className="rounded text-purple-600 focus:ring-purple-500"
+                            />
+                            <div className="min-w-0">
+                              <p className="font-semibold truncate">{s.name}</p>
+                              <p className="text-[10px] text-gray-500 font-mono truncate">
+                                {s.id.slice(0, 10)}…
+                              </p>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+              </div>
+
+              {/* Schedule Mode / Jam Kerja */}
+              <div className="p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 space-y-2.5">
+                <label className="block text-xs font-semibold text-gray-200 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Jadwal Operasional AI Bot</span>
+                </label>
+                <div className="flex flex-wrap items-center gap-4 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                    <input
+                      type="radio"
+                      name="scheduleMode"
+                      checked={aiConfig.scheduleMode !== "after_hours"}
+                      onChange={() =>
+                        setAiConfig((prev) => ({
+                          ...prev,
+                          scheduleMode: "always",
+                        }))
+                      }
+                      className="text-purple-600 focus:ring-purple-500"
+                    />
+                    <span>Selalu Aktif (24 Jam)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                    <input
+                      type="radio"
+                      name="scheduleMode"
+                      checked={aiConfig.scheduleMode === "after_hours"}
+                      onChange={() =>
+                        setAiConfig((prev) => ({
+                          ...prev,
+                          scheduleMode: "after_hours",
+                        }))
+                      }
+                      className="text-purple-600 focus:ring-purple-500"
+                    />
+                    <span>Hanya di Luar Jam Kerja (After Hours)</span>
+                  </label>
+                </div>
+
+                {aiConfig.scheduleMode === "after_hours" && (
+                  <div className="pt-2 border-t border-gray-700/50 space-y-2 text-xs">
+                    <p className="text-[11px] text-gray-400">
+                      Selama jam kerja, pesan dilayani staf CS manusia. Di luar jam ini, AI otomatis mengambil alih:
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 max-w-sm">
+                      <div>
+                        <label className="block text-[11px] text-gray-400 mb-1">
+                          Jam Kerja Mulai
+                        </label>
+                        <input
+                          type="time"
+                          value={aiConfig.workHoursStart || "08:00"}
+                          onChange={(e) =>
+                            setAiConfig((prev) => ({
+                              ...prev,
+                              workHoursStart: e.target.value,
+                            }))
+                          }
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-gray-400 mb-1">
+                          Jam Kerja Selesai
+                        </label>
+                        <input
+                          type="time"
+                          value={aiConfig.workHoursEnd || "17:00"}
+                          onChange={(e) =>
+                            setAiConfig((prev) => ({
+                              ...prev,
+                              workHoursEnd: e.target.value,
+                            }))
+                          }
+                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Sliders: Temperature & Max Tokens */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-xl bg-gray-800/40 border border-gray-700/50">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-300 font-medium">
+                      Kreativitas (Temperature)
+                    </span>
+                    <span className="font-mono text-purple-400 font-semibold">
+                      {aiConfig.temperature ?? 0.7}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={aiConfig.temperature ?? 0.7}
+                    onChange={(e) =>
+                      setAiConfig((prev) => ({
+                        ...prev,
+                        temperature: parseFloat(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-purple-500 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                    <span>0.0 Faktual</span>
+                    <span>0.7 Alami</span>
+                    <span>1.0 Sangat Luwes</span>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-gray-300 font-medium">
+                      Maks. Panjang Balasan (Tokens)
+                    </span>
+                    <span className="font-mono text-purple-400 font-semibold">
+                      {aiConfig.maxTokens ?? 500}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="100"
+                    max="2000"
+                    step="50"
+                    value={aiConfig.maxTokens ?? 500}
+                    onChange={(e) =>
+                      setAiConfig((prev) => ({
+                        ...prev,
+                        maxTokens: parseInt(e.target.value),
+                      }))
+                    }
+                    className="w-full accent-purple-500 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                    <span>100 Ringkas</span>
+                    <span>500 Sedang</span>
+                    <span>2000 Detail</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* System Prompt */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                  System Prompt (Instruksi Perilaku Bot)
+                </label>
                 <textarea
                   rows={3}
                   value={aiConfig.systemPrompt}
@@ -452,6 +794,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                 />
               </div>
 
+              {/* Knowledge Base */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-semibold text-gray-200">
@@ -503,7 +846,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                 </div>
 
                 <textarea
-                  rows={5}
+                  rows={4}
                   value={aiConfig.knowledgeBase || ""}
                   onChange={(e) =>
                     setAiConfig((prev) => ({
@@ -511,18 +854,98 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                       knowledgeBase: e.target.value,
                     }))
                   }
-                  placeholder={t("autoreply.kb_placeholder", "Ketik atau tempelkan FAQ, daftar harga, katalog produk, atau ketentuan garansi di sini...")}
+                  placeholder={t(
+                    "autoreply.kb_placeholder",
+                    "Ketik atau tempelkan FAQ, daftar harga, katalog produk, atau ketentuan garansi di sini...",
+                  )}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 font-sans leading-relaxed"
                 />
                 <p className="text-[10px] text-gray-500 mt-1 flex justify-between">
-                  <span>{t("autoreply.kb_help", "Mendukung teks acuan untuk menjawab pertanyaan pelanggan secara otomatis.")}</span>
-                  <span>{aiConfig.knowledgeBase?.length || 0} {t("common.characters", "karakter")}</span>
+                  <span>
+                    {t(
+                      "autoreply.kb_help",
+                      "Mendukung teks acuan untuk menjawab pertanyaan pelanggan secara otomatis.",
+                    )}
+                  </span>
+                  <span>
+                    {aiConfig.knowledgeBase?.length || 0}{" "}
+                    {t("common.characters", "karakter")}
+                  </span>
                 </p>
               </div>
 
+              {/* Handover & Duration */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1">
+                    Kata Kunci Handover CS (Manusia)
+                  </label>
+                  <input
+                    type="text"
+                    value={
+                      Array.isArray(aiConfig.handoverKeywords)
+                        ? aiConfig.handoverKeywords.join(", ")
+                        : aiConfig.handoverKeywords || ""
+                    }
+                    onChange={(e) =>
+                      setAiConfig((prev) => ({
+                        ...prev,
+                        handoverKeywords: e.target.value
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                      }))
+                    }
+                    placeholder="cs, admin, human, manusia, bantuan"
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-1">
+                    Durasi Jeda AI Setelah Alih CS
+                  </label>
+                  <select
+                    value={aiConfig.handoverDurationMinutes ?? 120}
+                    onChange={(e) =>
+                      setAiConfig((prev) => ({
+                        ...prev,
+                        handoverDurationMinutes: parseInt(e.target.value),
+                      }))
+                    }
+                    className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                  >
+                    <option value={30}>30 Menit</option>
+                    <option value={60}>1 Jam</option>
+                    <option value={120}>2 Jam (Rekomendasi)</option>
+                    <option value={360}>6 Jam</option>
+                    <option value={1440}>24 Jam</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Handover Message */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                  Pesan Notifikasi Handover ke Pelanggan
+                </label>
+                <input
+                  type="text"
+                  value={aiConfig.handoverMessage || ""}
+                  onChange={(e) =>
+                    setAiConfig((prev) => ({
+                      ...prev,
+                      handoverMessage: e.target.value,
+                    }))
+                  }
+                  placeholder="Baik kak, pesan Anda telah dialihkan ke CS..."
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
               {aiSaveMsg && (
-                <div className="p-2.5 rounded-lg bg-purple-950/60 border border-purple-800/60 text-xs text-purple-300 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <div className="p-2.5 rounded-lg bg-purple-950/60 border border-purple-800/60 text-xs text-purple-300 flex items-center gap-2 animate-in fade-in duration-200">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-purple-400" />
                   <span>{aiSaveMsg}</span>
                 </div>
               )}
@@ -531,9 +954,11 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                 <button
                   type="submit"
                   disabled={savingAi}
-                  className="btn-primary bg-purple-600 hover:bg-purple-500 border-none px-4 py-2"
+                  className="btn-primary bg-purple-600 hover:bg-purple-500 border-none px-4 py-2 text-xs shadow-lg shadow-purple-600/25"
                 >
-                  {savingAi ? t("status.saving", "Saving...") : t("actions.save", "Save AI Configuration")}
+                  {savingAi
+                    ? t("status.saving", "Menyimpan...")
+                    : t("actions.save", "Simpan Konfigurasi AI")}
                 </button>
               </div>
             </form>
@@ -564,14 +989,18 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     {
                       role: "bot",
                       text: "Percakapan telah direset. Silakan ajukan pertanyaan baru!",
-                      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                      time: new Date().toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }),
                     },
                   ])
                 }
-                className="text-[11px] text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors"
+                className="text-[11px] text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-gray-800 transition-colors flex items-center gap-1"
                 title="Reset riwayat simulasi"
               >
-                Reset
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset</span>
               </button>
             </div>
 
@@ -582,7 +1011,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                 "Berapa harga paket?",
                 "Jam berapa buka?",
                 "Bisa transfer bank?",
-                "Ada diskon gak?",
+                "Mau bicara dengan CS",
               ].map((q) => (
                 <button
                   key={q}
@@ -613,7 +1042,9 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
                     <p
                       className={`text-[9px] text-right font-mono ${
-                        msg.role === "user" ? "text-emerald-200/70" : "text-gray-400"
+                        msg.role === "user"
+                          ? "text-emerald-200/70"
+                          : "text-gray-400"
                       }`}
                     >
                       {msg.time}
@@ -628,7 +1059,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" />
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.2s]" />
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.4s]" />
-                    <span className="text-[11px] ml-1">AI sedang merespons...</span>
+                    <span className="text-[11px] ml-1">AI sedang berpikir...</span>
                   </div>
                 </div>
               )}

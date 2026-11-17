@@ -494,9 +494,18 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                   content,
                 );
                 if (!replyContent && this.aiBotService) {
+                  let sessionUserId: string | undefined;
+                  try {
+                    const sess = await this.sessionRepo?.findById(effectiveSessionId);
+                    sessionUserId = sess?.userId;
+                  } catch {
+                    // ignore lookup error
+                  }
                   replyContent = await this.aiBotService.generateReply(
                     content,
                     from,
+                    sessionUserId,
+                    effectiveSessionId,
                   );
                 }
                 if (replyContent) {
