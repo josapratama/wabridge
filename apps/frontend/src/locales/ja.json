@@ -630,7 +630,8 @@
     "failed": "送信失敗",
     "success_rate": "成功率",
     "monthly_usage": "今月の使用量",
-    "providers_breakdown": "ステータスおよびプロバイダー内訳"
+    "providers_breakdown": "ステータスおよびプロバイダー内訳",
+    "ai_performance": "AIアシスタント実績"
   },
   "autoreply": {
     "title": "自動応答＆AIボット",
@@ -724,7 +725,9 @@
     "tags": "タグ",
     "notes": "メモ",
     "upload_csv": ".CSVファイルをアップロード",
-    "or_paste": "または以下に直接貼り付けます："
+    "or_paste": "または以下に直接貼り付けます：",
+    "export_all": "すべて出力 (.csv)",
+    "export_filtered": "タグ別出力 (.csv)"
   },
   "webhooks": {
     "title": "Webhook",
@@ -773,7 +776,8 @@
     "scheduled_for": "送信予定日時",
     "empty_title": "予約メッセージはありません",
     "empty_desc": "将来の特定の日時に送信される自動メッセージを予約します。",
-    "cancel": "予約をキャンセル"
+    "cancel": "予約をキャンセル",
+    "quick_presets": "クイックプリセット:"
   },
   "templates": {
     "title": "メッセージテンプレート",
@@ -922,7 +926,17 @@
     "manage_quick_replies": "テンプレート管理",
     "add_quick_reply": "+ クイック返信を追加",
     "filter_all_tags": "すべてのタグ",
-    "filter_by_tag": "タグで絞り込み:"
+    "filter_by_tag": "タグで絞り込み:",
+    "notif_sound_on": "通知オン",
+    "notif_sound_off": "通知ミュート",
+    "schedule_msg_btn": "メッセージ予約",
+    "schedule_modal_title": "フォローアップメッセージの予約",
+    "schedule_success": "メッセージが正常に予約されました！",
+    "preset_1hour": "+1時間",
+    "preset_tomorrow_morning": "明日 (09:00)",
+    "preset_tomorrow_afternoon": "明日 (14:00)",
+    "preset_3days": "+3日",
+    "preset_1week": "+1週間"
   },
   "api_keys": {
     "created_title": "APIキーが作成されました",

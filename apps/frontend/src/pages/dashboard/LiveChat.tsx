@@ -11,6 +11,7 @@ import {
   HealthResult,
   BASE,
   aiBotApi,
+  scheduledMessagesApi,
 } from "../../api/client";
 import { useI18n } from "../../context/I18nContext";
 import BaileysConnectionModal from "../../components/BaileysConnectionModal";
@@ -43,6 +44,9 @@ import {
   Edit2,
   Plus,
   Trash2,
+  Bell,
+  BellOff,
+  Calendar,
 } from "lucide-react";
 
 interface Conversation {
@@ -54,6 +58,31 @@ interface Conversation {
   lastMessage: Message;
   messages: Message[];
   unreadCount: number;
+}
+
+function playNotificationChime() {
+  try {
+    const AudioCtx =
+      window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
+
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.36);
+  } catch {}
 }
 
 export default function LiveChat() {
@@ -76,6 +105,46 @@ export default function LiveChat() {
     type: "image" | "document";
     mimeType: string;
   } | null>(null);
+
+  // Sound & Desktop Notifications
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    return localStorage.getItem("wabridge_livechat_sound") !== "false";
+  });
+  const prevInboundIdsRef = useRef<Set<string>>(new Set());
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    try {
+      localStorage.setItem("wabridge_livechat_sound", String(next));
+      if (next && "Notification" in window && Notification.permission === "default") {
+        void Notification.requestPermission();
+      }
+    } catch {}
+  };
+
+  const checkNewInbounds = (msgs: Message[]) => {
+    if (soundEnabled && prevInboundIdsRef.current.size > 0) {
+      const newInbounds = msgs.filter(
+        (m) => m.direction === "inbound" && !prevInboundIdsRef.current.has(m.id),
+      );
+      if (newInbounds.length > 0) {
+        playNotificationChime();
+        if ("Notification" in window && Notification.permission === "granted" && document.hidden) {
+          const latest = newInbounds[newInbounds.length - 1];
+          try {
+            new Notification(`WhatsApp: +${latest.from?.replace(/@.*$/, "")}`, {
+              body: latest.content || "[Media]",
+              icon: "/wa-icon.svg",
+            });
+          } catch {}
+        }
+      }
+    }
+    msgs.forEach((m) => {
+      if (m.direction === "inbound") prevInboundIdsRef.current.add(m.id);
+    });
+  };
 
   // Voice Note & Quick Replies
   const [recording, setRecording] = useState(false);
@@ -262,6 +331,7 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
 
     if (msgRes.status === "fulfilled" && msgRes.value.data) {
       setMessages(msgRes.value.data);
+      checkNewInbounds(msgRes.value.data);
     }
     if (sessRes.status === "fulfilled" && sessRes.value.data) {
       setSessions(sessRes.value.data);
@@ -285,7 +355,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
     void loadData();
     const interval = setInterval(() => {
       void messagesApi.list().then((res) => {
-        if (res.data) setMessages(res.data);
+        if (res.data) {
+          setMessages(res.data);
+          checkNewInbounds(res.data);
+        }
       });
       void healthApi.check().then((res) => {
         if (res.data) setHealth(res.data);
@@ -481,6 +554,44 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  // Quick Schedule Follow-up state
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleDatetime, setScheduleDatetime] = useState("");
+  const [scheduleContent, setScheduleContent] = useState("");
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduledToast, setScheduledToast] = useState(false);
+
+  const openScheduleModal = () => {
+    setScheduleContent(inputText.trim() || "");
+    const in1Hour = new Date(Date.now() + 3600000);
+    const localIso = new Date(in1Hour.getTime() - in1Hour.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    setScheduleDatetime(localIso);
+    setShowScheduleModal(true);
+  };
+
+  const handleCreateSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeConv || !selectedSessionId || !scheduleContent.trim() || !scheduleDatetime) return;
+    setScheduling(true);
+    try {
+      await scheduledMessagesApi.create({
+        sessionId: selectedSessionId,
+        to: activeConv.phone,
+        content: scheduleContent.trim(),
+        scheduledAt: new Date(scheduleDatetime).toISOString(),
+      });
+      setShowScheduleModal(false);
+      setScheduledToast(true);
+      setTimeout(() => setScheduledToast(false), 2500);
+    } catch (err) {
+      console.error("Failed to schedule message", err);
+    } finally {
+      setScheduling(false);
+    }
   };
 
   // AI Takeover status per selected conversation
@@ -773,15 +884,37 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                 <span>{t("nav.live_chat", "Live Chat")}</span>
                 <span className="text-gray-500 font-mono text-[11px]">({filteredConversations.length})</span>
               </span>
-              <button
-                onClick={() => void loadData()}
-                className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800 transition-colors"
-                title="Refresh chats"
-              >
-                <RefreshCw
-                  className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
-                />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={toggleSound}
+                  className={`p-1 rounded-md transition-colors ${
+                    soundEnabled
+                      ? "text-brand-400 hover:text-brand-300 hover:bg-gray-800"
+                      : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+                  }`}
+                  title={
+                    soundEnabled
+                      ? t("livechat.notif_sound_on", "Notifikasi Suara Aktif")
+                      : t("livechat.notif_sound_off", "Notifikasi Suara Senyap")
+                  }
+                >
+                  {soundEnabled ? (
+                    <Bell className="w-3.5 h-3.5" />
+                  ) : (
+                    <BellOff className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                <button
+                  onClick={() => void loadData()}
+                  className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800 transition-colors"
+                  title="Refresh chats"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+                  />
+                </button>
+              </div>
             </div>
 
             {/* Status Filter Tabs */}
@@ -1463,6 +1596,15 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
 
                 <button
                   type="button"
+                  onClick={openScheduleModal}
+                  className="p-1.5 sm:p-2 rounded-lg text-purple-400 hover:text-white hover:bg-gray-800 transition-colors"
+                  title={t("livechat.schedule_msg_btn", "Jadwalkan Pesan Follow-up")}
+                >
+                  <Calendar className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
                   onClick={recording ? stopVoiceRecording : startVoiceRecording}
                   className={`p-1.5 sm:p-2 rounded-lg transition-all ${
                     recording
@@ -1850,6 +1992,150 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Quick Schedule Message Modal */}
+      {showScheduleModal && activeConv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-5 shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {t("livechat.schedule_modal_title", "Jadwalkan Pesan Follow-up")}
+                  </h3>
+                  <p className="text-[11px] text-gray-400 font-mono">
+                    +{activeConv.phone} ({activeConv.name})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSchedule} className="mt-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1">
+                  Isi Pesan Terjadwal
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={scheduleContent}
+                  onChange={(e) => setScheduleContent(e.target.value)}
+                  placeholder="Ketik pesan yang akan dikirim secara otomatis..."
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg p-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 leading-relaxed"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-gray-300">
+                    Waktu Pengiriman
+                  </label>
+                  <span className="text-[10px] text-purple-400 font-medium">Preset Cepat:</span>
+                </div>
+                {/* Presets */}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {[
+                    {
+                      label: t("livechat.preset_1hour", "+1 Jam"),
+                      get: () => new Date(Date.now() + 3600000),
+                    },
+                    {
+                      label: t("livechat.preset_tomorrow_morning", "Besok (09:00)"),
+                      get: () => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 1);
+                        d.setHours(9, 0, 0, 0);
+                        return d;
+                      },
+                    },
+                    {
+                      label: t("livechat.preset_tomorrow_afternoon", "Besok (14:00)"),
+                      get: () => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 1);
+                        d.setHours(14, 0, 0, 0);
+                        return d;
+                      },
+                    },
+                    {
+                      label: t("livechat.preset_3days", "+3 Hari"),
+                      get: () => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 3);
+                        d.setHours(10, 0, 0, 0);
+                        return d;
+                      },
+                    },
+                  ].map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        const target = p.get();
+                        const localIso = new Date(
+                          target.getTime() - target.getTimezoneOffset() * 60000,
+                        )
+                          .toISOString()
+                          .slice(0, 16);
+                        setScheduleDatetime(localIso);
+                      }}
+                      className="text-[10px] font-medium px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="datetime-local"
+                  required
+                  value={scheduleDatetime}
+                  onChange={(e) => setScheduleDatetime(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => setShowScheduleModal(false)}
+                  className="btn-secondary text-xs px-3 py-1.5"
+                >
+                  {t("actions.cancel", "Batal")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={scheduling || !scheduleContent.trim()}
+                  className="btn-primary text-xs px-4 py-1.5 flex items-center gap-1.5 shadow-lg shadow-brand-500/20"
+                >
+                  {scheduling ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Clock className="w-3.5 h-3.5" />
+                  )}
+                  <span>Jadwalkan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Scheduled Toast */}
+      {scheduledToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-purple-600 text-white text-xs px-3.5 py-2 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-bottom duration-200">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{t("livechat.schedule_success", "Pesan berhasil dijadwalkan!")}</span>
         </div>
       )}
     </div>

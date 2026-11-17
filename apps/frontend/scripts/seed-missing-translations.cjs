@@ -1793,5 +1793,75 @@ module.exports = { TRANSLATIONS: {
     "id": "Rasio Otomasi AI",
     "en": "AI Automation Ratio",
     "ja": "AI自動化率"
+  },
+  "livechat.notif_sound_on": {
+    "id": "Notifikasi Aktif",
+    "en": "Notifications On",
+    "ja": "通知オン"
+  },
+  "livechat.notif_sound_off": {
+    "id": "Notifikasi Senyap",
+    "en": "Notifications Muted",
+    "ja": "通知ミュート"
+  },
+  "livechat.schedule_msg_btn": {
+    "id": "Jadwalkan Pesan",
+    "en": "Schedule Message",
+    "ja": "メッセージ予約"
+  },
+  "livechat.schedule_modal_title": {
+    "id": "Jadwalkan Pesan Follow-up",
+    "en": "Schedule Follow-up Message",
+    "ja": "フォローアップメッセージの予約"
+  },
+  "livechat.schedule_success": {
+    "id": "Pesan berhasil dijadwalkan!",
+    "en": "Message scheduled successfully!",
+    "ja": "メッセージが正常に予約されました！"
+  },
+  "livechat.preset_1hour": {
+    "id": "+1 Jam",
+    "en": "+1 Hour",
+    "ja": "+1時間"
+  },
+  "livechat.preset_tomorrow_morning": {
+    "id": "Besok (09:00)",
+    "en": "Tomorrow (09:00)",
+    "ja": "明日 (09:00)"
+  },
+  "livechat.preset_tomorrow_afternoon": {
+    "id": "Besok (14:00)",
+    "en": "Tomorrow (14:00)",
+    "ja": "明日 (14:00)"
+  },
+  "livechat.preset_3days": {
+    "id": "+3 Hari",
+    "en": "+3 Days",
+    "ja": "+3日"
+  },
+  "livechat.preset_1week": {
+    "id": "+1 Minggu",
+    "en": "+1 Week",
+    "ja": "+1週間"
+  },
+  "contacts.export_all": {
+    "id": "Ekspor Semua (.csv)",
+    "en": "Export All (.csv)",
+    "ja": "すべて出力 (.csv)"
+  },
+  "contacts.export_filtered": {
+    "id": "Ekspor Tag Terpilih (.csv)",
+    "en": "Export Filtered Tag (.csv)",
+    "ja": "タグ別出力 (.csv)"
+  },
+  "analytics.ai_performance": {
+    "id": "Performa Asisten AI",
+    "en": "AI Assistant Performance",
+    "ja": "AIアシスタント実績"
+  },
+  "scheduled.quick_presets": {
+    "id": "Preset Waktu Cepat:",
+    "en": "Quick Presets:",
+    "ja": "クイックプリセット:"
   }
 } };

@@ -168,7 +168,73 @@ export default function ScheduledMessages() {
                 />
               </div>
               <div>
-                <label className="label">{t("scheduled.scheduled_for")} *</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="label mb-0">{t("scheduled.scheduled_for")} *</label>
+                  <span className="text-[10px] text-brand-400 font-medium">
+                    {t("scheduled.quick_presets", "Preset Cepat:")}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {[
+                    {
+                      label: t("livechat.preset_1hour", "+1 Jam"),
+                      get: () => new Date(Date.now() + 3600000),
+                    },
+                    {
+                      label: t("livechat.preset_tomorrow_morning", "Besok (09:00)"),
+                      get: () => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 1);
+                        d.setHours(9, 0, 0, 0);
+                        return d;
+                      },
+                    },
+                    {
+                      label: t("livechat.preset_tomorrow_afternoon", "Besok (14:00)"),
+                      get: () => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 1);
+                        d.setHours(14, 0, 0, 0);
+                        return d;
+                      },
+                    },
+                    {
+                      label: t("livechat.preset_3days", "+3 Hari"),
+                      get: () => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 3);
+                        d.setHours(10, 0, 0, 0);
+                        return d;
+                      },
+                    },
+                    {
+                      label: t("livechat.preset_1week", "+1 Minggu"),
+                      get: () => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 7);
+                        d.setHours(10, 0, 0, 0);
+                        return d;
+                      },
+                    },
+                  ].map((p, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        const target = p.get();
+                        const localIso = new Date(
+                          target.getTime() - target.getTimezoneOffset() * 60000,
+                        )
+                          .toISOString()
+                          .slice(0, 16);
+                        setForm({ ...form, scheduledAt: localIso });
+                      }}
+                      className="text-[10px] font-medium px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
                 <input
                   type="datetime-local"
                   className="input"

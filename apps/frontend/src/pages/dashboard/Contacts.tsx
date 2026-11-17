@@ -58,6 +58,28 @@ export default function Contacts() {
     ? contacts.filter((c) => c.tags.includes(filterTag))
     : contacts;
 
+  const exportFilteredCsv = (listToExport: Contact[], filenameSuffix = "all") => {
+    const header = ["Nama", "Nomor HP", "Label/Tag", "Catatan", "Tanggal Dibuat"];
+    const rows = listToExport.map((c) => [
+      `"${(c.name || "").replace(/"/g, '""')}"`,
+      `"${c.phone}"`,
+      `"${(c.tags || []).join(", ").replace(/"/g, '""')}"`,
+      `"${(c.notes || "").replace(/"/g, '""')}"`,
+      `"${new Date(c.createdAt).toLocaleDateString()}"`,
+    ]);
+    const csvContent =
+      "\uFEFF" + [header.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `contacts_${filenameSuffix}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const openCreate = () => {
     setEditing(null);
     setShowForm(true);
@@ -167,21 +189,33 @@ export default function Contacts() {
             <Plus className="w-4 h-4" /> {t("contacts.add_contact", "Add Contact")}
           </button>
           <div className="relative group">
-            <button className="btn-secondary">
-              <Download className="w-4 h-4" /> {t("actions.export", "Export")}
+            <button className="btn-secondary flex items-center gap-1.5">
+              <Download className="w-4 h-4 text-gray-400" />
+              <span>{t("actions.export", "Export")}</span>
             </button>
-            <div className="absolute right-0 top-full mt-1 w-28 card py-1 hidden group-hover:block z-10">
+            <div className="absolute right-0 top-full mt-1 w-44 card py-1 hidden group-hover:block z-10 shadow-xl border border-gray-800">
+              {filterTag && (
+                <button
+                  type="button"
+                  onClick={() => exportFilteredCsv(filtered, `tag_${filterTag}`)}
+                  className="w-full text-left px-3 py-2 text-xs text-brand-300 hover:bg-gray-800 font-medium border-b border-gray-800/80"
+                >
+                  Ekspor Tag #{filterTag} ({filtered.length})
+                </button>
+              )}
               <button
-                onClick={() => exportContacts("csv")}
-                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-800"
+                type="button"
+                onClick={() => exportFilteredCsv(contacts, "all")}
+                className="w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-gray-800"
               >
-                CSV
+                {t("contacts.export_all", "Ekspor Semua (.csv)")}
               </button>
               <button
+                type="button"
                 onClick={() => exportContacts("json")}
-                className="w-full text-left px-3 py-2 text-xs text-gray-300 hover:bg-gray-800"
+                className="w-full text-left px-3 py-2 text-xs text-gray-400 hover:bg-gray-800"
               >
-                JSON
+                Format JSON
               </button>
             </div>
           </div>

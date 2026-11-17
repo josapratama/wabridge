@@ -630,7 +630,8 @@
     "failed": "Failed",
     "success_rate": "Success Rate",
     "monthly_usage": "Monthly Usage",
-    "providers_breakdown": "Status & Provider Breakdown"
+    "providers_breakdown": "Status & Provider Breakdown",
+    "ai_performance": "AI Assistant Performance"
   },
   "autoreply": {
     "title": "Auto-Reply & AI Bot",
@@ -724,7 +725,9 @@
     "tags": "Tags",
     "notes": "Notes",
     "upload_csv": "Upload .CSV File",
-    "or_paste": "or paste raw lines directly below:"
+    "or_paste": "or paste raw lines directly below:",
+    "export_all": "Export All (.csv)",
+    "export_filtered": "Export Filtered Tag (.csv)"
   },
   "webhooks": {
     "title": "Webhooks",
@@ -773,7 +776,8 @@
     "scheduled_for": "Scheduled For",
     "empty_title": "No Scheduled Messages",
     "empty_desc": "Schedule automated messages to be delivered at a specific future date and time.",
-    "cancel": "Cancel Schedule"
+    "cancel": "Cancel Schedule",
+    "quick_presets": "Quick Presets:"
   },
   "templates": {
     "title": "Message Templates",
@@ -922,7 +926,17 @@
     "manage_quick_replies": "Manage Templates",
     "add_quick_reply": "+ Add Quick Reply",
     "filter_all_tags": "All Tags",
-    "filter_by_tag": "Filter by Tag:"
+    "filter_by_tag": "Filter by Tag:",
+    "notif_sound_on": "Notifications On",
+    "notif_sound_off": "Notifications Muted",
+    "schedule_msg_btn": "Schedule Message",
+    "schedule_modal_title": "Schedule Follow-up Message",
+    "schedule_success": "Message scheduled successfully!",
+    "preset_1hour": "+1 Hour",
+    "preset_tomorrow_morning": "Tomorrow (09:00)",
+    "preset_tomorrow_afternoon": "Tomorrow (14:00)",
+    "preset_3days": "+3 Days",
+    "preset_1week": "+1 Week"
   },
   "api_keys": {
     "created_title": "API Key Created",

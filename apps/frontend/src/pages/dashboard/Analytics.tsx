@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { analyticsApi, AnalyticsSummary, UsageRecord } from "../../api/client";
-import { BarChart2, TrendingUp, RefreshCw, AlertCircle } from "lucide-react";
+import { analyticsApi, AnalyticsSummary, UsageRecord, aiBotApi } from "../../api/client";
+import { BarChart2, TrendingUp, RefreshCw, AlertCircle, Bot } from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
 
 function StatCard({
@@ -50,16 +50,25 @@ export default function Analytics() {
   const { t } = useI18n();
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [usage, setUsage] = useState<UsageRecord | null>(null);
+  const [aiStats, setAiStats] = useState<{
+    totalReplies: number;
+    lastReplyAt: string | null;
+    isEnabled: boolean;
+    provider: string;
+    model: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
-    const [s, u] = await Promise.all([
+    const [s, u, ai] = await Promise.allSettled([
       analyticsApi.summary(),
       analyticsApi.usage(),
+      aiBotApi.getStats(),
     ]);
-    if (s.data) setSummary(s.data);
-    if (u.data) setUsage(u.data);
+    if (s.status === "fulfilled" && s.value.data) setSummary(s.value.data);
+    if (u.status === "fulfilled" && u.value.data) setUsage(u.value.data);
+    if (ai.status === "fulfilled" && ai.value.data) setAiStats(ai.value.data);
     setLoading(false);
   };
 
@@ -121,6 +130,95 @@ export default function Analytics() {
               color={usagePct > 80 ? "text-red-400" : "text-yellow-400"}
               sub={`${usagePct}% used this month`}
             />
+          </div>
+
+          {/* AI Assistant Performance Metrics */}
+          <div className="card p-5 border border-purple-800/40 bg-gradient-to-br from-purple-950/20 via-gray-900 to-gray-900 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white">
+                      {t("analytics.ai_performance", "Performa Asisten AI")}
+                    </h3>
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        aiStats?.isEnabled
+                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          : "bg-gray-800 text-gray-400 border border-gray-700"
+                      }`}
+                    >
+                      {aiStats?.isEnabled ? "Online / Aktif" : "Nonaktif"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Provider: <strong className="text-gray-300 capitalize">{aiStats?.provider || "Gemini"}</strong> • Model:{" "}
+                    <span className="font-mono text-purple-300">{aiStats?.model || "gemini-2.0-flash"}</span>
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-xs">
+                <div>
+                  <p className="text-gray-400 text-[11px] font-medium">Balasan AI Terkirim</p>
+                  <p className="text-lg font-bold text-white font-mono">{aiStats?.totalReplies ?? 0}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-[11px] font-medium">Rasio Otomasi AI</p>
+                  <p className="text-lg font-bold text-purple-400 font-mono">
+                    {summary?.totalReceived && summary.totalReceived > 0
+                      ? `${Math.min(100, Math.round(((aiStats?.totalReplies || 0) / summary.totalReceived) * 100))}%`
+                      : (aiStats?.totalReplies ?? 0) > 0 ? "100%" : "0%"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* AI vs Human volume bar */}
+            <div>
+              <div className="flex items-center justify-between text-xs text-gray-400 mb-1.5">
+                <span>Distribusi Penanganan Pesan</span>
+                <span className="text-purple-300 font-medium">
+                  {aiStats?.totalReplies ?? 0} Bot / {Math.max(0, (summary?.totalSent ?? 0) - (aiStats?.totalReplies ?? 0))} Human CS
+                </span>
+              </div>
+              <div className="h-2.5 bg-gray-800 rounded-full overflow-hidden flex">
+                <div
+                  className="bg-purple-500 h-full transition-all"
+                  style={{
+                    width: `${
+                      (summary?.totalSent ?? 0) > 0
+                        ? Math.min(100, Math.round(((aiStats?.totalReplies ?? 0) / (summary?.totalSent || 1)) * 100))
+                        : (aiStats?.totalReplies ?? 0) > 0 ? 100 : 0
+                    }%`,
+                  }}
+                  title="Balasan Bot AI"
+                />
+                <div
+                  className="bg-brand-500 h-full transition-all"
+                  style={{
+                    width: `${
+                      (summary?.totalSent ?? 0) > 0
+                        ? Math.max(0, 100 - Math.min(100, Math.round(((aiStats?.totalReplies ?? 0) / (summary?.totalSent || 1)) * 100)))
+                        : 0
+                    }%`,
+                  }}
+                  title="Balasan CS Manusia"
+                />
+              </div>
+              <div className="flex items-center gap-4 text-[10px] text-gray-500 mt-1.5">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-purple-500" />
+                  <span>Dijawab Otomatis oleh AI</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-brand-500" />
+                  <span>Ditangani Manual oleh Staf CS</span>
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Quota bar */}

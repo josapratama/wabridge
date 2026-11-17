@@ -630,7 +630,8 @@
     "failed": "Gagal Kirim",
     "success_rate": "Rasio Keberhasilan",
     "monthly_usage": "Penggunaan Bulan Ini",
-    "providers_breakdown": "Distribusi Status & Provider"
+    "providers_breakdown": "Distribusi Status & Provider",
+    "ai_performance": "Performa Asisten AI"
   },
   "autoreply": {
     "title": "Balas Otomatis & AI Bot",
@@ -724,7 +725,9 @@
     "tags": "Tag / Label",
     "notes": "Catatan",
     "upload_csv": "Unggah Berkas .CSV",
-    "or_paste": "atau tempel baris kontak langsung di bawah ini:"
+    "or_paste": "atau tempel baris kontak langsung di bawah ini:",
+    "export_all": "Ekspor Semua (.csv)",
+    "export_filtered": "Ekspor Tag Terpilih (.csv)"
   },
   "webhooks": {
     "title": "Webhook HTTP",
@@ -773,7 +776,8 @@
     "scheduled_for": "Waktu Pengiriman",
     "empty_title": "Belum Ada Pesan Terjadwal",
     "empty_desc": "Jadwalkan pesan otomatis untuk dikirim pada tanggal dan jam tertentu di masa mendatang.",
-    "cancel": "Batalkan Jadwal"
+    "cancel": "Batalkan Jadwal",
+    "quick_presets": "Preset Waktu Cepat:"
   },
   "templates": {
     "title": "Template Pesan",
@@ -922,7 +926,17 @@
     "manage_quick_replies": "Kelola Template",
     "add_quick_reply": "+ Tambah Template Cepat",
     "filter_all_tags": "Semua Tag",
-    "filter_by_tag": "Filter Tag:"
+    "filter_by_tag": "Filter Tag:",
+    "notif_sound_on": "Notifikasi Aktif",
+    "notif_sound_off": "Notifikasi Senyap",
+    "schedule_msg_btn": "Jadwalkan Pesan",
+    "schedule_modal_title": "Jadwalkan Pesan Follow-up",
+    "schedule_success": "Pesan berhasil dijadwalkan!",
+    "preset_1hour": "+1 Jam",
+    "preset_tomorrow_morning": "Besok (09:00)",
+    "preset_tomorrow_afternoon": "Besok (14:00)",
+    "preset_3days": "+3 Hari",
+    "preset_1week": "+1 Minggu"
   },
   "api_keys": {
     "created_title": "API Key Berhasil Dibuat",
