@@ -27,23 +27,23 @@ export default function Messages() {
   };
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-5">
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <p className="text-sm text-gray-400">
+        <p className="text-xs sm:text-sm text-gray-400">
           {t("table.showing", "Showing")} <span className="font-semibold text-gray-200">{filtered.length}</span> {t("messages.title", "messages")}
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => void load()}
-            className="btn-secondary"
+            className="btn-secondary text-xs sm:text-sm"
             disabled={loading}
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
           <div className="relative group">
-            <button className="btn-secondary">
-              <Download className="w-4 h-4" /> {t("actions.export", "Export")}
+            <button className="btn-secondary text-xs sm:text-sm">
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {t("actions.export", "Export")}
             </button>
             <div className="absolute right-0 top-full mt-1 w-32 card py-1 hidden group-hover:block z-10">
               <button
@@ -70,8 +70,8 @@ export default function Messages() {
               </button>
             </div>
           </div>
-          <button onClick={() => setShowForm(true)} className="btn-primary">
-            <Send className="w-4 h-4" /> {t("messages.send_new", "Send Message")}
+          <button onClick={() => setShowForm(true)} className="btn-primary text-xs sm:text-sm shadow-lg shadow-brand-500/20">
+            <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {t("messages.send_new", "Kirim Pesan")}
           </button>
         </div>
       </div>

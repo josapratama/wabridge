@@ -32,23 +32,23 @@ export default function ProviderConfigs() {
   };
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-5">
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <p className="text-sm text-gray-400">
-          {t("provider_configs.subtitle", "Configure WhatsApp connectivity via Meta Cloud API, BSP partner, or Baileys Web.")}
+        <p className="text-xs sm:text-sm text-gray-400">
+          {t("provider_configs.subtitle", "Kelola gateway koneksi WhatsApp (Meta Cloud API, BSP Partner, dan Baileys Multi-Device)")}
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => void load()}
-            className="btn-secondary"
+            className="btn-secondary text-xs sm:text-sm"
             disabled={loading}
             title={t("actions.refresh", "Refresh")}
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
-          <button onClick={() => setShowForm(true)} className="btn-primary shadow-lg shadow-brand-500/20">
-            <Plus className="w-4 h-4" /> {t("provider_configs.new", "New Provider Config")}
+          <button onClick={() => setShowForm(true)} className="btn-primary text-xs sm:text-sm shadow-lg shadow-brand-500/20">
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {t("provider_configs.new", "Tambah Provider")}
           </button>
         </div>
       </div>
@@ -82,11 +82,11 @@ export default function ProviderConfigs() {
         ) : configs.length === 0 ? (
           <EmptyState
             icon={Settings2}
-            title={t("provider_configs.empty_title", "No provider configs yet")}
-            description={t("provider_configs.empty_desc", "Create your first provider configuration to connect WhatsApp.")}
+            title={t("provider_configs.empty_title", "Belum Ada Provider")}
+            description={t("provider_configs.empty_desc", "Tambahkan konfigurasi Baileys atau Meta Cloud API untuk mulai menghubungkan nomor WhatsApp.")}
             action={
-              <button className="btn-primary shadow-lg shadow-brand-500/20" onClick={() => setShowForm(true)}>
-                <Plus className="w-4 h-4" /> {t("provider_configs.new", "New Provider Config")}
+              <button className="btn-primary text-xs sm:text-sm shadow-lg shadow-brand-500/20" onClick={() => setShowForm(true)}>
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {t("provider_configs.new", "Tambah Provider")}
               </button>
             }
           />

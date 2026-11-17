@@ -141,7 +141,7 @@ export default function Sessions() {
     configs.find((c) => c.id === id)?.name ?? id.slice(0, 8) + "…";
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-5">
       <BaileysConnectionModal
         show={qrModal.show}
         configId={qrModal.configId}
@@ -155,20 +155,20 @@ export default function Sessions() {
 
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <p className="text-sm text-gray-400">
+        <p className="text-xs sm:text-sm text-gray-400">
           {t("sessions.subtitle", "Active and configured WhatsApp account sessions")}
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => void load()}
-            className="btn-secondary"
+            className="btn-secondary text-xs sm:text-sm"
             disabled={loading}
             title={t("actions.refresh", "Refresh")}
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
-          <button onClick={() => setShowForm(true)} className="btn-primary shadow-lg shadow-brand-500/20">
-            <Plus className="w-4 h-4" /> {t("sessions.new_session", "New Session")}
+          <button onClick={() => setShowForm(true)} className="btn-primary text-xs sm:text-sm shadow-lg shadow-brand-500/20">
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {t("sessions.new_session", "New Session")}
           </button>
         </div>
       </div>

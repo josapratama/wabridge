@@ -115,42 +115,43 @@ export default function Topbar({
   const isHealthy = health?.status === "ok";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-gray-800 bg-gray-900/95 px-4 backdrop-blur-md sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 sm:h-16 w-full items-center justify-between border-b border-gray-800 bg-gray-900/95 px-3 sm:px-6 backdrop-blur-md">
       {/* Left: Mobile hamburger & breadcrumbs */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 pr-2">
         <button
           onClick={onToggleMobileSidebar}
           aria-label="Toggle navigation menu"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-800 bg-gray-800/60 text-gray-400 hover:bg-gray-800 hover:text-white lg:hidden transition-colors"
+          className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg border border-gray-800 bg-gray-800/60 text-gray-400 hover:bg-gray-800 hover:text-white lg:hidden transition-colors"
         >
           {isMobileSidebarOpen ? (
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4 sm:h-5 sm:w-5" />
           ) : (
-            <Menu className="h-5 w-5" />
+            <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
           )}
         </button>
 
-        <div>
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+        <div className="min-w-0">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-500">
             <span>{groupLabel}</span>
             <span>/</span>
             <span className="text-gray-300 font-medium capitalize">
               {titleLabel}
             </span>
           </div>
-          <h1 className="text-base sm:text-lg font-bold text-white capitalize leading-tight">
+          <h1 className="text-sm sm:text-base md:text-lg font-bold text-white capitalize leading-tight truncate">
             {titleLabel}
           </h1>
         </div>
       </div>
 
       {/* Right: Health pill, Language Switcher, Public docs link, User dropdown */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         {/* Live System Health pill with popover */}
         <div className="relative" ref={popoverRef}>
           <button
             onClick={() => setShowStatusPopover((prev) => !prev)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+            title={isHealthy ? t("nav.system_operational", "All Systems Operational") : t("nav.system_degraded", "System Degraded")}
+            className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-medium border transition-colors ${
               isHealthy
                 ? "bg-brand-950/60 border-brand-800/60 text-brand-300 hover:bg-brand-900/50"
                 : "bg-yellow-950/60 border-yellow-800/60 text-yellow-300 hover:bg-yellow-900/50"
@@ -171,10 +172,10 @@ export default function Topbar({
             <span className="hidden md:inline">
               {isHealthy ? t("nav.system_operational", "All Systems Operational") : t("nav.system_degraded", "System Degraded")}
             </span>
-            <span className="md:hidden">
+            <span className="hidden sm:inline md:hidden">
               {isHealthy ? t("status.online", "Online") : t("status.offline", "Degraded")}
             </span>
-            <ChevronDown className="w-3 h-3 text-gray-400" />
+            <ChevronDown className="w-3 h-3 text-gray-400 hidden sm:inline" />
           </button>
 
           {/* Health Popover Details */}
@@ -284,7 +285,8 @@ export default function Topbar({
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => setShowUserDropdown((prev) => !prev)}
-            className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-full border border-gray-800 bg-gray-850 hover:bg-gray-800 transition-colors"
+            aria-label="User menu"
+            className="flex items-center gap-1.5 sm:gap-2 p-1 sm:pl-2 sm:pr-2.5 sm:py-1 rounded-full border border-gray-800 bg-gray-850 hover:bg-gray-800 transition-colors"
           >
             <div className="w-7 h-7 rounded-full bg-brand-600/30 border border-brand-500/40 flex items-center justify-center text-brand-300 text-xs font-semibold">
               {user?.name ? user.name[0].toUpperCase() : "A"}
@@ -292,7 +294,7 @@ export default function Topbar({
             <span className="text-xs font-medium text-gray-200 hidden md:inline max-w-[100px] truncate">
               {user?.name || "Admin"}
             </span>
-            <ChevronDown className="w-3 h-3 text-gray-400" />
+            <ChevronDown className="w-3 h-3 text-gray-400 hidden sm:inline" />
           </button>
 
           {showUserDropdown && (

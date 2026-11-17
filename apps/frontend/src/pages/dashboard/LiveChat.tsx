@@ -485,7 +485,7 @@ export default function LiveChat() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col bg-gray-950 overflow-hidden">
+    <div className="flex h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] flex-col bg-gray-950 overflow-hidden">
       {/* Baileys QR Modal */}
       <BaileysConnectionModal
         show={qrModal.show}
@@ -508,8 +508,10 @@ export default function LiveChat() {
           {/* Top Search & Filter Tabs */}
           <div className="p-3 border-b border-gray-800 space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                {t("nav.live_chat")} ({filteredConversations.length})
+              <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-brand-400" />
+                <span>{t("nav.live_chat", "Live Chat")}</span>
+                <span className="text-gray-500 font-mono text-[11px]">({filteredConversations.length})</span>
               </span>
               <button
                 onClick={() => void loadData()}
@@ -547,7 +549,7 @@ export default function LiveChat() {
               <Search className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder={t("livechat.search_placeholder")}
+                placeholder={t("livechat.search_placeholder", "Cari kontak, nomor, atau isi pesan...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-gray-800/80 border border-gray-700/60 rounded-lg pl-9 pr-3 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-brand-500"
@@ -556,10 +558,34 @@ export default function LiveChat() {
           </div>
 
           {/* Conversations Scrollable List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-gray-800/40">
+          <div className="flex-1 overflow-y-auto divide-y divide-gray-800/40 flex flex-col">
             {filteredConversations.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-xs">
-                {loading ? t("common.loading", "Loading chats...") : t("livechat.no_conversations")}
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-14 h-14 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 mb-3.5 shadow-inner">
+                  <MessageSquare className="w-7 h-7" />
+                </div>
+                <h3 className="text-sm font-semibold text-gray-200">
+                  {loading ? t("common.loading", "Memuat percakapan...") : t("livechat.no_conversations", "Belum Ada Percakapan")}
+                </h3>
+                <p className="text-xs text-gray-400 max-w-xs mt-1.5 leading-relaxed">
+                  Pesan WhatsApp yang dikirim atau diterima melalui sesi aktif akan muncul di sini secara real-time.
+                </p>
+                <div className="mt-4 flex flex-col sm:flex-row gap-2 w-full max-w-xs justify-center">
+                  <button
+                    onClick={() => void loadData()}
+                    className="btn-secondary text-xs px-3.5 py-2 inline-flex items-center justify-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Segarkan</span>
+                  </button>
+                  <a
+                    href="/messages"
+                    className="btn-primary text-xs px-3.5 py-2 inline-flex items-center justify-center gap-1.5 shadow-lg shadow-brand-500/20"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Kirim Pesan Baru</span>
+                  </a>
+                </div>
               </div>
             ) : (
               filteredConversations.map((c) => {
