@@ -117,7 +117,7 @@ export default function LiveChat() {
     } catch (e: any) {
       console.error("AI draft reply error", e);
       setSendError(
-        "Gagal merumuskan draf AI. Pastikan API Key aktif di menu Auto-Reply & AI.",
+        t("livechat.ai_draft_err", "Gagal merumuskan draf AI. Pastikan API Key aktif di menu Auto-Reply & AI."),
       );
     } finally {
       setAiDrafting(false);
@@ -209,7 +209,7 @@ export default function LiveChat() {
       setMediaRecorder(recorder);
       setRecording(true);
     } catch {
-      alert("Izin akses mikrofon diperlukan untuk merekam voice note.");
+      alert(t("livechat.mic_permission_err", "Izin akses mikrofon diperlukan untuk merekam voice note."));
     }
   };
 
@@ -553,9 +553,9 @@ export default function LiveChat() {
             {/* Status Filter Tabs */}
             <div className="flex border border-gray-800 rounded-lg p-0.5 bg-gray-950/60 text-[11px]">
               {[
-                { id: "all", label: "Semua" },
-                { id: "unread", label: "Belum Dibaca" },
-                { id: "resolved", label: "Selesai" },
+                { id: "all", label: t("livechat.tab_all", "Semua") },
+                { id: "unread", label: t("livechat.tab_unread", "Belum Dibaca") },
+                { id: "resolved", label: t("livechat.tab_resolved", "Selesai") },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -594,7 +594,7 @@ export default function LiveChat() {
                   {loading ? t("common.loading", "Memuat percakapan...") : t("livechat.no_conversations", "Belum Ada Percakapan")}
                 </h3>
                 <p className="text-xs text-gray-400 max-w-xs mt-1.5 leading-relaxed">
-                  Pesan WhatsApp yang dikirim atau diterima melalui sesi aktif akan muncul di sini secara real-time.
+                  {t("livechat.empty_desc", "Pesan WhatsApp yang dikirim atau diterima melalui sesi aktif akan muncul di sini secara real-time.")}
                 </p>
                 <div className="mt-4 flex flex-col sm:flex-row gap-2 w-full max-w-xs justify-center">
                   <button
@@ -602,14 +602,14 @@ export default function LiveChat() {
                     className="btn-secondary text-xs px-3.5 py-2 inline-flex items-center justify-center gap-1.5"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Segarkan</span>
+                    <span>{t("actions.refresh", "Segarkan")}</span>
                   </button>
                   <a
                     href="/messages"
                     className="btn-primary text-xs px-3.5 py-2 inline-flex items-center justify-center gap-1.5 shadow-lg shadow-brand-500/20"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Kirim Pesan Baru</span>
+                    <span>{t("livechat.send_new_msg", "Kirim Pesan Baru")}</span>
                   </a>
                 </div>
               </div>
@@ -1057,18 +1057,18 @@ export default function LiveChat() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                  className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
                   title={t("livechat.attach_file")}
                 >
                   <Paperclip
-                    className={`w-5 h-5 ${uploading ? "animate-spin" : ""}`}
+                    className={`w-4 h-4 sm:w-5 sm:h-5 ${uploading ? "animate-spin" : ""}`}
                   />
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setShowQuickReplies(!showQuickReplies)}
-                  className={`p-2 rounded-lg transition-colors ${
+                  className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
                     showQuickReplies
                       ? "bg-amber-950/60 text-amber-300 border border-amber-600/40"
                       : "text-gray-400 hover:text-white hover:bg-gray-800"
@@ -1081,7 +1081,7 @@ export default function LiveChat() {
                 <button
                   type="button"
                   onClick={recording ? stopVoiceRecording : startVoiceRecording}
-                  className={`p-2 rounded-lg transition-all ${
+                  className={`p-1.5 sm:p-2 rounded-lg transition-all ${
                     recording
                       ? "bg-red-600 text-white animate-pulse"
                       : "text-gray-400 hover:text-white hover:bg-gray-800"
@@ -1100,12 +1100,12 @@ export default function LiveChat() {
                   type="button"
                   onClick={() => void handleAiDraftReply()}
                   disabled={aiDrafting || !selectedJid}
-                  className={`p-2 rounded-lg transition-colors flex items-center gap-1 ${
+                  className={`p-1.5 sm:p-2 rounded-lg transition-colors flex items-center gap-1 ${
                     aiDrafting
                       ? "bg-purple-950/80 text-purple-300 border border-purple-600/50"
                       : "text-purple-400 hover:text-purple-200 hover:bg-purple-950/40"
                   }`}
-                  title="✨ Bantu buat draf balasan dengan AI Copilot"
+                  title={t("livechat.ai_copilot_btn", "✨ Bantu buat draf balasan dengan AI Copilot")}
                 >
                   <Sparkles
                     className={`w-4 h-4 ${aiDrafting ? "animate-spin text-purple-300" : ""}`}

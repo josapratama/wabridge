@@ -224,7 +224,8 @@ export default function ScheduledMessages() {
             }
           />
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800">
                 <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
@@ -286,7 +287,8 @@ export default function ScheduledMessages() {
               ))}
             </tbody>
           </table>
-        )}
+        </div>
+      )}
       </div>
     </div>
   );

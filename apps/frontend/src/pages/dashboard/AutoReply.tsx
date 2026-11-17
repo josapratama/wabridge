@@ -322,7 +322,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
             }`}
           >
             <Bot className="w-4 h-4" />
-            <span>Aturan Kata Kunci ({rules.length})</span>
+            <span>{t("autoreply.rules_tab", "Aturan Kata Kunci")} ({rules.length})</span>
           </button>
           <button
             onClick={() => setActiveTab("ai")}
@@ -333,7 +333,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
             }`}
           >
             <Sparkles className="w-4 h-4 text-purple-400" />
-            <span>AI Bot Assistant</span>
+            <span>{t("autoreply.ai_tab", "AI Bot Assistant")}</span>
             {aiConfig.isEnabled && (
               <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
             )}
@@ -347,7 +347,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
               onClick={() => void load()}
               className="btn-secondary text-xs"
               disabled={loading}
-              title="Refresh"
+              title={t("actions.refresh", "Refresh")}
             >
               <RefreshCw
                 className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? "animate-spin" : ""}`}
@@ -439,10 +439,10 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-purple-400" />
-                  AI WhatsApp Assistant (LLM Auto-Responder)
+                  {t("autoreply.ai_title", "AI WhatsApp Assistant (LLM Auto-Responder)")}
                 </h3>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  Pesan masuk yang tidak cocok dengan kata kunci manual akan dijawab cerdas oleh AI secara otomatis.
+                  {t("autoreply.ai_desc", "Pesan masuk yang tidak cocok dengan kata kunci manual akan dijawab cerdas oleh AI secara otomatis.")}
                 </p>
               </div>
 
@@ -468,7 +468,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-300 mb-1">
-                    AI Provider
+                    {t("autoreply.provider", "AI Provider")}
                   </label>
                   <select
                     value={aiConfig.provider}
@@ -493,7 +493,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-300 mb-1">
-                    Model AI
+                    {t("autoreply.model", "Model AI")}
                   </label>
                   <select
                     value={aiConfig.model}
@@ -514,7 +514,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
               {/* API Key */}
               <div>
                 <label className="block text-xs font-semibold text-gray-300 mb-1">
-                  API Key {aiConfig.hasKey && "(Tersimpan)"}
+                  {t("autoreply.api_key", "API Key")} {aiConfig.hasKey && t("autoreply.api_key_stored", "(Tersimpan)")}
                 </label>
                 <div className="relative">
                   <Key className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
@@ -531,7 +531,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                   />
                 </div>
                 <p className="text-[10px] text-gray-500 mt-1">
-                  Kunci API Anda dienkripsi dan disimpan khusus untuk akun Anda sendiri (terisolasi).
+                  {t("autoreply.api_key_help", "Kunci API Anda dienkripsi dan disimpan khusus untuk akun Anda sendiri (terisolasi).")}
                 </p>
               </div>
 
@@ -539,7 +539,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
               <div className="p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 space-y-2.5">
                 <label className="block text-xs font-semibold text-gray-200 flex items-center gap-1.5">
                   <Smartphone className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Cakupan Nomor Sesi WhatsApp</span>
+                  <span>{t("autoreply.session_scope", "Cakupan Nomor Sesi WhatsApp")}</span>
                 </label>
                 <div className="flex flex-wrap items-center gap-4 text-xs">
                   <label className="flex items-center gap-2 cursor-pointer text-gray-300">
@@ -558,7 +558,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                       }
                       className="text-purple-600 focus:ring-purple-500"
                     />
-                    <span>Semua Sesi Aktif ({sessions.length})</span>
+                    <span>{t("autoreply.all_sessions", "Semua Sesi Aktif")} ({sessions.length})</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer text-gray-300">
                     <input
@@ -584,50 +584,55 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                       }}
                       className="text-purple-600 focus:ring-purple-500"
                     />
-                    <span>Pilih Sesi Tertentu Saja</span>
+                    <span>{t("autoreply.select_sessions", "Pilih Sesi Tertentu Saja")}</span>
                   </label>
                 </div>
 
                 {aiConfig.targetSessionIds &&
                   aiConfig.targetSessionIds.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-700/50">
-                      {sessions.map((s) => {
-                        const isChecked = aiConfig.targetSessionIds?.includes(
-                          s.id,
-                        );
-                        return (
-                          <label
-                            key={s.id}
-                            className={`flex items-center gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition-colors ${
-                              isChecked
-                                ? "bg-purple-950/40 border-purple-800/60 text-purple-200"
-                                : "bg-gray-900/60 border-gray-800 text-gray-400 hover:border-gray-700"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={(e) => {
-                                const curr = aiConfig.targetSessionIds || [];
-                                const next = e.target.checked
-                                  ? [...curr, s.id]
-                                  : curr.filter((id) => id !== s.id);
-                                setAiConfig((prev) => ({
-                                  ...prev,
-                                  targetSessionIds: next,
-                                }));
-                              }}
-                              className="rounded text-purple-600 focus:ring-purple-500"
-                            />
-                            <div className="min-w-0">
-                              <p className="font-semibold truncate">{s.name}</p>
-                              <p className="text-[10px] text-gray-500 font-mono truncate">
-                                {s.id.slice(0, 10)}…
-                              </p>
-                            </div>
-                          </label>
-                        );
-                      })}
+                    <div className="pt-2 border-t border-gray-700/50 space-y-2">
+                      <p className="text-[11px] text-gray-400">
+                        {t("autoreply.select_sessions_desc", "Pilih nomor WhatsApp yang akan dijawab otomatis oleh AI:")}
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {sessions.map((s) => {
+                          const isChecked = aiConfig.targetSessionIds?.includes(
+                            s.id,
+                          );
+                          return (
+                            <label
+                              key={s.id}
+                              className={`flex items-center gap-2.5 p-2 rounded-lg border text-xs cursor-pointer transition-colors ${
+                                isChecked
+                                  ? "bg-purple-950/40 border-purple-800/60 text-purple-200"
+                                  : "bg-gray-900/60 border-gray-800 text-gray-400 hover:border-gray-700"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  const curr = aiConfig.targetSessionIds || [];
+                                  const next = e.target.checked
+                                    ? [...curr, s.id]
+                                    : curr.filter((id) => id !== s.id);
+                                  setAiConfig((prev) => ({
+                                    ...prev,
+                                    targetSessionIds: next,
+                                  }));
+                                }}
+                                className="rounded text-purple-600 focus:ring-purple-500"
+                              />
+                              <div className="min-w-0">
+                                <p className="font-semibold truncate">{s.name}</p>
+                                <p className="text-[10px] text-gray-500 font-mono truncate">
+                                  {s.id.slice(0, 10)}…
+                                </p>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
               </div>
@@ -636,7 +641,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
               <div className="p-3 rounded-xl bg-gray-800/40 border border-gray-700/50 space-y-2.5">
                 <label className="block text-xs font-semibold text-gray-200 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Jadwal Operasional AI Bot</span>
+                  <span>{t("autoreply.schedule_title", "Jadwal Operasional AI Bot")}</span>
                 </label>
                 <div className="flex flex-wrap items-center gap-4 text-xs">
                   <label className="flex items-center gap-2 cursor-pointer text-gray-300">
@@ -652,7 +657,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                       }
                       className="text-purple-600 focus:ring-purple-500"
                     />
-                    <span>Selalu Aktif (24 Jam)</span>
+                    <span>{t("autoreply.always_active", "Selalu Aktif (24 Jam)")}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer text-gray-300">
                     <input
@@ -667,19 +672,19 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                       }
                       className="text-purple-600 focus:ring-purple-500"
                     />
-                    <span>Hanya di Luar Jam Kerja (After Hours)</span>
+                    <span>{t("autoreply.after_hours", "Hanya di Luar Jam Kerja (After Hours)")}</span>
                   </label>
                 </div>
 
                 {aiConfig.scheduleMode === "after_hours" && (
                   <div className="pt-2 border-t border-gray-700/50 space-y-2 text-xs">
                     <p className="text-[11px] text-gray-400">
-                      Selama jam kerja, pesan dilayani staf CS manusia. Di luar jam ini, AI otomatis mengambil alih:
+                      {t("autoreply.schedule_help", "Selama jam kerja, pesan dilayani staf CS manusia. Di luar jam ini, AI otomatis mengambil alih:")}
                     </p>
                     <div className="grid grid-cols-2 gap-3 max-w-sm">
                       <div>
                         <label className="block text-[11px] text-gray-400 mb-1">
-                          Jam Kerja Mulai
+                          {t("autoreply.work_hours_start", "Jam Kerja Mulai")}
                         </label>
                         <input
                           type="time"
@@ -695,7 +700,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                       </div>
                       <div>
                         <label className="block text-[11px] text-gray-400 mb-1">
-                          Jam Kerja Selesai
+                          {t("autoreply.work_hours_end", "Jam Kerja Selesai")}
                         </label>
                         <input
                           type="time"
@@ -719,7 +724,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-gray-300 font-medium">
-                      Kreativitas (Temp)
+                      {t("autoreply.creativity", "Kreativitas (Temp)")}
                     </span>
                     <span className="font-mono text-purple-400 font-semibold">
                       {aiConfig.temperature ?? 0.7}
@@ -740,15 +745,15 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     className="w-full accent-purple-500 cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                    <span>0.0 Faktual</span>
-                    <span>1.0 Luwes</span>
+                    <span>{t("autoreply.temp_factual", "0.0 Faktual")}</span>
+                    <span>{t("autoreply.temp_creative", "1.0 Luwes")}</span>
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-gray-300 font-medium">
-                      Maks. Tokens
+                      {t("autoreply.max_tokens", "Maks. Tokens")}
                     </span>
                     <span className="font-mono text-purple-400 font-semibold">
                       {aiConfig.maxTokens ?? 500}
@@ -769,18 +774,18 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     className="w-full accent-purple-500 cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-gray-500 mt-1">
-                    <span>100 Ringkas</span>
-                    <span>2000 Panjang</span>
+                    <span>{t("autoreply.tokens_short", "100 Ringkas")}</span>
+                    <span>{t("autoreply.tokens_long", "2000 Panjang")}</span>
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-gray-300 font-medium">
-                      Memori Chat
+                      {t("autoreply.chat_memory", "Memori Chat")}
                     </span>
                     <span className="font-mono text-purple-400 font-semibold">
-                      {aiConfig.contextWindow ?? 8} Pesan
+                      {t("autoreply.context_messages", { count: aiConfig.contextWindow ?? 8 }, `${aiConfig.contextWindow ?? 8} Pesan`)}
                     </span>
                   </div>
                   <select
@@ -793,20 +798,20 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     }
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500"
                   >
-                    <option value={4}>4 Pesan (Hemat Token)</option>
-                    <option value={8}>8 Pesan (Standar)</option>
-                    <option value={12}>12 Pesan (Lanjutan)</option>
-                    <option value={16}>16 Pesan (Konsultasi)</option>
-                    <option value={20}>20 Pesan (Konteks Penuh)</option>
+                    <option value={4}>{t("autoreply.context_opt_4", "4 Pesan (Hemat Token)")}</option>
+                    <option value={8}>{t("autoreply.context_opt_8", "8 Pesan (Standar)")}</option>
+                    <option value={12}>{t("autoreply.context_opt_12", "12 Pesan (Lanjutan)")}</option>
+                    <option value={16}>{t("autoreply.context_opt_16", "16 Pesan (Konsultasi)")}</option>
+                    <option value={20}>{t("autoreply.context_opt_20", "20 Pesan (Konteks Penuh)")}</option>
                   </select>
-                  <p className="text-[10px] text-gray-500 mt-1">Riwayat chat yang dibaca AI</p>
+                  <p className="text-[10px] text-gray-500 mt-1">{t("autoreply.chat_memory_help", "Riwayat chat yang dibaca AI")}</p>
                 </div>
               </div>
 
               {/* System Prompt */}
               <div>
                 <label className="block text-xs font-semibold text-gray-300 mb-1">
-                  System Prompt (Instruksi Perilaku Bot)
+                  {t("autoreply.prompt_title", "System Prompt (Instruksi Perilaku Bot)")}
                 </label>
                 <textarea
                   rows={3}
@@ -825,7 +830,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-semibold text-gray-200">
-                    Knowledge Base & Dokumen FAQ
+                    {t("autoreply.kb_title", "Knowledge Base & Dokumen FAQ")}
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -905,7 +910,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-300 mb-1">
-                    Kata Kunci Handover CS (Manusia)
+                    {t("autoreply.handover_kw", "Kata Kunci Handover CS (Manusia)")}
                   </label>
                   <input
                     type="text"
@@ -930,7 +935,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-300 mb-1">
-                    Durasi Jeda AI Setelah Alih CS
+                    {t("autoreply.handover_duration", "Durasi Jeda AI Setelah Alih CS")}
                   </label>
                   <select
                     value={aiConfig.handoverDurationMinutes ?? 120}
@@ -942,11 +947,11 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     }
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
                   >
-                    <option value={30}>30 Menit</option>
-                    <option value={60}>1 Jam</option>
-                    <option value={120}>2 Jam (Rekomendasi)</option>
-                    <option value={360}>6 Jam</option>
-                    <option value={1440}>24 Jam</option>
+                    <option value={30}>{t("autoreply.handover_30m", "30 Menit")}</option>
+                    <option value={60}>{t("autoreply.handover_1h", "1 Jam")}</option>
+                    <option value={120}>{t("autoreply.handover_2h", "2 Jam (Rekomendasi)")}</option>
+                    <option value={360}>{t("autoreply.handover_6h", "6 Jam")}</option>
+                    <option value={1440}>{t("autoreply.handover_24h", "24 Jam")}</option>
                   </select>
                 </div>
               </div>
@@ -954,7 +959,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
               {/* Handover Message */}
               <div>
                 <label className="block text-xs font-semibold text-gray-300 mb-1">
-                  Pesan Notifikasi Handover ke Pelanggan
+                  {t("autoreply.handover_msg_label", "Pesan Notifikasi Handover ke Pelanggan")}
                 </label>
                 <input
                   type="text"
@@ -992,7 +997,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
           </div>
 
           {/* Right Panel: WhatsApp Chat Simulator */}
-          <div className="card p-0 flex flex-col h-[650px] overflow-hidden border-gray-750 shadow-2xl">
+          <div className="card p-0 flex flex-col h-[520px] sm:h-[650px] overflow-hidden border-gray-750 shadow-2xl">
             {/* Simulator Header */}
             <div className="px-4 py-3 bg-emerald-950/40 border-b border-emerald-900/40 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -1015,7 +1020,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                   setSimulatorChat([
                     {
                       role: "bot",
-                      text: "Percakapan telah direset. Silakan ajukan pertanyaan baru!",
+                      text: t("autoreply.sim_reset_text", "Percakapan telah direset. Silakan ajukan pertanyaan baru!"),
                       time: new Date().toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -1027,13 +1032,13 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                 title="Reset riwayat simulasi"
               >
                 <RotateCcw className="w-3 h-3" />
-                <span>Reset</span>
+                <span>{t("autoreply.reset_sim", "Reset")}</span>
               </button>
             </div>
 
             {/* Quick Questions Pills */}
             <div className="px-3 py-2 bg-gray-900/60 border-b border-gray-800/60 flex items-center gap-1.5 overflow-x-auto">
-              <span className="text-[10px] text-gray-500 shrink-0">Tes cepat:</span>
+              <span className="text-[10px] text-gray-500 shrink-0">{t("autoreply.quick_test", "Tes cepat:")}</span>
               {[
                 "Berapa harga paket?",
                 "Jam berapa buka?",
@@ -1086,7 +1091,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" />
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.2s]" />
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:0.4s]" />
-                    <span className="text-[11px] ml-1">AI sedang berpikir...</span>
+                    <span className="text-[11px] ml-1">{t("autoreply.ai_thinking", "AI sedang berpikir...")}</span>
                   </div>
                 </div>
               )}
@@ -1105,7 +1110,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                 type="text"
                 value={testInput}
                 onChange={(e) => setTestInput(e.target.value)}
-                placeholder="Ketik pertanyaan untuk bot..."
+                placeholder={t("autoreply.test_placeholder", "Ketik pertanyaan untuk bot...")}
                 disabled={testingAi}
                 className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
               />

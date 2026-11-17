@@ -115,9 +115,9 @@ export default function Topbar({
   const isHealthy = health?.status === "ok";
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 sm:h-16 w-full items-center justify-between border-b border-gray-800 bg-gray-900/95 px-3 sm:px-6 backdrop-blur-md">
-      {/* Left: Mobile hamburger & breadcrumbs */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0 pr-2">
+    <header className="sticky top-0 z-30 flex h-14 sm:h-16 w-full items-center justify-between border-b border-gray-800/80 bg-gray-900/95 px-3 sm:px-6 backdrop-blur-md">
+      {/* Left: Mobile hamburger & title */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 pr-2">
         <button
           onClick={onToggleMobileSidebar}
           aria-label="Toggle navigation menu"
@@ -130,11 +130,11 @@ export default function Topbar({
           )}
         </button>
 
-        <div className="min-w-0">
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-500">
-            <span>{groupLabel}</span>
-            <span>/</span>
-            <span className="text-gray-300 font-medium capitalize">
+        <div className="min-w-0 flex-1">
+          <div className="hidden md:flex items-center gap-1.5 text-xs text-gray-500 mb-0.5">
+            <span className="hover:text-gray-300 transition-colors">{groupLabel}</span>
+            <span className="text-gray-600">/</span>
+            <span className="text-gray-300 font-medium capitalize truncate">
               {titleLabel}
             </span>
           </div>
@@ -145,13 +145,13 @@ export default function Topbar({
       </div>
 
       {/* Right: Health pill, Language Switcher, Public docs link, User dropdown */}
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* Live System Health pill with popover */}
         <div className="relative" ref={popoverRef}>
           <button
             onClick={() => setShowStatusPopover((prev) => !prev)}
             title={isHealthy ? t("nav.system_operational", "All Systems Operational") : t("nav.system_degraded", "System Degraded")}
-            className={`flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-medium border transition-colors ${
+            className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-1 rounded-full text-xs font-medium border transition-colors ${
               isHealthy
                 ? "bg-brand-950/60 border-brand-800/60 text-brand-300 hover:bg-brand-900/50"
                 : "bg-yellow-950/60 border-yellow-800/60 text-yellow-300 hover:bg-yellow-900/50"
@@ -169,11 +169,11 @@ export default function Topbar({
                 }`}
               />
             </span>
-            <span className="hidden md:inline">
+            <span className="hidden lg:inline text-xs font-medium">
               {isHealthy ? t("nav.system_operational", "All Systems Operational") : t("nav.system_degraded", "System Degraded")}
             </span>
-            <span className="hidden sm:inline md:hidden">
-              {isHealthy ? t("status.online", "Online") : t("status.offline", "Degraded")}
+            <span className="hidden sm:inline lg:hidden text-xs font-medium">
+              {isHealthy ? t("status.online", "Online") : t("status.offline", "Offline")}
             </span>
             <ChevronDown className="w-3 h-3 text-gray-400 hidden sm:inline" />
           </button>

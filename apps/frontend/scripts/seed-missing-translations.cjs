@@ -1268,5 +1268,290 @@ module.exports = { TRANSLATIONS: {
     "id": "karakter",
     "en": "characters",
     "ja": "文字"
+  },
+  "autoreply.rules_tab": {
+    "id": "Aturan Kata Kunci",
+    "en": "Keyword Rules",
+    "ja": "キーワードルール"
+  },
+  "autoreply.ai_tab": {
+    "id": "AI Bot Assistant",
+    "en": "AI Bot Assistant",
+    "ja": "AIボットアシスタント"
+  },
+  "autoreply.ai_title": {
+    "id": "AI WhatsApp Assistant (LLM Auto-Responder)",
+    "en": "AI WhatsApp Assistant (LLM Auto-Responder)",
+    "ja": "AI WhatsAppアシスタント（LLM自動応答）"
+  },
+  "autoreply.ai_desc": {
+    "id": "Pesan masuk yang tidak cocok dengan kata kunci manual akan dijawab cerdas oleh AI secara otomatis.",
+    "en": "Inbound messages that do not match manual keywords will be answered intelligently by AI.",
+    "ja": "手動キーワードに一致しない受信メッセージはAIによって自動応答されます。"
+  },
+  "autoreply.provider": {
+    "id": "AI Provider",
+    "en": "AI Provider",
+    "ja": "AIプロバイダー"
+  },
+  "autoreply.model": {
+    "id": "Model AI",
+    "en": "AI Model",
+    "ja": "AIモデル"
+  },
+  "autoreply.api_key": {
+    "id": "API Key",
+    "en": "API Key",
+    "ja": "APIキー"
+  },
+  "autoreply.api_key_stored": {
+    "id": "(Tersimpan)",
+    "en": "(Stored)",
+    "ja": "(保存済み)"
+  },
+  "autoreply.api_key_help": {
+    "id": "Kunci API Anda dienkripsi dan disimpan khusus untuk akun Anda sendiri (terisolasi).",
+    "en": "Your API key is encrypted and stored exclusively for your own account (isolated).",
+    "ja": "APIキーは暗号化され、アカウント専用に分離して安全に保存されます。"
+  },
+  "autoreply.session_scope": {
+    "id": "Cakupan Nomor Sesi WhatsApp",
+    "en": "WhatsApp Session Scope",
+    "ja": "WhatsAppセッション範囲"
+  },
+  "autoreply.all_sessions": {
+    "id": "Semua Sesi Aktif",
+    "en": "All Active Sessions",
+    "ja": "すべてのアクティブセッション"
+  },
+  "autoreply.select_sessions": {
+    "id": "Pilih Sesi Tertentu Saja",
+    "en": "Select Specific Sessions Only",
+    "ja": "特定のセッションのみ選択"
+  },
+  "autoreply.select_sessions_desc": {
+    "id": "Pilih nomor WhatsApp yang akan dijawab otomatis oleh AI:",
+    "en": "Select WhatsApp numbers to be auto-answered by AI:",
+    "ja": "AIが自動応答するWhatsApp番号を選択してください："
+  },
+  "autoreply.schedule_title": {
+    "id": "Jadwal Operasional AI Bot",
+    "en": "AI Bot Operating Schedule",
+    "ja": "AIボット運用スケジュール"
+  },
+  "autoreply.always_active": {
+    "id": "Selalu Aktif (24 Jam)",
+    "en": "Always Active (24/7)",
+    "ja": "常時アクティブ (24時間)"
+  },
+  "autoreply.after_hours": {
+    "id": "Hanya di Luar Jam Kerja (After Hours)",
+    "en": "After Hours Only (Outside Work Hours)",
+    "ja": "営業時間外のみ（After Hours）"
+  },
+  "autoreply.schedule_help": {
+    "id": "Selama jam kerja, pesan dilayani staf CS manusia. Di luar jam ini, AI otomatis mengambil alih:",
+    "en": "During work hours, messages are handled by human CS. Outside these hours, AI automatically takes over:",
+    "ja": "営業時間中は人間のCSが対応し、時間外はAIが自動的に引き継ぎます："
+  },
+  "autoreply.work_hours_start": {
+    "id": "Jam Kerja Mulai",
+    "en": "Work Hours Start",
+    "ja": "業務開始時間"
+  },
+  "autoreply.work_hours_end": {
+    "id": "Jam Kerja Selesai",
+    "en": "Work Hours End",
+    "ja": "業務終了時間"
+  },
+  "autoreply.creativity": {
+    "id": "Kreativitas (Temperature)",
+    "en": "Creativity (Temperature)",
+    "ja": "創造性（Temperature）"
+  },
+  "autoreply.max_tokens": {
+    "id": "Maks. Panjang Balasan (Tokens)",
+    "en": "Max Reply Length (Tokens)",
+    "ja": "最大応答長（Tokens）"
+  },
+  "autoreply.chat_memory": {
+    "id": "Memori Chat (Context Window)",
+    "en": "Chat Memory (Context Window)",
+    "ja": "チャットメモリ（コンテキスト）"
+  },
+  "autoreply.chat_memory_help": {
+    "id": "Jumlah riwayat chat yang dibaca AI",
+    "en": "Number of chat history messages read by AI",
+    "ja": "AIが参照するチャット履歴の件数"
+  },
+  "autoreply.prompt_title": {
+    "id": "System Prompt (Instruksi Perilaku Bot)",
+    "en": "System Prompt (Bot Behavior Instructions)",
+    "ja": "システムプロンプト（ボットの行動指示）"
+  },
+  "autoreply.handover_kw": {
+    "id": "Kata Kunci Handover CS (Manusia)",
+    "en": "CS Human Handover Keywords",
+    "ja": "CS（有人）引き継ぎキーワード"
+  },
+  "autoreply.handover_duration": {
+    "id": "Durasi Jeda AI Setelah Alih CS",
+    "en": "AI Pause Duration After CS Handover",
+    "ja": "CS引き継ぎ後のAI一時停止時間"
+  },
+  "autoreply.handover_msg_label": {
+    "id": "Pesan Notifikasi Handover ke Pelanggan",
+    "en": "Handover Notification Message to Customer",
+    "ja": "顧客への引き継ぎ通知メッセージ"
+  },
+  "autoreply.reset_sim": {
+    "id": "Reset",
+    "en": "Reset",
+    "ja": "リセット"
+  },
+  "autoreply.quick_test": {
+    "id": "Tes cepat:",
+    "en": "Quick test:",
+    "ja": "クイックテスト："
+  },
+  "autoreply.ai_thinking": {
+    "id": "AI sedang berpikir...",
+    "en": "AI is thinking...",
+    "ja": "AIが思考中..."
+  },
+  "autoreply.test_placeholder": {
+    "id": "Ketik pertanyaan untuk bot...",
+    "en": "Type a message for the bot...",
+    "ja": "ボットへのメッセージを入力..."
+  },
+  "autoreply.sim_reset_text": {
+    "id": "Percakapan telah direset. Silakan ajukan pertanyaan baru!",
+    "en": "Conversation has been reset. Please ask a new question!",
+    "ja": "会話がリセットされました。新しい質問をどうぞ！"
+  },
+  "livechat.ai_copilot_btn": {
+    "id": "✨ Bantu buat draf balasan dengan AI Copilot",
+    "en": "✨ Draft reply with AI Copilot",
+    "ja": "✨ AI Copilotで返信下書きを作成"
+  },
+  "livechat.ai_drafting": {
+    "id": "AI sedang merumuskan draf balasan...",
+    "en": "AI is drafting a reply...",
+    "ja": "AIが返信の下書きを作成中..."
+  },
+  "livechat.ai_draft_err": {
+    "id": "Gagal merumuskan draf AI. Pastikan API Key aktif di menu Auto-Reply & AI.",
+    "en": "Failed to draft AI reply. Make sure the API Key is active in Auto-Reply & AI menu.",
+    "ja": "AIの下書き作成に失敗しました。自動応答＆AIメニューでAPIキーが有効か確認してください。"
+  },
+  "autoreply.temp_factual": {
+    "id": "0.0 Faktual",
+    "en": "0.0 Factual",
+    "ja": "0.0 厳密"
+  },
+  "autoreply.temp_creative": {
+    "id": "1.0 Luwes",
+    "en": "1.0 Creative",
+    "ja": "1.0 柔軟"
+  },
+  "autoreply.tokens_short": {
+    "id": "100 Ringkas",
+    "en": "100 Brief",
+    "ja": "100 簡潔"
+  },
+  "autoreply.tokens_long": {
+    "id": "2000 Panjang",
+    "en": "2000 Detailed",
+    "ja": "2000 長文"
+  },
+  "autoreply.context_messages": {
+    "id": "{count} Pesan",
+    "en": "{count} Messages",
+    "ja": "{count} 件のメッセージ"
+  },
+  "autoreply.context_opt_4": {
+    "id": "4 Pesan (Hemat Token)",
+    "en": "4 Messages (Token Saver)",
+    "ja": "4 メッセージ（省トークン）"
+  },
+  "autoreply.context_opt_8": {
+    "id": "8 Pesan (Standar)",
+    "en": "8 Messages (Standard)",
+    "ja": "8 メッセージ（標準）"
+  },
+  "autoreply.context_opt_12": {
+    "id": "12 Pesan (Lanjutan)",
+    "en": "12 Messages (Advanced)",
+    "ja": "12 メッセージ（高度）"
+  },
+  "autoreply.context_opt_16": {
+    "id": "16 Pesan (Konsultasi)",
+    "en": "16 Messages (Consultation)",
+    "ja": "16 メッセージ（相談向）"
+  },
+  "autoreply.context_opt_20": {
+    "id": "20 Pesan (Konteks Penuh)",
+    "en": "20 Messages (Full Context)",
+    "ja": "20 メッセージ（完全文脈）"
+  },
+  "autoreply.handover_30m": {
+    "id": "30 Menit",
+    "en": "30 Minutes",
+    "ja": "30 分"
+  },
+  "autoreply.handover_1h": {
+    "id": "1 Jam",
+    "en": "1 Hour",
+    "ja": "1 時間"
+  },
+  "autoreply.handover_2h": {
+    "id": "2 Jam (Rekomendasi)",
+    "en": "2 Hours (Recommended)",
+    "ja": "2 時間（推奨）"
+  },
+  "autoreply.handover_6h": {
+    "id": "6 Jam",
+    "en": "6 Hours",
+    "ja": "6 時間"
+  },
+  "autoreply.handover_24h": {
+    "id": "24 Jam",
+    "en": "24 Hours",
+    "ja": "24 時間"
+  },
+  "autoreply.kb_title": {
+    "id": "Knowledge Base & Dokumen FAQ",
+    "en": "Knowledge Base & FAQ Documents",
+    "ja": "ナレッジベース＆FAQドキュメント"
+  },
+  "livechat.tab_all": {
+    "id": "Semua",
+    "en": "All",
+    "ja": "すべて"
+  },
+  "livechat.tab_unread": {
+    "id": "Belum Dibaca",
+    "en": "Unread",
+    "ja": "未読"
+  },
+  "livechat.tab_resolved": {
+    "id": "Selesai",
+    "en": "Resolved",
+    "ja": "完了"
+  },
+  "livechat.empty_desc": {
+    "id": "Pesan WhatsApp yang dikirim atau diterima melalui sesi aktif akan muncul di sini secara real-time.",
+    "en": "WhatsApp messages sent or received through active sessions will appear here in real time.",
+    "ja": "アクティブなセッションを介して送受信されたWhatsAppメッセージがここにリアルタイムで表示されます。"
+  },
+  "livechat.send_new_msg": {
+    "id": "Kirim Pesan Baru",
+    "en": "Send New Message",
+    "ja": "新規メッセージ送信"
+  },
+  "livechat.mic_permission_err": {
+    "id": "Izin akses mikrofon diperlukan untuk merekam voice note.",
+    "en": "Microphone permission is required to record voice notes.",
+    "ja": "音声メモを録音するにはマイクの許可が必要です。"
   }
 } };
