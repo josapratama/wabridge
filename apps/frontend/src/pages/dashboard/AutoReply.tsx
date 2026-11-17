@@ -25,23 +25,27 @@ import { useI18n } from "../../context/I18nContext";
 
 const PROVIDER_MODELS: Record<string, Array<{ id: string; name: string; desc: string }>> = {
   gemini: [
-    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash (Recommended)", desc: "Tercepat & cerdas dari Google" },
-    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", desc: "Model cepat standar" },
-    { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", desc: "Penalaran tinggi dan konteks luas" },
+    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash (Aktif & Cepat)", desc: "Model generasi 2.0 tercepat dan pintar dari Google" },
+    { id: "gemini-2.0-flash-lite", name: "Gemini 2.0 Flash Lite (Aktif - Super Cepat)", desc: "Ultra ringan, latensi paling rendah & efisien" },
+    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash (Aktif - Stable GA)", desc: "Model produksi stabil dari Google" },
+    { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro (Aktif - Penalaran Tinggi)", desc: "Penalaran kompleks dan dokumen panjang" },
   ],
   deepseek: [
-    { id: "deepseek-chat", name: "DeepSeek-V3 (Chat)", desc: "Cerdas, natural, dan sangat hemat biaya" },
-    { id: "deepseek-reasoner", name: "DeepSeek-R1 (Reasoning)", desc: "Kemampuan penalaran mendalam" },
+    { id: "deepseek-chat", name: "DeepSeek-V3 (Chat - Aktif)", desc: "Sangat cerdas, bahasa natural & hemat biaya" },
+    { id: "deepseek-reasoner", name: "DeepSeek-R1 (Reasoning - Aktif)", desc: "Kemampuan penalaran matematika & logika mendalam" },
   ],
   openai: [
-    { id: "gpt-4o-mini", name: "GPT-4o Mini (Recommended)", desc: "Cepat, cerdas, efisien biaya" },
-    { id: "gpt-4o", name: "GPT-4o Omni", desc: "Model flagship OpenAI paling cerdas" },
+    { id: "gpt-4o-mini", name: "GPT-4o Mini (Aktif & Rekomendasi)", desc: "Cepat, cerdas, efisien biaya operasional" },
+    { id: "gpt-4o", name: "GPT-4o Omni (Aktif - Flagship)", desc: "Model multimodal flagship tercerdas dari OpenAI" },
+    { id: "o3-mini", name: "o3-mini (Aktif - Reasoning)", desc: "Model penalaran terbaru dengan efisiensi tinggi" },
   ],
   openrouter: [
-    { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", desc: "Bahasa sangat luwes dan natural" },
-    { id: "deepseek/deepseek-r1", name: "DeepSeek R1", desc: "Penalaran tinggi via OpenRouter" },
-    { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B", desc: "Model open-source terkuat" },
-    { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash", desc: "Akses Gemini via OpenRouter" },
+    { id: "deepseek/deepseek-chat", name: "DeepSeek-V3 (OpenRouter - Aktif)", desc: "Akses DeepSeek-V3 via OpenRouter" },
+    { id: "deepseek/deepseek-r1", name: "DeepSeek-R1 (OpenRouter - Aktif)", desc: "Penalaran logika tinggi via OpenRouter" },
+    { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet (Aktif)", desc: "Bahasa sangat luwes dan natural" },
+    { id: "openai/gpt-4o-mini", name: "GPT-4o Mini (OpenRouter - Aktif)", desc: "Akses GPT-4o Mini via OpenRouter" },
+    { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B (Aktif)", desc: "Model open-weight terkuat" },
+    { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash (OpenRouter - Aktif)", desc: "Gemini 2.0 via OpenRouter" },
   ],
 };
 
@@ -493,22 +497,33 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     }}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
                   >
-                    <option value="gemini">Google Gemini (Gratis / Cepat)</option>
-                    <option value="deepseek">DeepSeek Direct API (Hemat & Pintar)</option>
-                    <option value="openai">OpenAI (ChatGPT 4o)</option>
-                    <option value="openrouter">OpenRouter (Claude 3.5 / Llama)</option>
+                    <option value="gemini">{t("autoreply.prov_gemini", "Google Gemini (Gratis & Cepat)")}</option>
+                    <option value="deepseek">{t("autoreply.prov_deepseek", "DeepSeek Direct API (Hemat & Pintar)")}</option>
+                    <option value="openai">{t("autoreply.prov_openai", "OpenAI (GPT-4o / o3-mini)")}</option>
+                    <option value="openrouter">{t("autoreply.prov_openrouter", "OpenRouter (Claude 3.5 / Llama 3.3)")}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-300 mb-1">
-                    {t("autoreply.model", "Model AI")}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-300">
+                      {t("autoreply.model", "Model AI")}
+                    </label>
+                    <span className="text-[10px] text-emerald-400 font-medium">● Non-deprecated</span>
+                  </div>
                   <select
-                    value={aiConfig.model}
-                    onChange={(e) =>
-                      setAiConfig((prev) => ({ ...prev, model: e.target.value }))
+                    value={
+                      (PROVIDER_MODELS[aiConfig.provider] || []).some((m) => m.id === aiConfig.model)
+                        ? aiConfig.model
+                        : "__custom__"
                     }
+                    onChange={(e) => {
+                      if (e.target.value === "__custom__") {
+                        setAiConfig((prev) => ({ ...prev, model: "" }));
+                      } else {
+                        setAiConfig((prev) => ({ ...prev, model: e.target.value }));
+                      }
+                    }}
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                   >
                     {(PROVIDER_MODELS[aiConfig.provider] || []).map((m) => (
@@ -516,7 +531,23 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                         {m.name}
                       </option>
                     ))}
+                    <option value="__custom__">{t("autoreply.model_custom_opt", "✏️ Model Kustom / Input Manual...")}</option>
                   </select>
+
+                  {!((PROVIDER_MODELS[aiConfig.provider] || []).some((m) => m.id === aiConfig.model)) && (
+                    <div className="mt-2 animate-in fade-in duration-150">
+                      <input
+                        type="text"
+                        value={aiConfig.model}
+                        onChange={(e) => setAiConfig((prev) => ({ ...prev, model: e.target.value }))}
+                        placeholder={t("autoreply.model_custom_placeholder", "Ketik model ID spesifik (contoh: gemini-2.0-flash-lite, o3-mini)")}
+                        className="w-full bg-gray-900 border border-purple-600/60 rounded-lg px-3 py-2 text-xs text-white placeholder-gray-500 font-mono focus:outline-none focus:border-purple-400"
+                      />
+                    </div>
+                  )}
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    {t("autoreply.model_active_note", "Hanya model aktif resmi non-deprecated yang disediakan untuk stabilitas koneksi.")}
+                  </p>
                 </div>
               </div>
 

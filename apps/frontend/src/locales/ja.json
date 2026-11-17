@@ -693,7 +693,14 @@
     "blacklist_desc": "下記の番号はAIによって返信されません（家族、上司、社内スタッフなど）：",
     "numbers_count": "件の番号",
     "numbers_format_help": "番号はカンマ（,）または改行で区切ってください。他の連絡先は手動返信に残されます。",
-    "blacklist_help": "番号はカンマ（,）または改行で区切ってください。このリストの連絡先は常に手動対応になります。"
+    "blacklist_help": "番号はカンマ（,）または改行で区切ってください。このリストの連絡先は常に手動対応になります。",
+    "prov_gemini": "Google Gemini（無料・高速）",
+    "prov_deepseek": "DeepSeek 直接 API（低コスト・高知能）",
+    "prov_openai": "OpenAI（GPT-4o / o3-mini）",
+    "prov_openrouter": "OpenRouter（Claude 3.5 / Llama 3.3）",
+    "model_custom_opt": "✏️ カスタムモデル / 手動入力...",
+    "model_custom_placeholder": "特定のモデルIDを入力（例: gemini-2.0-flash-lite, o3-mini）",
+    "model_active_note": "接続の安定性のため、廃止されていない公式のアクティブモデルのみが表示されます。"
   },
   "contacts": {
     "title": "連絡先",

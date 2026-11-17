@@ -693,7 +693,14 @@
     "blacklist_desc": "Numbers listed below will NEVER be answered by AI (e.g. family, boss, internal team):",
     "numbers_count": "numbers",
     "numbers_format_help": "Separate numbers with comma (,) or newline. Other contacts will be left for manual reply.",
-    "blacklist_help": "Separate numbers with comma (,) or newline. Contacts on this list will always be handled manually."
+    "blacklist_help": "Separate numbers with comma (,) or newline. Contacts on this list will always be handled manually.",
+    "prov_gemini": "Google Gemini (Free & Fast)",
+    "prov_deepseek": "DeepSeek Direct API (Cost-Effective & Smart)",
+    "prov_openai": "OpenAI (GPT-4o / o3-mini)",
+    "prov_openrouter": "OpenRouter (Claude 3.5 / Llama 3.3)",
+    "model_custom_opt": "✏️ Custom Model / Manual Input...",
+    "model_custom_placeholder": "Enter specific model ID (e.g. gemini-2.0-flash-lite, o3-mini)",
+    "model_active_note": "Only officially active, non-deprecated models are listed for maximum stability."
   },
   "contacts": {
     "title": "Contacts",

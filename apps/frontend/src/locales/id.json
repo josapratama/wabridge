@@ -693,7 +693,14 @@
     "blacklist_desc": "Nomor di bawah ini TIDAK akan pernah dibalas oleh AI (misal: keluarga, atasan, internal):",
     "numbers_count": "nomor",
     "numbers_format_help": "Pisahkan nomor dengan tanda koma (,) atau baris baru. Kontak lain akan dibiarkan untuk dibalas manual.",
-    "blacklist_help": "Pisahkan nomor dengan tanda koma (,) atau baris baru. Kontak di daftar ini akan selalu manual."
+    "blacklist_help": "Pisahkan nomor dengan tanda koma (,) atau baris baru. Kontak di daftar ini akan selalu manual.",
+    "prov_gemini": "Google Gemini (Gratis & Cepat)",
+    "prov_deepseek": "DeepSeek Direct API (Hemat & Pintar)",
+    "prov_openai": "OpenAI (GPT-4o / o3-mini)",
+    "prov_openrouter": "OpenRouter (Claude 3.5 / Llama 3.3)",
+    "model_custom_opt": "✏️ Model Kustom / Input Manual...",
+    "model_custom_placeholder": "Ketik model ID spesifik (contoh: gemini-2.0-flash-lite, o3-mini)",
+    "model_active_note": "Hanya model aktif resmi non-deprecated yang disediakan untuk stabilitas koneksi."
   },
   "contacts": {
     "title": "Buku Kontak",

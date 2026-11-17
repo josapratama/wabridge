@@ -1603,5 +1603,40 @@ module.exports = { TRANSLATIONS: {
     "id": "Pisahkan nomor dengan tanda koma (,) atau baris baru. Kontak di daftar ini akan selalu manual.",
     "en": "Separate numbers with comma (,) or newline. Contacts on this list will always be handled manually.",
     "ja": "番号はカンマ（,）または改行で区切ってください。このリストの連絡先は常に手動対応になります。"
+  },
+  "autoreply.prov_gemini": {
+    "id": "Google Gemini (Gratis & Cepat)",
+    "en": "Google Gemini (Free & Fast)",
+    "ja": "Google Gemini（無料・高速）"
+  },
+  "autoreply.prov_deepseek": {
+    "id": "DeepSeek Direct API (Hemat & Pintar)",
+    "en": "DeepSeek Direct API (Cost-Effective & Smart)",
+    "ja": "DeepSeek 直接 API（低コスト・高知能）"
+  },
+  "autoreply.prov_openai": {
+    "id": "OpenAI (GPT-4o / o3-mini)",
+    "en": "OpenAI (GPT-4o / o3-mini)",
+    "ja": "OpenAI（GPT-4o / o3-mini）"
+  },
+  "autoreply.prov_openrouter": {
+    "id": "OpenRouter (Claude 3.5 / Llama 3.3)",
+    "en": "OpenRouter (Claude 3.5 / Llama 3.3)",
+    "ja": "OpenRouter（Claude 3.5 / Llama 3.3）"
+  },
+  "autoreply.model_custom_opt": {
+    "id": "✏️ Model Kustom / Input Manual...",
+    "en": "✏️ Custom Model / Manual Input...",
+    "ja": "✏️ カスタムモデル / 手動入力..."
+  },
+  "autoreply.model_custom_placeholder": {
+    "id": "Ketik model ID spesifik (contoh: gemini-2.0-flash-lite, o3-mini)",
+    "en": "Enter specific model ID (e.g. gemini-2.0-flash-lite, o3-mini)",
+    "ja": "特定のモデルIDを入力（例: gemini-2.0-flash-lite, o3-mini）"
+  },
+  "autoreply.model_active_note": {
+    "id": "Hanya model aktif resmi non-deprecated yang disediakan untuk stabilitas koneksi.",
+    "en": "Only officially active, non-deprecated models are listed for maximum stability.",
+    "ja": "接続の安定性のため、廃止されていない公式のアクティブモデルのみが表示されます。"
   }
 } };
