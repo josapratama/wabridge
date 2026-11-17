@@ -35,12 +35,33 @@ export default function BaileysConnectionModal({
   const [mode, setMode] = useState<"qr" | "pairing">("qr");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
+  const [timeLeft, setTimeLeft] = useState(60);
 
   useEffect(() => {
     if (show && mode === "qr" && !qrCode && !loading) {
       void onRequestQrCode();
     }
   }, [show, mode]);
+
+  useEffect(() => {
+    if (!show || mode !== "qr" || !qrCode) {
+      setTimeLeft(60);
+      return;
+    }
+
+    setTimeLeft(60);
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          void onRequestQrCode();
+          return 60;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [show, mode, qrCode]);
 
   if (!show) return null;
 
@@ -162,11 +183,30 @@ export default function BaileysConnectionModal({
               </div>
 
               {qrCode && (
-                <div className="flex items-start gap-2 px-3 py-2 bg-yellow-900/20 border border-yellow-800/30 rounded-lg">
-                  <AlertCircle className="w-3.5 h-3.5 text-yellow-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-yellow-400/80">
-                    {t("sessions.qr_expires", "QR code expires in ~60 seconds. Refresh if expired.")}
-                  </p>
+                <div className="space-y-2">
+                  <div className="p-3 bg-gray-900/80 border border-gray-800 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-gray-300 font-medium">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                        {t("sessions.auto_refresh", "Auto-refresh QR aktif")}
+                      </span>
+                      <span className="font-mono text-emerald-400 font-semibold bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
+                        {timeLeft}s
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-emerald-500 h-1.5 rounded-full transition-all duration-1000 ease-linear shadow-sm shadow-emerald-500/50"
+                        style={{ width: `${(timeLeft / 60) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 px-3 py-2 bg-yellow-900/20 border border-yellow-800/30 rounded-lg">
+                    <AlertCircle className="w-3.5 h-3.5 text-yellow-500 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-yellow-400/80">
+                      {t("sessions.qr_expires", "QR code kedaluwarsa dalam 60 detik. Sistem otomatis memperbarui.")}
+                    </p>
+                  </div>
                 </div>
               )}
 

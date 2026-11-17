@@ -123,7 +123,38 @@ export default function MessageSendForm({ sessions, onSend, onClose }: Props) {
           {/* Text */}
           {form.type === "text" && (
             <div>
-              <label className="label">Message *</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="label mb-0">Message *</label>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-gray-500">Quick template:</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        message:
+                          "Halo kak! Terima kasih sudah menghubungi kami. Ada yang bisa kami bantu?",
+                      })
+                    }
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-brand-300 border border-gray-700"
+                  >
+                    Salam
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm({
+                        ...form,
+                        message:
+                          "Halo kak, kami ingin mengonfirmasi pesanan Anda sudah kami proses dan siap dikirim. Terima kasih!",
+                      })
+                    }
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-brand-300 border border-gray-700"
+                  >
+                    Konfirmasi
+                  </button>
+                </div>
+              </div>
               <textarea
                 className="input resize-none"
                 rows={4}

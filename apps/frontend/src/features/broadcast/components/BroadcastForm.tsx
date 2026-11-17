@@ -122,7 +122,33 @@ export default function BroadcastForm({
             </select>
           </div>
           <div>
-            <label className="label">Message *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="label mb-0">Message *</label>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-gray-400">Sisipkan:</span>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, content: form.content + " {{name}}" })}
+                  className="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-brand-300 font-mono text-[10px] border border-gray-700"
+                >
+                  {"{{name}}"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, content: form.content + " {{phone}}" })}
+                  className="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-brand-300 font-mono text-[10px] border border-gray-700"
+                >
+                  {"{{phone}}"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, content: form.content + " {Halo|Hai|Salam}" })}
+                  className="px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-amber-300 font-mono text-[10px] border border-gray-700"
+                >
+                  {"{Spintax}"}
+                </button>
+              </div>
+            </div>
             <textarea
               className="input resize-none"
               rows={4}
@@ -147,7 +173,7 @@ export default function BroadcastForm({
                     key={mode}
                     type="button"
                     onClick={() => setUseContacts(i === 1)}
-                    className={`text-xs px-2 py-1 rounded ${(i === 1) === useContacts ? "bg-brand-600 text-white" : "bg-gray-800 text-gray-400"}`}
+                    className={`text-xs px-2.5 py-1 rounded font-medium transition-colors ${(i === 1) === useContacts ? "bg-brand-600 text-white shadow-sm" : "bg-gray-800 text-gray-400 hover:text-gray-200"}`}
                   >
                     {mode}
                   </button>
@@ -155,22 +181,40 @@ export default function BroadcastForm({
               </div>
             </div>
             {useContacts ? (
-              <div className="space-y-2">
-                <select
-                  className="input"
-                  value={selectedTag}
-                  onChange={(e) => setSelectedTag(e.target.value)}
-                >
-                  <option value="">All contacts ({contacts.length})</option>
+              <div className="space-y-2.5">
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTag("")}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                      selectedTag === ""
+                        ? "bg-brand-600/30 border border-brand-500 text-brand-300"
+                        : "bg-gray-800/80 border border-gray-700 text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    Semua ({contacts.length})
+                  </button>
                   {allTags.map((t) => (
-                    <option key={t} value={t}>
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setSelectedTag(t)}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                        selectedTag === t
+                          ? "bg-brand-600/30 border border-brand-500 text-brand-300"
+                          : "bg-gray-800/80 border border-gray-700 text-gray-400 hover:text-white"
+                      }`}
+                    >
                       {t} ({contacts.filter((c) => c.tags.includes(t)).length})
-                    </option>
+                    </button>
                   ))}
-                </select>
-                <p className="text-xs text-gray-500">
-                  {recipientCount} recipients selected
-                </p>
+                </div>
+                <div className="p-2.5 bg-gray-900/80 border border-gray-800 rounded-lg flex items-center justify-between text-xs">
+                  <span className="text-gray-400">Total kontak terseleksi:</span>
+                  <span className="font-semibold text-brand-400 font-mono">
+                    {recipientCount} penerima
+                  </span>
+                </div>
               </div>
             ) : (
               <textarea

@@ -100,22 +100,27 @@ export default function LiveChat() {
 
   const QUICK_REPLIES = [
     {
+      cmd: "salam",
       title: "👋 Salam Pembuka",
       text: "Halo kak! Terima kasih telah menghubungi kami. Ada yang bisa kami bantu hari ini?",
     },
     {
+      cmd: "rekening",
       title: "💳 Info Rekening Transfer",
       text: "Pembayaran dapat ditransfer ke:\n🏦 BCA: 1234567890 a/n WaBridge Indonesia\nSilakan konfirmasi bukti transfer jika sudah membayar ya kak.",
     },
     {
+      cmd: "order",
       title: "📦 Format Pemesanan",
       text: "Silakan melengkapi format order berikut ya kak:\n- Nama:\n- No. HP:\n- Alamat Lengkap:\n- Produk & Jumlah:",
     },
     {
+      cmd: "jam",
       title: "⏱️ Jam Operasional CS",
       text: "Jam operasional kami adalah Senin - Sabtu pukul 08.00 - 17.00 WIB. Pertanyaan di luar jam kerja akan kami balas secepatnya.",
     },
     {
+      cmd: "thanks",
       title: "🙏 Ucapan Terima Kasih",
       text: "Terima kasih banyak kak atas pesanannya! Semoga harimu menyenangkan. Jangan ragu hubungi kami lagi jika ada pertanyaan.",
     },
@@ -934,7 +939,61 @@ export default function LiveChat() {
               )}
 
               {/* Input Bar */}
-              <div className="p-3 border-t border-gray-800 bg-gray-900/60 flex items-center gap-2">
+              <div className="p-3 border-t border-gray-800 bg-gray-900/60 flex items-center gap-2 relative">
+                {/* Slash Command Popover */}
+                {inputText.startsWith("/") && (
+                  <div className="absolute bottom-full mb-2 left-4 right-4 bg-gray-900 border border-brand-500/50 rounded-xl shadow-2xl p-2.5 z-30 animate-in fade-in slide-in-from-bottom-2 backdrop-blur-md">
+                    <div className="flex items-center justify-between px-2 py-1 text-[11px] text-gray-400 border-b border-gray-800 mb-2">
+                      <span className="font-semibold text-brand-400 flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-amber-400" />
+                        Quick Reply (Slash Command)
+                      </span>
+                      <span className="text-[10px] text-gray-500">Tekan Tab atau klik template</span>
+                    </div>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                      {QUICK_REPLIES.filter(
+                        (qr) =>
+                          qr.cmd.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
+                          qr.title.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
+                          qr.text.toLowerCase().includes(inputText.slice(1).toLowerCase())
+                      ).map((qr) => (
+                        <button
+                          key={qr.cmd}
+                          type="button"
+                          onClick={() => setInputText(qr.text)}
+                          className="w-full text-left p-2 rounded-lg bg-gray-800/70 hover:bg-gray-800 border border-transparent hover:border-brand-500/40 transition-all flex items-start justify-between gap-3 group"
+                        >
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-mono text-brand-300 bg-brand-950/70 px-1.5 py-0.5 rounded border border-brand-700/50">
+                                /{qr.cmd}
+                              </span>
+                              <span className="text-xs font-semibold text-white group-hover:text-brand-300 transition-colors">
+                                {qr.title}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gray-400 line-clamp-1 mt-1 font-normal">
+                              {qr.text}
+                            </p>
+                          </div>
+                          <span className="text-[10px] font-mono text-gray-500 shrink-0 group-hover:text-brand-400 mt-1">
+                            Pilih ↵
+                          </span>
+                        </button>
+                      ))}
+                      {QUICK_REPLIES.filter(
+                        (qr) =>
+                          qr.cmd.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
+                          qr.title.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
+                          qr.text.toLowerCase().includes(inputText.slice(1).toLowerCase())
+                      ).length === 0 && (
+                        <p className="text-xs text-gray-500 p-2 text-center">
+                          Tidak ada template dengan perintah "{inputText}"
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -991,6 +1050,24 @@ export default function LiveChat() {
                     if (sendError) setSendError(null);
                   }}
                   onKeyDown={(e) => {
+                    if (inputText.startsWith("/")) {
+                      const matches = QUICK_REPLIES.filter(
+                        (qr) =>
+                          qr.cmd.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
+                          qr.title.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
+                          qr.text.toLowerCase().includes(inputText.slice(1).toLowerCase())
+                      );
+                      if (e.key === "Tab" && matches.length > 0) {
+                        e.preventDefault();
+                        setInputText(matches[0].text);
+                        return;
+                      }
+                      if (e.key === "Escape") {
+                        e.preventDefault();
+                        setInputText("");
+                        return;
+                      }
+                    }
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       void handleSendMessage();
