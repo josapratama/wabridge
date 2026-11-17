@@ -8,6 +8,7 @@ import {
   Check,
   Loader2,
 } from "lucide-react";
+import { useI18n } from "../context/I18nContext";
 
 interface Props {
   show: boolean;
@@ -22,6 +23,7 @@ interface Props {
 
 export default function BaileysConnectionModal({
   show,
+  configId,
   onClose,
   onRequestQrCode,
   onRequestPairingCode,
@@ -29,6 +31,7 @@ export default function BaileysConnectionModal({
   pairingCode,
   loading,
 }: Props) {
+  const { t } = useI18n();
   const [mode, setMode] = useState<"qr" | "pairing">("qr");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
@@ -44,13 +47,13 @@ export default function BaileysConnectionModal({
   const handleRequestPairingCode = async () => {
     setError("");
     if (!phoneNumber || phoneNumber.length < 10) {
-      setError("Enter a valid phone number with country code");
+      setError(t("sessions.error_phone", "Enter a valid phone number with country code"));
       return;
     }
     try {
       await onRequestPairingCode(phoneNumber);
     } catch {
-      setError("Failed to generate pairing code. Please try again.");
+      setError(t("sessions.error_pairing", "Failed to generate pairing code. Please try again."));
     }
   };
 
@@ -59,65 +62,65 @@ export default function BaileysConnectionModal({
     try {
       await onRequestQrCode();
     } catch {
-      setError("Failed to generate QR code. Please try again.");
+      setError(t("sessions.error_qr", "Failed to generate QR code. Please try again."));
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="card w-full max-w-sm flex flex-col overflow-hidden max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="card w-full max-w-sm flex flex-col overflow-hidden max-h-[90vh] shadow-2xl border-gray-750">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center shrink-0">
-              <QrCode className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+              <QrCode className="w-4 h-4 text-emerald-400" />
             </div>
             <div>
               <p className="text-sm font-semibold text-white leading-none">
-                Connect WhatsApp
+                {t("sessions.scan_qr", "Connect WhatsApp")}
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Scan QR or use pairing code
+              <p className="text-[11px] text-gray-400 mt-1">
+                {t("sessions.scan_qr_desc", "Scan QR or use pairing code")}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-300 transition-colors"
+            className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-gray-800"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-800">
+        <div className="flex border-b border-gray-800 bg-gray-900/50">
           <button
             onClick={() => {
               setMode("qr");
               setError("");
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-b-2 ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-semibold transition-colors border-b-2 ${
               mode === "qr"
-                ? "border-brand-500 text-brand-400"
-                : "border-transparent text-gray-500 hover:text-gray-300"
+                ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
+                : "border-transparent text-gray-400 hover:text-gray-200"
             }`}
           >
             <QrCode className="w-3.5 h-3.5" />
-            QR Code
+            {t("provider_configs.qr_code", "QR Code")}
           </button>
           <button
             onClick={() => {
               setMode("pairing");
               setError("");
             }}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-medium transition-colors border-b-2 ${
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-semibold transition-colors border-b-2 ${
               mode === "pairing"
-                ? "border-brand-500 text-brand-400"
-                : "border-transparent text-gray-500 hover:text-gray-300"
+                ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
+                : "border-transparent text-gray-400 hover:text-gray-200"
             }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
-            Pairing Code
+            {t("sessions.pairing_code", "Pairing Code")}
           </button>
         </div>
 
@@ -136,7 +139,7 @@ export default function BaileysConnectionModal({
               {/* QR display area */}
               <div className="rounded-xl border border-gray-800 bg-gray-950 overflow-hidden">
                 {qrCode ? (
-                  <div className="p-3 bg-white flex items-center justify-center">
+                  <div className="p-4 bg-white flex items-center justify-center">
                     <img
                       src={qrCode}
                       alt="QR Code"
@@ -144,15 +147,15 @@ export default function BaileysConnectionModal({
                     />
                   </div>
                 ) : loading ? (
-                  <div className="flex flex-col items-center justify-center py-8 gap-3">
-                    <Loader2 className="w-8 h-8 text-brand-400 animate-spin" />
-                    <p className="text-xs text-gray-500">Generating QR code…</p>
+                  <div className="flex flex-col items-center justify-center py-10 gap-3">
+                    <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+                    <p className="text-xs text-gray-400">{t("actions.loading", "Generating QR code…")}</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-8 gap-3">
-                    <QrCode className="w-10 h-10 text-gray-700" />
-                    <p className="text-xs text-gray-500">
-                      Click below to generate
+                  <div className="flex flex-col items-center justify-center py-10 gap-3">
+                    <QrCode className="w-10 h-10 text-gray-600" />
+                    <p className="text-xs text-gray-400">
+                      {t("sessions.click_generate", "Click below to generate")}
                     </p>
                   </div>
                 )}
@@ -162,7 +165,7 @@ export default function BaileysConnectionModal({
                 <div className="flex items-start gap-2 px-3 py-2 bg-yellow-900/20 border border-yellow-800/30 rounded-lg">
                   <AlertCircle className="w-3.5 h-3.5 text-yellow-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-yellow-400/80">
-                    QR code expires in ~60 seconds. Refresh if expired.
+                    {t("sessions.qr_expires", "QR code expires in ~60 seconds. Refresh if expired.")}
                   </p>
                 </div>
               )}
@@ -170,23 +173,12 @@ export default function BaileysConnectionModal({
               {/* Steps */}
               <div className="space-y-2">
                 {[
-                  "Open WhatsApp on your phone",
-                  <>
-                    Tap <span className="text-white font-medium">Menu</span> →{" "}
-                    <span className="text-white font-medium">
-                      Linked Devices
-                    </span>
-                  </>,
-                  <>
-                    Tap{" "}
-                    <span className="text-white font-medium">
-                      Link a Device
-                    </span>{" "}
-                    and scan
-                  </>,
+                  t("sessions.step_1", "Open WhatsApp on your phone"),
+                  t("sessions.step_2", "Tap Menu (Android) or Settings (iOS) → Linked Devices"),
+                  t("sessions.step_3", "Tap Link a Device and scan this code"),
                 ].map((step, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <span className="w-5 h-5 rounded-full bg-brand-600/20 text-brand-400 text-[10px] font-bold flex items-center justify-center shrink-0">
+                    <span className="w-5 h-5 rounded-full bg-emerald-600/20 text-emerald-400 text-[10px] font-bold flex items-center justify-center shrink-0">
                       {i + 1}
                     </span>
                     <p className="text-xs text-gray-400">{step}</p>
@@ -198,14 +190,14 @@ export default function BaileysConnectionModal({
                 <button
                   onClick={() => void handleRequestQrCode()}
                   disabled={loading}
-                  className="btn-primary w-full justify-center"
+                  className="btn-primary w-full justify-center py-2.5 shadow-lg shadow-brand-500/20"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <QrCode className="w-4 h-4" />
                   )}
-                  {loading ? "Generating…" : "Generate QR Code"}
+                  {loading ? t("actions.saving", "Generating…") : t("sessions.generate_qr", "Generate QR Code")}
                 </button>
               )}
 
@@ -213,12 +205,12 @@ export default function BaileysConnectionModal({
                 <button
                   onClick={() => void handleRequestQrCode()}
                   disabled={loading}
-                  className="btn-secondary w-full justify-center"
+                  className="btn-secondary w-full justify-center py-2.5"
                 >
                   <RefreshCw
                     className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
                   />
-                  Refresh QR
+                  {t("actions.refresh", "Refresh QR")}
                 </button>
               )}
             </div>
@@ -231,22 +223,22 @@ export default function BaileysConnectionModal({
                 <>
                   <div className="rounded-xl border border-gray-800 bg-gray-950 p-5 space-y-3">
                     <div className="flex flex-col items-center gap-2 pb-2">
-                      <Smartphone className="w-8 h-8 text-brand-400" />
+                      <Smartphone className="w-8 h-8 text-emerald-400" />
                       <p className="text-xs text-gray-400 text-center">
-                        Enter your WhatsApp number with country code
+                        {t("sessions.enter_phone", "Enter your WhatsApp number with country code")}
                       </p>
                     </div>
                     <input
                       type="tel"
                       placeholder="628123456789"
-                      className="input text-center text-base tracking-widest"
+                      className="input text-center text-base tracking-widest font-mono"
                       value={phoneNumber}
                       onChange={(e) => {
                         setPhoneNumber(e.target.value);
                         setError("");
                       }}
                     />
-                    <p className="text-[10px] text-gray-600 text-center">
+                    <p className="text-[10px] text-gray-500 text-center">
                       No + or spaces · e.g. 628123456789
                     </p>
                   </div>
@@ -254,57 +246,39 @@ export default function BaileysConnectionModal({
                   <button
                     onClick={() => void handleRequestPairingCode()}
                     disabled={!phoneNumber || loading}
-                    className="btn-primary w-full justify-center"
+                    className="btn-primary w-full justify-center py-2.5 shadow-lg shadow-brand-500/20"
                   >
                     {loading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Check className="w-4 h-4" />
                     )}
-                    {loading ? "Generating…" : "Get Pairing Code"}
+                    {loading ? t("actions.saving", "Generating…") : t("sessions.get_pairing_code", "Get Pairing Code")}
                   </button>
                 </>
               ) : (
                 <div className="space-y-4">
                   {/* Code display */}
-                  <div className="rounded-xl border border-brand-800/40 bg-brand-900/10 p-5 text-center space-y-2">
-                    <p className="text-xs text-gray-500">Your pairing code</p>
+                  <div className="rounded-xl border border-emerald-800/40 bg-emerald-950/20 p-5 text-center space-y-2">
+                    <p className="text-xs text-gray-400">{t("sessions.your_pairing_code", "Your pairing code")}</p>
                     <div className="text-3xl font-bold text-white tracking-[0.4em] font-mono py-2">
                       {pairingCode}
                     </div>
-                    <p className="text-[10px] text-gray-600">
-                      Valid for ~60 seconds
+                    <p className="text-[10px] text-gray-500">
+                      {t("sessions.valid_seconds", "Valid for ~60 seconds")}
                     </p>
                   </div>
 
                   {/* Steps */}
                   <div className="space-y-2">
                     {[
-                      "Open WhatsApp on your phone",
-                      <>
-                        Go to{" "}
-                        <span className="text-white font-medium">Settings</span>{" "}
-                        →{" "}
-                        <span className="text-white font-medium">
-                          Linked Devices
-                        </span>
-                      </>,
-                      <>
-                        Tap{" "}
-                        <span className="text-white font-medium">
-                          Link a Device
-                        </span>
-                      </>,
-                      <>
-                        Tap{" "}
-                        <span className="text-white font-medium">
-                          Link with phone number instead
-                        </span>
-                      </>,
-                      "Enter the code above within 60 seconds",
+                      t("sessions.pair_step_1", "Open WhatsApp on your phone"),
+                      t("sessions.pair_step_2", "Go to Settings → Linked Devices → Link a Device"),
+                      t("sessions.pair_step_3", "Tap Link with phone number instead"),
+                      t("sessions.pair_step_4", "Enter the code above within 60 seconds"),
                     ].map((step, i) => (
                       <div key={i} className="flex items-center gap-3">
-                        <span className="w-5 h-5 rounded-full bg-brand-600/20 text-brand-400 text-[10px] font-bold flex items-center justify-center shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-emerald-600/20 text-emerald-400 text-[10px] font-bold flex items-center justify-center shrink-0">
                           {i + 1}
                         </span>
                         <p className="text-xs text-gray-400">{step}</p>
@@ -317,10 +291,10 @@ export default function BaileysConnectionModal({
                       setPhoneNumber("");
                       setError("");
                     }}
-                    className="btn-secondary w-full justify-center text-xs"
+                    className="btn-secondary w-full justify-center text-xs py-2.5"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
-                    Request New Code
+                    {t("sessions.request_new_code", "Request New Code")}
                   </button>
                 </div>
               )}
@@ -332,9 +306,9 @@ export default function BaileysConnectionModal({
         <div className="px-5 pb-5">
           <button
             onClick={onClose}
-            className="btn-secondary w-full justify-center"
+            className="btn-secondary w-full justify-center py-2.5"
           >
-            Close
+            {t("actions.close", "Close")}
           </button>
         </div>
       </div>

@@ -119,14 +119,14 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarPr
         {/* Logo Header */}
         <div className="shrink-0 flex items-center justify-between px-5 py-5 border-b border-gray-800">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-600/30">
-              <Zap className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-500/25 ring-1 ring-white/20">
+              <Zap className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white leading-none">
+              <p className="text-sm font-bold text-white leading-none tracking-tight">
                 WA Integration
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">{t("nav.control_center")}</p>
+              <p className="text-[11px] text-gray-400 mt-1 font-medium">{t("nav.control_center", "WhatsApp Control Center")}</p>
             </div>
           </div>
 
@@ -134,7 +134,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile }: SidebarPr
           <button
             onClick={onCloseMobile}
             aria-label="Close sidebar"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white lg:hidden"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white lg:hidden transition-colors"
           >
             <X className="w-4 h-4" />
           </button>

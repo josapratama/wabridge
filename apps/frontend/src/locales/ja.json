@@ -56,7 +56,18 @@
     "terms": "By registering, you agree to our terms & conditions.",
     "registration_closed_title": "Registration Closed",
     "registration_closed_desc": "New user registration is currently disabled by the administrator.",
-    "back_to_login": "Back to Login"
+    "back_to_login": "Back to Login",
+    "login_authhub": "AuthHub SSOでログイン",
+    "or_traditional": "またはメールアドレスでログイン",
+    "sso_verifying": "AuthHubの認証情報を確認中...",
+    "sso_success": "認証が成功しました！転送中...",
+    "sso_failed_title": "AuthHub SSOログインに失敗しました",
+    "sso_processing_desc": "集中型SSOサービスに接続し、安全なアクセスセッションを発行しています。",
+    "sso_redirect_desc": "おかえりなさい！WABridgeダッシュボードにリダイレクトしています。",
+    "sso_missing_code": "AuthHubから認証コードが返されませんでした。",
+    "sso_state_mismatch": "SSOステートの不一致が検出されました。セキュリティのため再ログインしてください。",
+    "sso_exchange_failed": "AuthHubとのトークン交換に失敗しました。",
+    "sso_error": "AuthHubログイン処理中にエラーが発生しました。"
   },
   "status": {
     "loading": "読み込み中...",
@@ -107,19 +118,38 @@
     "deploy": "New Deploy",
     "databases": "Databases",
     "domain_manager": "Domain Hub & DNS",
-    "templates": "Templates",
+    "templates": "テンプレート",
     "marketplace": "Marketplace",
     "tunnel": "CF Tunnel",
     "health": "Health Monitor",
     "apikeys": "API Keys",
     "teams": "Teams",
     "security": "Security",
-    "overview": "Overview",
+    "overview": "概要",
     "users": "Users",
     "system": "System",
     "nodes": "Nodes",
     "audit": "Audit Log",
-    "logout": "Logout"
+    "logout": "Logout",
+    "control_center": "WhatsApp コントロールセンター",
+    "live_chat": "ライブチャット",
+    "whatsapp": "WhatsApp",
+    "provider_configs": "プロバイダー設定",
+    "sessions": "セッション",
+    "wa_groups": "WAグループ",
+    "session_health": "セッションヘルス",
+    "messages_log": "メッセージログ",
+    "events": "イベント",
+    "messaging": "メッセージング",
+    "broadcast": "一斉配信",
+    "scheduled": "予約送信",
+    "auto_reply": "自動応答＆AI",
+    "contacts": "連絡先",
+    "automation": "自動化",
+    "webhooks": "Webhook",
+    "team": "チーム",
+    "developer": "開発者",
+    "api_keys": "APIキー"
   },
   "confirm": {
     "delete_title": "本当に削除しますか？",
@@ -196,7 +226,8 @@
     "hours_ago": "{h}時間前",
     "days_ago": "{d}日前",
     "today": "今日",
-    "yesterday": "昨日"
+    "yesterday": "昨日",
+    "last_7_days": "過去7日間"
   },
   "theme": {
     "light": "ライトモード",
@@ -221,7 +252,7 @@
     "docs_btn": "REST API仕様書"
   },
   "common": {
-    "loading": "Loading...",
+    "loading": "読み込み中...",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -277,7 +308,12 @@
     "try_again": "Try again",
     "or": "or",
     "and": "and",
-    "logout": "Logout"
+    "logout": "Logout",
+    "saving": "保存中...",
+    "sending": "送信中...",
+    "type_message": "ここにメッセージを入力...",
+    "member": "メンバー",
+    "invited": "招待済み"
   },
   "user": {
     "profile": "My Profile",
@@ -387,14 +423,161 @@
     "send_media": "メディア・文書を送信",
     "status_sent": "送信済み",
     "status_delivered": "配信済み",
-    "status_read": "既読"
+    "status_read": "既読",
+    "title": "メッセージログ",
+    "subtitle": "送受信されたテキスト、メディア、ドキュメント、位置情報の完全な監査ログ"
   },
   "broadcast": {
-    "title": "一斉配信キャンペーン",
+    "title": "一斉配信",
     "new_campaign": "新規キャンペーン作成",
     "campaign_name": "キャンペーン名",
     "upload_csv": "宛先CSVファイルをアップロード",
     "schedule_time": "配信日時を設定",
-    "delivery_rate": "配信成功率"
+    "delivery_rate": "配信成功率",
+    "subtitle": "複数連絡先にBAN防止遅延機能付きでメッセージを一斉配信",
+    "create": "新規一斉配信",
+    "empty": "一斉配信履歴がありません。"
+  },
+  "topbar": {
+    "system_status": "システム状態",
+    "system_healthy": "正常稼働中",
+    "system_degraded": "機能低下中",
+    "api_docs": "APIドキュメント",
+    "profile": "プロフィール",
+    "logout": "ログアウト"
+  },
+  "provider_configs": {
+    "title": "プロバイダー設定",
+    "subtitle": "WhatsApp接続ゲートウェイの管理 (Meta Cloud API、BSPパートナー、Baileysマルチデバイス)",
+    "new": "新規プロバイダー",
+    "form_title": "プロバイダー設定の追加",
+    "edit_title": "プロバイダー設定の編集",
+    "provider_type": "プロバイダータイプ",
+    "name": "プロバイダー名",
+    "name_placeholder": "例：公式WhatsAppサポート",
+    "endpoint": "エンドポイントURL",
+    "status": "ステータス",
+    "created": "作成日",
+    "actions": "操作",
+    "qr_code": "QRコード",
+    "activate": "有効化",
+    "deactivate": "無効化",
+    "empty_title": "プロバイダー設定がありません",
+    "empty_desc": "WhatsApp番号を接続するには、BaileysまたはMeta Cloud API設定を追加してください。",
+    "access_token": "アクセストークン",
+    "phone_number_id": "電話番号ID",
+    "verify_token": "Webhook検証トークン",
+    "api_version": "Graph APIバージョン",
+    "base_url": "カスタムBase URL"
+  },
+  "sessions": {
+    "title": "WhatsAppセッション",
+    "subtitle": "システムに接続されているアクティブなWhatsApp番号セッションの監視と管理",
+    "new_session": "新規セッション",
+    "add_modal_title": "新規WhatsAppセッション",
+    "session_name": "セッション名",
+    "session_name_placeholder": "例：メイン営業番号",
+    "provider": "プロバイダー設定を選択",
+    "select_provider_placeholder": "設定を選択してください...",
+    "status": "セッション状態",
+    "created_at": "作成日時",
+    "disconnect": "切断",
+    "reconnect": "再接続",
+    "scan_qr": "WhatsApp接続 / QRスキャン",
+    "pairing_code": "8桁のペアリングコード",
+    "empty": "アクティブなセッションがありません。新しいセッションを作成してWhatsAppアカウントを接続してください。"
+  },
+  "dashboard": {
+    "title": "ダッシュボード",
+    "subtitle": "WhatsApp連携の概要とリアルタイムステータス",
+    "active_sessions": "アクティブセッション",
+    "total_messages": "総メッセージ数",
+    "delivered_messages": "配信完了",
+    "failed_messages": "送信失敗",
+    "system_status": "ゲートウェイ状態",
+    "all_systems_operational": "すべてのシステムが稼働中",
+    "system_degraded": "システム機能低下",
+    "recent_messages": "最近のメッセージ",
+    "recent_events": "最近のイベント",
+    "no_messages": "メッセージ履歴なし",
+    "no_events": "イベント履歴なし"
+  },
+  "analytics": {
+    "title": "分析とメトリクス",
+    "subtitle": "トラフィック量分析、配信成功率、利用傾向",
+    "total_messages": "メッセージ総数",
+    "delivered": "配信成功",
+    "failed": "送信失敗",
+    "success_rate": "成功率",
+    "monthly_usage": "今月の使用量",
+    "providers_breakdown": "ステータスおよびプロバイダー内訳"
+  },
+  "autoreply": {
+    "title": "自動応答＆AIボット",
+    "subtitle": "受信メッセージに自動返信するルールまたはAIボットを設定します。",
+    "add_rule": "新規ルール",
+    "empty": "自動応答ルールが設定されていません。"
+  },
+  "contacts": {
+    "title": "連絡先",
+    "subtitle": "一斉配信やメッセージング用の連絡先を管理します。",
+    "add_contact": "連絡先を追加",
+    "empty": "連絡先が見つかりません。",
+    "name": "名前",
+    "phone": "電話番号"
+  },
+  "webhooks": {
+    "title": "Webhook",
+    "subtitle": "受信メッセージや配信イベントをHTTPエンドポイントにリアルタイム転送",
+    "new_endpoint": "新規エンドポイント",
+    "endpoints_tab": "エンドポイント一覧",
+    "logs_tab": "配信ログ",
+    "empty_title": "Webhookエンドポイントがありません",
+    "empty_desc": "受信メッセージのリアルタイム通知を受け取るWebhook URLを追加してください。",
+    "url": "Webhook URL",
+    "events": "購読イベント",
+    "secret": "シークレットキー",
+    "status": "ステータス",
+    "action": "操作"
+  },
+  "scheduled": {
+    "title": "予約送信メッセージ",
+    "subtitle": "将来の指定した日時に自動的にメッセージを送信するようスケジュールします",
+    "create": "メッセージを予約",
+    "empty": "予約されたメッセージはありません。"
+  },
+  "templates": {
+    "title": "メッセージテンプレート",
+    "subtitle": "定型文や事前承認されたMeta WhatsAppテンプレートを管理します",
+    "new": "新規テンプレート",
+    "empty_title": "テンプレートがありません",
+    "empty_desc": "顧客への迅速な返信のために最初のテンプレートを作成してください。"
+  },
+  "session_health": {
+    "title": "セッションヘルス診断",
+    "subtitle": "WebSocket遅延診断、Baileys稼働時間、および接続安定性の監視",
+    "empty": "現在利用可能なヘルスデータはありません。",
+    "refresh": "診断を更新"
+  },
+  "groups": {
+    "title": "WhatsAppグループ",
+    "subtitle": "接続されたチャットグループを管理し、グループに直接アナウンスを送信します"
+  },
+  "team": {
+    "title": "チーム管理",
+    "subtitle": "チームメンバーの管理、同僚の招待、および権限の設定",
+    "invite": "メンバーを招待",
+    "empty_title": "チームメンバーがいません",
+    "empty_desc": "チームメンバーを招待して、一緒に顧客メッセージを管理しましょう。"
+  },
+  "apikeys": {
+    "title": "APIキーと連携",
+    "subtitle": "WhatsApp Gateway REST APIにプログラムでアクセスするための認証トークンを管理します",
+    "create_key": "新しいAPIキーを生成",
+    "empty": "APIキーはまだ作成されていません。"
+  },
+  "events": {
+    "title": "リアルタイムイベントログ",
+    "subtitle": "接続変更、メッセージ受領、Webhookなどのゲートウェイイベントのライブストリーム"
   }
 }

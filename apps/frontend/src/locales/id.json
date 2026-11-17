@@ -56,7 +56,18 @@
     "terms": "Dengan mendaftar, kamu menyetujui syarat & ketentuan.",
     "registration_closed_title": "Pendaftaran Ditutup",
     "registration_closed_desc": "Pendaftaran pengguna baru sedang dinonaktifkan oleh administrator.",
-    "back_to_login": "Kembali ke Login"
+    "back_to_login": "Kembali ke Login",
+    "login_authhub": "Masuk dengan AuthHub SSO",
+    "or_traditional": "atau masuk dengan email & password",
+    "sso_verifying": "Memverifikasi Identitas AuthHub...",
+    "sso_success": "Identitas Terverifikasi! Mengalihkan...",
+    "sso_failed_title": "Login AuthHub SSO Gagal",
+    "sso_processing_desc": "Menghubungkan ke server autentikasi terpusat dan menerbitkan token sesi aman.",
+    "sso_redirect_desc": "Selamat datang kembali! Anda sedang dialihkan ke dashboard WABridge.",
+    "sso_missing_code": "Kode otorisasi tidak ditemukan dari callback AuthHub.",
+    "sso_state_mismatch": "Ketidakcocokan state SSO terdeteksi. Silakan coba login kembali demi keamanan.",
+    "sso_exchange_failed": "Pertukaran token dengan AuthHub gagal.",
+    "sso_error": "Terjadi kendala teknis saat memproses login AuthHub."
   },
   "status": {
     "loading": "Memuat...",
@@ -107,19 +118,38 @@
     "deploy": "Deploy Baru",
     "databases": "Databases",
     "domain_manager": "Domain Hub & DNS",
-    "templates": "Templates",
+    "templates": "Template Pesan",
     "marketplace": "Marketplace",
     "tunnel": "CF Tunnel",
     "health": "Health Monitor",
     "apikeys": "API Keys",
     "teams": "Teams",
     "security": "Keamanan",
-    "overview": "Overview",
+    "overview": "Ringkasan",
     "users": "Users",
     "system": "System",
     "nodes": "Nodes",
     "audit": "Audit Log",
-    "logout": "Logout"
+    "logout": "Logout",
+    "control_center": "Pusat Kontrol WhatsApp",
+    "live_chat": "Live Chat",
+    "whatsapp": "WhatsApp",
+    "provider_configs": "Konfigurasi Provider",
+    "sessions": "Sesi WhatsApp",
+    "wa_groups": "Grup WhatsApp",
+    "session_health": "Kesehatan Sesi",
+    "messages_log": "Log Pesan",
+    "events": "Event Real-time",
+    "messaging": "Pengiriman Pesan",
+    "broadcast": "Pesan Siaran",
+    "scheduled": "Pesan Terjadwal",
+    "auto_reply": "Balas Otomatis & AI",
+    "contacts": "Buku Kontak",
+    "automation": "Otomasi",
+    "webhooks": "Webhook HTTP",
+    "team": "Manajemen Tim",
+    "developer": "Pengembang",
+    "api_keys": "API Keys"
   },
   "confirm": {
     "delete_title": "Apakah Anda yakin ingin menghapus ini?",
@@ -196,7 +226,8 @@
     "hours_ago": "{h} jam lalu",
     "days_ago": "{d} hari lalu",
     "today": "Hari Ini",
-    "yesterday": "Kemarin"
+    "yesterday": "Kemarin",
+    "last_7_days": "7 Hari Terakhir"
   },
   "theme": {
     "light": "Mode Terang",
@@ -277,7 +308,12 @@
     "try_again": "Coba lagi",
     "or": "atau",
     "and": "dan",
-    "logout": "Logout"
+    "logout": "Logout",
+    "saving": "Menyimpan...",
+    "sending": "Mengirim...",
+    "type_message": "Ketik pesan atau pengumuman di sini...",
+    "member": "Anggota",
+    "invited": "Diundang"
   },
   "user": {
     "profile": "Profil Saya",
@@ -387,14 +423,161 @@
     "send_media": "Kirim Media / Dokumen",
     "status_sent": "Terkirim",
     "status_delivered": "Diterima",
-    "status_read": "Dibaca"
+    "status_read": "Dibaca",
+    "title": "Riwayat & Log Pesan",
+    "subtitle": "Audit seluruh riwayat pesan teks, media, dokumen, dan lokasi masuk maupun keluar"
   },
   "broadcast": {
-    "title": "Kampanye Siaran Massal",
+    "title": "Pesan Siaran (Broadcast)",
     "new_campaign": "Buat Kampanye Baru",
     "campaign_name": "Nama Kampanye",
     "upload_csv": "Unggah Kontak Penerima (.CSV)",
     "schedule_time": "Jadwalkan Waktu Siaran",
-    "delivery_rate": "Tingkat Keberhasilan Pengiriman"
+    "delivery_rate": "Tingkat Keberhasilan Pengiriman",
+    "subtitle": "Kirim pengumuman massal dan notifikasi ke ratusan kontak sekaligus dengan jeda anti-ban otomatis",
+    "create": "Buat Siaran Baru",
+    "empty": "Belum ada riwayat siaran."
+  },
+  "topbar": {
+    "system_status": "Status Sistem",
+    "system_healthy": "Sistem Normal",
+    "system_degraded": "Sistem Terganggu",
+    "api_docs": "Dokumentasi API",
+    "profile": "Profil Saya",
+    "logout": "Keluar"
+  },
+  "provider_configs": {
+    "title": "Konfigurasi Provider",
+    "subtitle": "Kelola gateway koneksi WhatsApp (Meta Cloud API, BSP Partner, dan Baileys Multi-Device)",
+    "new": "Tambah Provider",
+    "form_title": "Tambah Konfigurasi Provider",
+    "edit_title": "Ubah Konfigurasi Provider",
+    "provider_type": "Tipe Provider",
+    "name": "Nama Provider",
+    "name_placeholder": "Contoh: WhatsApp CS Resmi",
+    "endpoint": "Endpoint URL",
+    "status": "Status",
+    "created": "Dibuat",
+    "actions": "Tindakan",
+    "qr_code": "Scan QR Code",
+    "activate": "Aktifkan",
+    "deactivate": "Nonaktifkan",
+    "empty_title": "Belum Ada Provider",
+    "empty_desc": "Tambahkan konfigurasi Baileys atau Meta Cloud API untuk mulai menghubungkan nomor WhatsApp.",
+    "access_token": "Access Token",
+    "phone_number_id": "Phone Number ID",
+    "verify_token": "Verify Token Webhook",
+    "api_version": "Versi API Graph",
+    "base_url": "Custom Base URL"
+  },
+  "sessions": {
+    "title": "Sesi WhatsApp",
+    "subtitle": "Pantau dan kelola sesi aktif nomor WhatsApp yang terhubung ke sistem",
+    "new_session": "Tambah Sesi Baru",
+    "add_modal_title": "Tambah Sesi WhatsApp Baru",
+    "session_name": "Nama Sesi",
+    "session_name_placeholder": "Contoh: Nomor Sales Utama",
+    "provider": "Pilih Konfigurasi Provider",
+    "select_provider_placeholder": "Pilih salah satu konfigurasi...",
+    "status": "Status Sesi",
+    "created_at": "Tanggal Dibuat",
+    "disconnect": "Putuskan Sesi",
+    "reconnect": "Sambungkan Ulang",
+    "scan_qr": "Hubungkan WhatsApp / Pindai QR",
+    "pairing_code": "Kode Pairing 8 Digit",
+    "empty": "Belum ada sesi aktif. Buat sesi baru untuk menghubungkan nomor WhatsApp ke gateway."
+  },
+  "dashboard": {
+    "title": "Dashboard Utama",
+    "subtitle": "Ringkasan metrik performa, status koneksi gateway, dan aktivitas real-time",
+    "active_sessions": "Sesi Aktif",
+    "total_messages": "Total Pesan",
+    "delivered_messages": "Pesan Terkirim",
+    "failed_messages": "Pesan Gagal",
+    "system_status": "Status Gateway",
+    "all_systems_operational": "Semua Gateway Berjalan Normal",
+    "system_degraded": "Performa Gateway Mengalami Gangguan",
+    "recent_messages": "Pesan Terkini",
+    "recent_events": "Log Aktivitas Terbaru",
+    "no_messages": "Belum ada riwayat pesan",
+    "no_events": "Belum ada riwayat event"
+  },
+  "analytics": {
+    "title": "Analitik & Metrik",
+    "subtitle": "Analisis volume lalu lintas pesan, rasio keberhasilan pengiriman, dan tren pengguna",
+    "total_messages": "Volume Pesan",
+    "delivered": "Terkirim Sukses",
+    "failed": "Gagal Kirim",
+    "success_rate": "Rasio Keberhasilan",
+    "monthly_usage": "Penggunaan Bulan Ini",
+    "providers_breakdown": "Distribusi Status & Provider"
+  },
+  "autoreply": {
+    "title": "Balas Otomatis & AI Bot",
+    "subtitle": "Konfigurasikan asisten bot cerdas (Gemini / OpenAI) atau aturan berbasis kata kunci untuk membalas chat secara instan",
+    "add_rule": "Tambah Aturan",
+    "empty": "Belum ada aturan balas otomatis."
+  },
+  "contacts": {
+    "title": "Buku Kontak",
+    "subtitle": "Kelola daftar nomor telepon dan kontak pelanggan untuk keperluan broadcast dan CRM",
+    "add_contact": "Tambah Kontak",
+    "empty": "Belum ada kontak terdaftar.",
+    "name": "Nama",
+    "phone": "Nomor WhatsApp"
+  },
+  "webhooks": {
+    "title": "Webhook HTTP",
+    "subtitle": "Teruskan setiap pesan masuk, status centang dua, dan event sesi ke URL backend server Anda secara real-time",
+    "new_endpoint": "Tambah Endpoint",
+    "endpoints_tab": "Daftar Endpoint",
+    "logs_tab": "Log Pengiriman",
+    "empty_title": "Belum Ada Endpoint Webhook",
+    "empty_desc": "Tambahkan URL webhook Anda untuk menerima notifikasi pesan masuk secara real-time.",
+    "url": "URL Webhook",
+    "events": "Event yang Dilanggan",
+    "secret": "Secret Key",
+    "status": "Status",
+    "action": "Tindakan"
+  },
+  "scheduled": {
+    "title": "Pesan Terjadwal",
+    "subtitle": "Jadwalkan pengiriman pesan otomatis pada tanggal dan jam tertentu di masa mendatang",
+    "create": "Jadwalkan Pesan",
+    "empty": "Belum ada pesan yang dijadwalkan."
+  },
+  "templates": {
+    "title": "Template Pesan",
+    "subtitle": "Kelola template pesan cepat dan template Meta Cloud yang telah disetujui",
+    "new": "Tambah Template",
+    "empty_title": "Belum Ada Template",
+    "empty_desc": "Buat template pesan pertama Anda untuk mempercepat respon ke pelanggan."
+  },
+  "session_health": {
+    "title": "Kesehatan Sesi & Monitor",
+    "subtitle": "Diagnostik latensi WebSocket, uptime Baileys, dan stabilitas koneksi nomor",
+    "empty": "Tidak ada data telemetri kesehatan sesi yang tersedia saat ini.",
+    "refresh": "Perbarui Diagnostik"
+  },
+  "groups": {
+    "title": "Grup WhatsApp",
+    "subtitle": "Kelola grup obrolan yang terhubung dan kirim pesan broadcast ke grup secara langsung"
+  },
+  "team": {
+    "title": "Manajemen Tim",
+    "subtitle": "Kelola anggota tim, undang rekan kerja, dan atur izin akses operator WABridge",
+    "invite": "Undang Anggota",
+    "empty_title": "Belum Ada Anggota Tim",
+    "empty_desc": "Undang rekan kerja untuk bersama-sama mengelola pesan dan broadcast pelanggan."
+  },
+  "apikeys": {
+    "title": "API Keys & Integrasi",
+    "subtitle": "Kelola token autentikasi untuk mengakses REST API WhatsApp Gateway secara programatik",
+    "create_key": "Buat API Key Baru",
+    "empty": "Belum ada API Key yang dibuat."
+  },
+  "events": {
+    "title": "Event Log Real-time",
+    "subtitle": "Pantau riwayat event gateway WhatsApp seperti koneksi, pesan masuk, dan webhook"
   }
 }

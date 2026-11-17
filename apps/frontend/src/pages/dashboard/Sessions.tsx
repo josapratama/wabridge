@@ -17,6 +17,9 @@ import {
   RefreshCw,
   Copy,
   QrCode,
+  Smartphone,
+  Globe,
+  Calendar,
 } from "lucide-react";
 import BaileysConnectionModal from "../../components/BaileysConnectionModal";
 import { useI18n } from "../../context/I18nContext";
@@ -150,6 +153,7 @@ export default function Sessions() {
         loading={qrLoading}
       />
 
+      {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <p className="text-sm text-gray-400">
           {t("sessions.subtitle", "Active and configured WhatsApp account sessions")}
@@ -159,10 +163,11 @@ export default function Sessions() {
             onClick={() => void load()}
             className="btn-secondary"
             disabled={loading}
+            title={t("actions.refresh", "Refresh")}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
-          <button onClick={() => setShowForm(true)} className="btn-primary">
+          <button onClick={() => setShowForm(true)} className="btn-primary shadow-lg shadow-brand-500/20">
             <Plus className="w-4 h-4" /> {t("sessions.new_session", "New Session")}
           </button>
         </div>
@@ -170,27 +175,27 @@ export default function Sessions() {
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="card w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="card w-full max-w-md p-6 space-y-4 shadow-2xl border-gray-750">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-800">
               <h2 className="text-base font-semibold text-white">
                 {t("sessions.add_modal_title", "New Session")}
               </h2>
               <button
                 onClick={() => setShowForm(false)}
-                className="text-gray-500 hover:text-gray-300"
+                className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-gray-800"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {error && (
-              <div className="px-3 py-2 bg-red-900/30 border border-red-800/50 rounded-lg text-sm text-red-300">
+              <div className="px-3.5 py-2.5 bg-red-900/30 border border-red-800/50 rounded-lg text-sm text-red-300">
                 {error}
               </div>
             )}
 
-            <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
+            <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
               <div>
                 <label className="label">{t("sessions.session_name", "Session Name")} *</label>
                 <input
@@ -212,7 +217,7 @@ export default function Sessions() {
                     setForm({ ...form, providerConfigId: e.target.value })
                   }
                 >
-                  <option value="">{t("common.loading", "Select a config…")}</option>
+                  <option value="">{t("sessions.select_provider_placeholder", "Select a config…")}</option>
                   {configs.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} ({c.providerType}) {c.isActive ? "✓" : ""}
@@ -220,15 +225,15 @@ export default function Sessions() {
                   ))}
                 </select>
                 {configs.length === 0 && (
-                  <p className="text-xs text-yellow-500 mt-1">
+                  <p className="text-xs text-yellow-500 mt-1.5">
                     No provider configs found. Create one first.
                   </p>
                 )}
               </div>
-              <div className="flex gap-2 pt-1">
+              <div className="flex items-center gap-3 pt-2">
                 <button
                   type="submit"
-                  className="btn-primary flex-1"
+                  className="btn-primary flex-1 justify-center py-2.5 shadow-lg shadow-brand-500/20"
                   disabled={saving}
                 >
                   {saving ? (
@@ -236,11 +241,11 @@ export default function Sessions() {
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  {saving ? t("status.saving", "Creating…") : t("actions.create", "Create Session")}
+                  {saving ? t("actions.saving", "Saving…") : t("actions.create", "Create Session")}
                 </button>
                 <button
                   type="button"
-                  className="btn-secondary"
+                  className="btn-secondary py-2.5 px-4"
                   onClick={() => setShowForm(false)}
                 >
                   {t("actions.cancel", "Cancel")}
@@ -251,7 +256,7 @@ export default function Sessions() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Sessions Container */}
       <div className="card overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -263,106 +268,213 @@ export default function Sessions() {
             title={t("sessions.title", "No sessions")}
             description={t("sessions.empty", "Create a session to link a provider config to a WhatsApp account.")}
             action={
-              <button className="btn-primary" onClick={() => setShowForm(true)}>
+              <button className="btn-primary shadow-lg shadow-brand-500/20" onClick={() => setShowForm(true)}>
                 <Plus className="w-4 h-4" />
                 {t("sessions.new_session", "New Session")}
               </button>
             }
           />
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-800">
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  {t("contacts.name", "Name")}
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Session ID
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  {t("sessions.provider", "Provider")}
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  Config
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  {t("sessions.status", "Status")}
-                </th>
-                <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">
-                  {t("sessions.created_at", "Created")}
-                </th>
-                <th className="px-5 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((s) => (
-                <tr key={s.id} className="table-row">
-                  <td className="px-5 py-3 font-medium text-gray-200">
-                    {s.name}
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
-                      <code className="text-xs text-gray-400 font-mono bg-gray-800 px-2 py-0.5 rounded">
-                        {s.id}
-                      </code>
+          <>
+            {/* Desktop Table (md+) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-800 bg-gray-900/40">
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      {t("contacts.name", "Name")}
+                    </th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Session ID
+                    </th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      {t("sessions.provider", "Provider")}
+                    </th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Config
+                    </th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      {t("sessions.status", "Status")}
+                    </th>
+                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      {t("sessions.created_at", "Created")}
+                    </th>
+                    <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      {t("provider_configs.actions", "Actions")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800/60">
+                  {sessions.map((s) => {
+                    const isBaileys = s.providerType === "baileys";
+                    return (
+                      <tr key={s.id} className="hover:bg-gray-850/50 transition-colors group">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+                              isBaileys
+                                ? "bg-emerald-950/40 border-emerald-800/40 text-emerald-400"
+                                : "bg-blue-950/40 border-blue-800/40 text-blue-400"
+                            }`}>
+                              {isBaileys ? <Smartphone className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+                            </div>
+                            <span className="font-semibold text-gray-100 group-hover:text-white transition-colors">
+                              {s.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs text-gray-400 font-mono bg-gray-950/60 border border-gray-800/60 px-2 py-0.5 rounded truncate max-w-[140px]">
+                              {s.id}
+                            </code>
+                            <button
+                              onClick={() => copy(s.id, s.id)}
+                              className="text-gray-500 hover:text-gray-300 transition-colors shrink-0"
+                              title={t("actions.copy", "Copy Session ID")}
+                            >
+                              {copied === s.id ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          <StatusBadge value={s.providerType} />
+                        </td>
+                        <td className="px-5 py-4 text-gray-300 text-xs font-medium">
+                          {configName(s.providerConfigId)}
+                        </td>
+                        <td className="px-5 py-4">
+                          <StatusBadge value={s.status} />
+                        </td>
+                        <td className="px-5 py-4 text-gray-400 text-xs">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="w-3 h-3 text-gray-500 shrink-0" />
+                            {new Date(s.createdAt).toLocaleDateString()}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {s.providerType === "baileys" && (
+                              <button
+                                onClick={() => openQrModal(s.providerConfigId)}
+                                className="btn-secondary text-xs px-2.5 py-1.5 hover:border-emerald-500/50 hover:text-emerald-300"
+                                title={t("sessions.scan_qr", "Connect WhatsApp / Scan QR")}
+                              >
+                                <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>{t("provider_configs.qr_code", "QR Code")}</span>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => void toggle(s)}
+                              className={`text-xs px-2.5 py-1.5 inline-flex items-center gap-1.5 rounded-lg border font-medium transition-colors ${
+                                s.status === "active"
+                                  ? "bg-red-950/40 border-red-800/50 text-red-300 hover:bg-red-900/60"
+                                  : "bg-gray-800/60 border-gray-700/60 text-gray-300 hover:bg-emerald-950/40 hover:border-emerald-800/50 hover:text-emerald-300"
+                              }`}
+                            >
+                              {s.status === "active" ? (
+                                <>
+                                  <PowerOff className="w-3.5 h-3.5 text-red-400" />
+                                  <span>{t("sessions.disconnect", "Deactivate")}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Power className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>{t("sessions.reconnect", "Activate")}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View (< md) */}
+            <div className="md:hidden divide-y divide-gray-800/70">
+              {sessions.map((s) => {
+                const isBaileys = s.providerType === "baileys";
+                return (
+                  <div key={s.id} className="p-4 space-y-3 hover:bg-gray-850/40 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border ${
+                          isBaileys
+                            ? "bg-emerald-950/40 border-emerald-800/40 text-emerald-400"
+                            : "bg-blue-950/40 border-blue-800/40 text-blue-400"
+                        }`}>
+                          {isBaileys ? <Smartphone className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-100 text-sm">{s.name}</h3>
+                          <p className="text-[11px] text-gray-400">{configName(s.providerConfigId)}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <StatusBadge value={s.status} />
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
+                          {s.providerType}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 bg-gray-950/50 rounded-lg px-3 py-2 border border-gray-800/60 text-xs">
+                      <code className="text-gray-400 font-mono truncate">{s.id}</code>
                       <button
                         onClick={() => copy(s.id, s.id)}
-                        className="text-gray-600 hover:text-gray-400 transition-colors shrink-0"
-                        title={t("actions.copy", "Copy Session ID")}
+                        className="text-gray-400 hover:text-white transition-colors shrink-0"
                       >
                         {copied === s.id ? (
-                          <Check className="w-3.5 h-3.5 text-brand-400" />
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
                       </button>
                     </div>
-                  </td>
-                  <td className="px-5 py-3">
-                    <StatusBadge value={s.providerType} />
-                  </td>
-                  <td className="px-5 py-3 text-gray-400 text-xs">
-                    {configName(s.providerConfigId)}
-                  </td>
-                  <td className="px-5 py-3">
-                    <StatusBadge value={s.status} />
-                  </td>
-                  <td className="px-5 py-3 text-gray-500 text-xs">
-                    {new Date(s.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
                       {s.providerType === "baileys" && (
                         <button
                           onClick={() => openQrModal(s.providerConfigId)}
-                          className="btn-secondary text-xs"
-                          title={t("sessions.scan_qr", "Connect WhatsApp / Scan QR")}
+                          className="btn-secondary text-xs flex-1 justify-center py-2"
                         >
-                          <QrCode className="w-3.5 h-3.5" /> QR Code
+                          <QrCode className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{t("provider_configs.qr_code", "QR Code")}</span>
                         </button>
                       )}
                       <button
                         onClick={() => void toggle(s)}
-                        className={
-                          s.status === "active" ? "btn-danger" : "btn-secondary"
-                        }
+                        className={`text-xs py-2 px-3 flex-1 justify-center inline-flex items-center gap-1.5 rounded-lg border font-medium transition-colors ${
+                          s.status === "active"
+                            ? "bg-red-950/40 border-red-800/50 text-red-300 hover:bg-red-900/60"
+                            : "bg-gray-800/60 border-gray-700/60 text-gray-300 hover:bg-emerald-950/40 hover:border-emerald-800/50 hover:text-emerald-300"
+                        }`}
                       >
                         {s.status === "active" ? (
                           <>
-                            <PowerOff className="w-3.5 h-3.5" /> {t("sessions.disconnect", "Deactivate")}
+                            <PowerOff className="w-3.5 h-3.5 text-red-400" />
+                            <span>{t("sessions.disconnect", "Deactivate")}</span>
                           </>
                         ) : (
                           <>
-                            <Power className="w-3.5 h-3.5" /> {t("sessions.reconnect", "Activate")}
+                            <Power className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{t("sessions.reconnect", "Activate")}</span>
                           </>
                         )}
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>
