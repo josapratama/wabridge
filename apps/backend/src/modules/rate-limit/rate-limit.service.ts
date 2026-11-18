@@ -1,4 +1,14 @@
-import { Injectable, HttpException, HttpStatus } from "@nestjs/common";
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Optional,
+} from "@nestjs/common";
+import { DRIZZLE_CLIENT } from "../../common/database/database.module";
+import * as schema from "../../common/database/drizzle/schema";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { v4 as uuidv4 } from "uuid";
 
 interface WindowEntry {
   count: number;
@@ -6,9 +16,9 @@ interface WindowEntry {
 }
 
 /**
- * In-memory rate limiter per API key.
- * Uses sliding window counters stored in a Map.
- * For production, replace with Redis.
+ * Hybrid rate limiter per API key:
+ * - In-memory sliding window counters for microsecond-fast gating.
+ * - Asynchronous persistence to PostgreSQL RateLimitCounter table for auditing & persistence.
  */
 @Injectable()
 export class RateLimitService {
@@ -24,6 +34,12 @@ export class RateLimitService {
 
   private minuteWindows = new Map<string, WindowEntry>();
   private hourWindows = new Map<string, WindowEntry>();
+
+  constructor(
+    @Optional()
+    @Inject(DRIZZLE_CLIENT)
+    private readonly db?: NodePgDatabase<typeof schema>,
+  ) {}
 
   async check(apiKeyId: string): Promise<void> {
     const now = Date.now();
@@ -76,5 +92,19 @@ export class RateLimitService {
       );
     }
     entry.count++;
+
+    // Asynchronously log to PostgreSQL RateLimitCounter table
+    if (this.db) {
+      void this.db
+        .insert(schema.rateLimitCounters)
+        .values({
+          id: uuidv4(),
+          apiKeyId: key,
+          windowStart: new Date(entry.windowStart),
+          windowType: type,
+          count: entry.count,
+        })
+        .catch(() => {});
+    }
   }
 }

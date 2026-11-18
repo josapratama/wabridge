@@ -4,7 +4,7 @@ import { MessageRepository } from "../../repositories/interfaces";
 import { DRIZZLE_CLIENT } from "../../common/database/database.module";
 import * as schema from "../../common/database/drizzle/schema";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
 import * as path from "path";
@@ -429,18 +429,49 @@ export class AiBotService implements OnModuleInit {
     return { isPaused: false, pausedUntil: null };
   }
 
-  getStats(userId: string = "default") {
+  async getStats(userId: string = "default") {
     const cfg = this.loadUserConfig(userId);
-    const statsPath = path.join(
-      this.configsDir,
-      `${userId.replace(/[^a-zA-Z0-9_-]/g, "_")}_stats.json`,
-    );
     let stats = { totalReplies: 0, lastReplyAt: null as string | null };
+
+    // 1. Query real PostgreSQL messages table for outbound bot replies
+    if (this.db) {
+      try {
+        const botMessages = await this.db
+          .select({
+            id: schema.messages.id,
+            createdAt: schema.messages.createdAt,
+          })
+          .from(schema.messages)
+          .where(
+            and(
+              eq(schema.messages.direction, "outbound"),
+              eq(schema.messages.from, "bot"),
+            ),
+          )
+          .orderBy(desc(schema.messages.createdAt));
+
+        if (botMessages.length > 0) {
+          stats.totalReplies = botMessages.length;
+          stats.lastReplyAt = botMessages[0].createdAt.toISOString();
+        }
+      } catch {}
+    }
+
+    // 2. Fallback to file/memory stats if DB has none or for custom user tracking
     try {
+      const statsPath = path.join(
+        this.configsDir,
+        `${userId.replace(/[^a-zA-Z0-9_-]/g, "_")}_stats.json`,
+      );
       if (fs.existsSync(statsPath)) {
-        stats = JSON.parse(fs.readFileSync(statsPath, "utf8"));
+        const fileStats = JSON.parse(fs.readFileSync(statsPath, "utf8"));
+        stats.totalReplies = Math.max(stats.totalReplies, fileStats.totalReplies || 0);
+        if (!stats.lastReplyAt && fileStats.lastReplyAt) {
+          stats.lastReplyAt = fileStats.lastReplyAt;
+        }
       }
     } catch {}
+
     return {
       ...stats,
       isEnabled: cfg.isEnabled,

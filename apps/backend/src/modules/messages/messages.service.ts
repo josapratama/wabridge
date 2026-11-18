@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  Optional,
 } from "@nestjs/common";
 import { v4 as uuidv4 } from "uuid";
 import { EVENT_TYPES, MESSAGE_STATUS } from "../../common/constants";
@@ -11,6 +12,7 @@ import {
   MessageRepository,
   ProviderConfigRepository,
   SessionRepository,
+  UsageRepository,
 } from "../../repositories/interfaces";
 import { ProviderRoutingService } from "../provider-routing/provider-routing.service";
 import { EventsService } from "../events/events.service";
@@ -37,6 +39,9 @@ export class MessagesService {
     private readonly webhookService: WebhookOutboundService,
     private readonly autoReplyService: AutoReplyService,
     private readonly logger: AppLogger,
+    @Optional()
+    @Inject(UsageRepository)
+    private readonly usageRepo?: UsageRepository,
   ) {
     this.retryAttempts = parseInt(process.env.RETRY_ATTEMPTS ?? "3", 10);
     this.retryDelayMs = parseInt(process.env.RETRY_DELAY_MS ?? "1000", 10);
@@ -121,6 +126,13 @@ export class MessagesService {
               externalMessageId: result.externalMessageId,
               rawPayload: result.rawResponse,
             })) ?? message;
+
+          if (this.usageRepo && session.userId) {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            void this.usageRepo
+              .upsert(session.userId, currentMonth, { sent: 1 })
+              .catch(() => {});
+          }
 
           await this.eventsService.recordRaw(
             session.providerType,

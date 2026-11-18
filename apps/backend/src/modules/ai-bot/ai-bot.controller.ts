@@ -69,7 +69,7 @@ export class AiBotController {
   }
 
   @Get("stats")
-  getStats(@Req() req: any) {
+  async getStats(@Req() req: any) {
     const userId = req.user?.id || "default";
     return this.service.getStats(userId);
   }
