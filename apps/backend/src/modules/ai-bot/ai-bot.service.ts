@@ -926,11 +926,34 @@ export class AiBotService implements OnModuleInit {
     }
   }
 
-  getStats(userId: string = "default"): { repliesSentToday: number } {
+  getStats(userId: string = "default"): {
+    repliesSentToday: number;
+    activeHandoversCount: number;
+    activeHandovers: Array<{ jid: string; remainingMinutes: number }>;
+  } {
     const today = new Date().toISOString().slice(0, 10);
     const existing = this.statsByUserId.get(userId);
-    if (!existing || existing.lastResetDate !== today) return { repliesSentToday: 0 };
-    return { repliesSentToday: existing.repliesSentToday };
+    const repliesSentToday = (!existing || existing.lastResetDate !== today) ? 0 : existing.repliesSentToday;
+
+    const userPaused = this.pausedJids.get(userId);
+    const activeHandovers: Array<{ jid: string; remainingMinutes: number }> = [];
+    if (userPaused) {
+      const now = Date.now();
+      for (const [jid, until] of userPaused.entries()) {
+        if (now < until) {
+          activeHandovers.push({
+            jid,
+            remainingMinutes: Math.ceil((until - now) / 60000),
+          });
+        }
+      }
+    }
+
+    return {
+      repliesSentToday,
+      activeHandoversCount: activeHandovers.length,
+      activeHandovers,
+    };
   }
 
   private isWithinWorkHours(startStr?: string, endStr?: string, workDays?: number[]): boolean {
@@ -1077,6 +1100,7 @@ export class AiBotService implements OnModuleInit {
     fromJid?: string,
     userId: string = "default",
     sessionId?: string,
+    mediaUrl?: string,
   ): Promise<string | null> {
     const rawProfile = await this.resolveProfileForSession(sessionId);
     if (!rawProfile || !rawProfile.isEnabled) {
@@ -1206,13 +1230,14 @@ export class AiBotService implements OnModuleInit {
 
       let reply: string | null = null;
       if (profile.provider === "gemini") {
-        reply = await this.callGemini(profile, userMessage, effectiveSystemPrompt, history);
+        reply = await this.callGemini(profile, userMessage, effectiveSystemPrompt, history, mediaUrl);
       } else {
         reply = await this.callOpenAiCompatible(
           profile,
           userMessage,
           effectiveSystemPrompt,
           history,
+          mediaUrl,
         );
       }
       if (reply) {
@@ -1299,6 +1324,7 @@ export class AiBotService implements OnModuleInit {
     userMessage: string,
     systemPrompt: string,
     history: Array<{ role: "user" | "assistant"; content: string }> = [],
+    mediaUrl?: string,
   ): Promise<string> {
     const model = cfg.model || "gemini-3.6-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cfg.apiKey}`;
@@ -1310,10 +1336,33 @@ export class AiBotService implements OnModuleInit {
         parts: [{ text: h.content }],
       });
     }
-    if (contents.length === 0 || contents[contents.length - 1].parts[0]?.text !== userMessage) {
+
+    const userParts: any[] = [{ text: userMessage || "Apa isi gambar ini?" }];
+    if (mediaUrl) {
+      try {
+        const fname = path.basename(mediaUrl);
+        const fpath = path.join(process.cwd(), "public", "uploads", fname);
+        if (fs.existsSync(fpath)) {
+          const buf = fs.readFileSync(fpath);
+          const base64 = buf.toString("base64");
+          const ext = path.extname(fname).toLowerCase();
+          const mime = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
+          userParts.push({
+            inlineData: {
+              mimeType: mime,
+              data: base64,
+            },
+          });
+        }
+      } catch (imgErr) {
+        this.logger.warn(`Failed to attach image to Gemini: ${imgErr}`, "AiBotService");
+      }
+    }
+
+    if (contents.length === 0 || contents[contents.length - 1].role === "model") {
       contents.push({
         role: "user",
-        parts: [{ text: userMessage }],
+        parts: userParts,
       });
     }
 
@@ -1355,6 +1404,7 @@ export class AiBotService implements OnModuleInit {
     userMessage: string,
     systemPrompt: string,
     history: Array<{ role: "user" | "assistant"; content: string }> = [],
+    mediaUrl?: string,
   ): Promise<string> {
     let baseUrl = "https://api.openai.com/v1/chat/completions";
     let defaultModel = "gpt-4o-mini";
@@ -1382,7 +1432,29 @@ export class AiBotService implements OnModuleInit {
     for (const h of history) {
       messages.push({ role: h.role, content: h.content });
     }
-    if (messages.length === 1 || messages[messages.length - 1].content !== userMessage) {
+    if (mediaUrl) {
+      try {
+        const fname = path.basename(mediaUrl);
+        const fpath = path.join(process.cwd(), "public", "uploads", fname);
+        if (fs.existsSync(fpath)) {
+          const buf = fs.readFileSync(fpath);
+          const base64 = buf.toString("base64");
+          const ext = path.extname(fname).toLowerCase();
+          const mime = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
+          messages.push({
+            role: "user",
+            content: [
+              { type: "text", text: userMessage || "Berikut gambar yang saya kirimkan:" },
+              { type: "image_url", image_url: { url: `data:${mime};base64,${base64}` } },
+            ] as any,
+          });
+        } else {
+          messages.push({ role: "user", content: userMessage });
+        }
+      } catch {
+        messages.push({ role: "user", content: userMessage });
+      }
+    } else if (messages.length === 1 || messages[messages.length - 1].content !== userMessage) {
       messages.push({ role: "user", content: userMessage });
     }
 

@@ -1,13 +1,16 @@
-import { BadRequestException, Inject, Injectable } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, Optional } from "@nestjs/common";
 import { MESSAGE_STATUS } from "../../common/constants";
 import type { ProviderType, VerifyWebhookQuery } from "../../common/types";
 import {
   MessageRepository,
   ProviderConfigRepository,
+  SessionRepository,
 } from "../../repositories/interfaces";
 import { ProviderRoutingService } from "../provider-routing/provider-routing.service";
 import { EventsService } from "../events/events.service";
 import { AppLogger } from "../../common/logger/app.logger";
+import { AutoReplyService } from "../auto-reply/auto-reply.service";
+import { AiBotService } from "../ai-bot/ai-bot.service";
 
 @Injectable()
 export class WebhooksService {
@@ -19,6 +22,13 @@ export class WebhooksService {
     private readonly routingService: ProviderRoutingService,
     private readonly eventsService: EventsService,
     private readonly logger: AppLogger,
+    @Optional()
+    private readonly autoReplyService?: AutoReplyService,
+    @Optional()
+    private readonly aiBotService?: AiBotService,
+    @Optional()
+    @Inject(SessionRepository)
+    private readonly sessionRepo?: SessionRepository,
   ) {}
 
   async verifyWebhook(
@@ -93,6 +103,80 @@ export class WebhooksService {
           createdAt: now,
           updatedAt: now,
         });
+
+        // Auto-reply and AI Bot integration for non-Baileys providers (Meta Cloud, BSP)
+        if (providerType !== "baileys" && this.autoReplyService) {
+          const effectiveSessionId = event.sessionId || "";
+          const senderPhone = (event.from || "").replace(/\D/g, "");
+          let replyContent: string | null = null;
+
+          if (effectiveSessionId) {
+            replyContent = await this.autoReplyService.match(
+              effectiveSessionId,
+              event.content,
+              undefined,
+              senderPhone,
+            );
+          }
+
+          if (!replyContent && this.aiBotService) {
+            let sessionUserId = "default";
+            if (effectiveSessionId && this.sessionRepo) {
+              try {
+                const sess = await this.sessionRepo.findById(effectiveSessionId);
+                if (sess?.userId) sessionUserId = sess.userId;
+              } catch {}
+            }
+
+            const canAiReply = await this.aiBotService.canReply(
+              event.from,
+              effectiveSessionId,
+              sessionUserId,
+            );
+
+            if (canAiReply) {
+              replyContent = await this.aiBotService.generateReply(
+                event.content,
+                event.from,
+                sessionUserId,
+                effectiveSessionId,
+              );
+            }
+          }
+
+          if (replyContent) {
+            try {
+              const activeConfig = await this.configRepo.findActiveByProviderType(providerType);
+              if (activeConfig) {
+                const sendRes = await provider.sendTextMessage({
+                  to: event.from,
+                  message: replyContent,
+                  config: activeConfig,
+                  sessionId: effectiveSessionId,
+                });
+
+                if (sendRes.success) {
+                  const outNow = new Date().toISOString();
+                  await this.messageRepo.save({
+                    id: crypto.randomUUID(),
+                    sessionId: effectiveSessionId,
+                    externalMessageId: sendRes.externalMessageId || crypto.randomUUID(),
+                    direction: "outbound",
+                    from: event.to || "bot",
+                    to: event.from,
+                    type: "text",
+                    content: replyContent,
+                    status: MESSAGE_STATUS.SENT,
+                    createdAt: outNow,
+                    updatedAt: outNow,
+                  });
+                }
+              }
+            } catch (replyErr) {
+              this.logger.error(`Automated reply failed on ${providerType}: ${replyErr}`, undefined, "WebhooksService");
+            }
+          }
+        }
       }
 
       if (

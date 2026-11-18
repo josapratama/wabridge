@@ -645,6 +645,7 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                         aiTargetJid,
                         sessionUserId,
                         effectiveSessionId,
+                        mediaUrl,
                       );
                     } finally {
                       if (activeSock) {
@@ -745,6 +746,92 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                   }
                 }
               }
+            }
+          }
+        } else if (msg.key.fromMe && msg.message) {
+          // Outbound message sent from physical WhatsApp phone (or WhatsApp Web/Desktop)
+          const to = msg.key.remoteJid || "";
+          if (to && to !== "status@broadcast" && !to.endsWith("@broadcast")) {
+            const externalId = msg.key.id || "";
+            let alreadyExists = false;
+            if (externalId && this.messageRepo) {
+              try {
+                const existing = await this.messageRepo.findByExternalMessageId(externalId);
+                if (existing) alreadyExists = true;
+              } catch {}
+            }
+
+            if (!alreadyExists && effectiveSessionId && this.messageRepo) {
+              let messageType: "text" | "image" | "audio" | "video" | "document" = "text";
+              let content =
+                msg.message.conversation ||
+                msg.message.extendedTextMessage?.text ||
+                "";
+
+              if (msg.message.imageMessage) {
+                messageType = "image";
+                content = msg.message.imageMessage.caption || "[Image]";
+              } else if (msg.message.videoMessage) {
+                messageType = "video";
+                content = msg.message.videoMessage.caption || "[Video]";
+              } else if (msg.message.audioMessage) {
+                messageType = "audio";
+                content = "[Voice Note / Audio]";
+              } else if (msg.message.documentMessage) {
+                messageType = "document";
+                content = msg.message.documentMessage.fileName
+                  ? `[Document: ${msg.message.documentMessage.fileName}]`
+                  : "[Document]";
+              }
+
+              if (content) {
+                const from = sock.user?.id || "me";
+                await this.messageRepo.save({
+                  id: uuidv4(),
+                  sessionId: effectiveSessionId,
+                  externalMessageId: externalId || uuidv4(),
+                  direction: "outbound",
+                  from,
+                  to,
+                  type: messageType,
+                  content,
+                  status: MESSAGE_STATUS.DELIVERED,
+                  rawPayload: msg as unknown as Record<string, unknown>,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                });
+
+                void this.webhookService.dispatch("message.sent", {
+                  sessionId: effectiveSessionId,
+                  from,
+                  to,
+                  content,
+                  type: messageType,
+                });
+              }
+            }
+
+            // AUTO HUMAN TAKEOVER:
+            // If the human admin sends a message directly from the phone, automatically pause AI for 120 minutes!
+            const isGroup = to.endsWith("@g.us");
+            if (!isGroup && this.aiBotService) {
+              let sessionUserId = "default";
+              if (effectiveSessionId && this.sessionRepo) {
+                try {
+                  const sess = await this.sessionRepo.findById(effectiveSessionId);
+                  if (sess?.userId) sessionUserId = sess.userId;
+                } catch {}
+              }
+
+              this.aiBotService.pauseForJid(sessionUserId, to, 120);
+              const alt = this.lidToPhoneMap.get(to);
+              if (alt) {
+                this.aiBotService.pauseForJid(sessionUserId, alt, 120);
+              }
+              this.logger.log(
+                `[Auto Handover] Admin sent message from physical phone to ${to}. AI automatically paused for 120 minutes.`,
+                "BaileysWhatsAppProvider",
+              );
             }
           }
         }
