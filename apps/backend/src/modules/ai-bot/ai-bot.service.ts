@@ -33,7 +33,7 @@ export interface AiBotProfile {
   isEnabled: boolean;
   connectionId?: string; // Links to registered AiConnection
   provider: "gemini" | "openai" | "openrouter" | "deepseek" | "grok";
-  apiKey: string;
+  apiKey?: string; // Resolved at runtime from AiConnection
   model: string;
   systemPrompt: string;
   knowledgeBase?: string;
@@ -41,7 +41,7 @@ export interface AiBotProfile {
   handoverMessage?: string;
   handoverDurationMinutes?: number; // default: 120
   targetSessionIds?: string[]; // empty array or undefined = all sessions
-  scheduleMode?: "always" | "after_hours";
+  scheduleMode?: "always" | "after_hours" | "work_hours";
   workHoursStart?: string; // e.g. "08:00"
   workHoursEnd?: string; // e.g. "17:00"
   workDays?: number[]; // [1,2,3,4,5] (1=Monday ... 7=Sunday)
@@ -206,7 +206,7 @@ export class AiBotService implements OnModuleInit {
             isEnabled: row.isEnabled,
             connectionId: row.connectionId || existing?.connectionId,
             provider: (row.provider as any) || existing?.provider || "gemini",
-            apiKey: existing?.apiKey !== undefined ? existing.apiKey : (row.apiKey || ""),
+            apiKey: existing?.apiKey || "",
             model: row.model || existing?.model || "gemini-3.6-flash",
             systemPrompt: row.systemPrompt || existing?.systemPrompt || DEFAULT_PROFILE_TEMPLATE.systemPrompt,
             knowledgeBase: row.knowledgeBase ?? existing?.knowledgeBase ?? "",
@@ -439,7 +439,6 @@ export class AiBotService implements OnModuleInit {
         isEnabled: p.isEnabled,
         connectionId: p.connectionId ?? null,
         provider: p.provider,
-        apiKey: p.apiKey || "",
         model: p.model,
         systemPrompt: p.systemPrompt,
         knowledgeBase: p.knowledgeBase ?? null,
@@ -530,7 +529,7 @@ export class AiBotService implements OnModuleInit {
       }
     }
     const hasKey = !!effectiveApiKey && effectiveApiKey.trim().length > 0;
-    const apiKeyMasked = hasKey ? `${effectiveApiKey.slice(0, 4)}...${effectiveApiKey.slice(-4)}` : "";
+    const apiKeyMasked = (hasKey && effectiveApiKey) ? `${effectiveApiKey.slice(0, 4)}...${effectiveApiKey.slice(-4)}` : "";
     const { apiKey, ...safe } = p;
     return {
       ...safe,
@@ -958,17 +957,34 @@ export class AiBotService implements OnModuleInit {
 
   private isWithinWorkHours(startStr?: string, endStr?: string, workDays?: number[]): boolean {
     if (!startStr || !endStr) return true;
-    const now = new Date();
-    const currentDay = now.getDay() === 0 ? 7 : now.getDay();
-    if (workDays && workDays.length > 0 && !workDays.includes(currentDay)) return false;
+    try {
+      const now = new Date();
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Jakarta",
+        hour: "numeric",
+        minute: "numeric",
+        hourCycle: "h23",
+        weekday: "short",
+      }).formatToParts(now);
 
-    const [startH, startM] = startStr.split(":").map(Number);
-    const [endH, endM] = endStr.split(":").map(Number);
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-    const startMinutes = startH * 60 + (startM || 0);
-    const endMinutes = endH * 60 + (endM || 0);
+      const h = Number(parts.find((p) => p.type === "hour")?.value || 0);
+      const m = Number(parts.find((p) => p.type === "minute")?.value || 0);
+      const weekdayStr = parts.find((p) => p.type === "weekday")?.value || "";
+      const dayMap: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+      const currentDay = dayMap[weekdayStr] || 1;
 
-    return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+      if (workDays && workDays.length > 0 && !workDays.includes(currentDay)) return false;
+
+      const [startH, startM] = startStr.split(":").map(Number);
+      const [endH, endM] = endStr.split(":").map(Number);
+      const currentMinutes = h * 60 + m;
+      const startMinutes = (startH || 0) * 60 + (startM || 0);
+      const endMinutes = (endH || 0) * 60 + (endM || 0);
+
+      return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+    } catch {
+      return true;
+    }
   }
 
   // ── Multi-Session Resolution & Reply Generation ────────────────────────────
@@ -1097,7 +1113,7 @@ export class AiBotService implements OnModuleInit {
       }
     }
 
-    // 2. Schedule Mode check: if "after_hours", only reply outside work hours
+    // 2. Schedule Mode check: "after_hours" vs "work_hours"
     if (profile.scheduleMode === "after_hours") {
       const isWorkHours = this.isWithinWorkHours(
         profile.workHoursStart,
@@ -1105,6 +1121,13 @@ export class AiBotService implements OnModuleInit {
         profile.workDays,
       );
       if (isWorkHours) return false;
+    } else if (profile.scheduleMode === "work_hours") {
+      const isWorkHours = this.isWithinWorkHours(
+        profile.workHoursStart,
+        profile.workHoursEnd,
+        profile.workDays,
+      );
+      if (!isWorkHours) return false;
     }
 
     // 3. Human Handover check for this contact
@@ -1182,7 +1205,7 @@ export class AiBotService implements OnModuleInit {
       }
     }
 
-    // 2. Schedule Mode check: if "after_hours", only reply outside work hours
+    // 2. Schedule Mode check: "after_hours" vs "work_hours"
     if (profile.scheduleMode === "after_hours") {
       const isWorkHours = this.isWithinWorkHours(
         profile.workHoursStart,
@@ -1190,6 +1213,13 @@ export class AiBotService implements OnModuleInit {
         profile.workDays,
       );
       if (isWorkHours) return null;
+    } else if (profile.scheduleMode === "work_hours") {
+      const isWorkHours = this.isWithinWorkHours(
+        profile.workHoursStart,
+        profile.workHoursEnd,
+        profile.workDays,
+      );
+      if (!isWorkHours) return null;
     }
 
     // 3. Human Handover check for this contact

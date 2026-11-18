@@ -35,6 +35,12 @@ import {
   UserX,
   Play,
   Globe,
+  Sliders,
+  Calendar,
+  Moon,
+  Sun,
+  Zap,
+  Briefcase,
   Settings,
   Shield,
 } from "lucide-react";
@@ -1607,24 +1613,41 @@ export default function AiBotProfilesView({ sessions }: Props) {
                       </button>
                     </div>
 
-                    {/* Connection Selector */}
+                    {/* Connection Selector (Akun AI Resmi - Kredensial Terpusat) */}
                     <div>
-                      <label className="label">Pilih Akun AI / Kredensial Terdaftar</label>
-                      <select
-                        className="input text-xs"
-                        value={editingProfile.connectionId || ""}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (!val) {
-                            setEditingProfile({
-                              ...editingProfile,
-                              connectionId: undefined,
-                              connectionName: undefined,
-                              hasKey: false,
-                              apiKeyMasked: "",
-                            });
-                            setKeyInput("");
-                          } else {
+                      <div className="flex items-center justify-between pb-1.5">
+                        <label className="label mb-0 text-xs font-semibold text-gray-200">
+                          Akun AI (Provider & Kredensial API)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={openNewConnection}
+                          className="text-[11px] text-purple-400 hover:text-purple-300 font-medium flex items-center gap-1 transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ Tambah Akun AI Baru</span>
+                        </button>
+                      </div>
+
+                      {connections.length === 0 ? (
+                        <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-800/40 flex items-center justify-between">
+                          <div className="text-xs text-purple-300">
+                            Belum ada Akun AI yang didaftarkan.
+                          </div>
+                          <button
+                            type="button"
+                            onClick={openNewConnection}
+                            className="btn-primary text-xs py-1 px-3"
+                          >
+                            + Daftarkan Akun AI
+                          </button>
+                        </div>
+                      ) : (
+                        <select
+                          className="input text-xs font-medium bg-gray-900 border-gray-700"
+                          value={editingProfile.connectionId || ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
                             const conn = connections.find((c) => c.id === val);
                             if (conn) {
                               setEditingProfile({
@@ -1636,36 +1659,43 @@ export default function AiBotProfilesView({ sessions }: Props) {
                                 hasKey: conn.hasKey,
                                 apiKeyMasked: conn.apiKeyMasked,
                               });
-                              setKeyInput("");
+                            } else {
+                              setEditingProfile({
+                                ...editingProfile,
+                                connectionId: undefined,
+                                connectionName: undefined,
+                                hasKey: false,
+                                apiKeyMasked: "",
+                              });
                             }
-                          }
-                        }}
-                      >
-                        <option value="">-- Kunci Manual (Kustom untuk Profil Ini Saja) --</option>
-                        {connections.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name} ({c.provider.toUpperCase()} · {c.defaultModel} · {c.apiKeyMasked})
-                          </option>
-                        ))}
-                      </select>
+                          }}
+                        >
+                          <option value="">-- Pilih Akun AI untuk Profil Ini --</option>
+                          {connections.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name} ({c.provider.toUpperCase()} · Model: {c.defaultModel} · Key: {c.apiKeyMasked})
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
 
-                    {/* Active Connection Info vs Manual */}
-                    {editingProfile.connectionId ? (
-                      <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-800/40 space-y-2.5">
+                    {/* Active Connection Badge & Model Selection */}
+                    {editingProfile.connectionId && (
+                      <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-800/40 space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-purple-300 font-medium flex items-center gap-1.5">
                             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                            Terhubung ke: <strong className="text-white">{connections.find((c) => c.id === editingProfile.connectionId)?.name}</strong>
+                            Terhubung ke Akun: <strong className="text-white">{connections.find((c) => c.id === editingProfile.connectionId)?.name}</strong>
                           </span>
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-purple-900/60 text-purple-200 border border-purple-700/50 uppercase font-mono">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-purple-900/60 text-purple-200 border border-purple-700/50 uppercase font-mono font-bold tracking-wider">
                             {editingProfile.provider}
                           </span>
                         </div>
 
                         <div>
                           <div className="flex items-center justify-between pb-1">
-                            <label className="label text-[11px] mb-0">Model AI untuk Profil Ini</label>
+                            <label className="label text-[11px] mb-0 font-medium">Model AI untuk Profil Ini</label>
                             <button
                               type="button"
                               onClick={() => setIsCustomProfileModel(!isCustomProfileModel)}
@@ -1683,11 +1713,11 @@ export default function AiBotProfilesView({ sessions }: Props) {
                                 onChange={(e) =>
                                   setEditingProfile({ ...editingProfile, model: e.target.value.trim() })
                                 }
-                                placeholder="Cth: anthropic/claude-3.7-sonnet"
+                                placeholder="Cth: anthropic/claude-3.7-sonnet atau deepseek/deepseek-r1"
                                 className="input text-xs font-mono"
                               />
                               <p className="text-[10px] text-gray-400 mt-1">
-                                Masukkan ID model kustom yang didukung oleh akun AI ini.
+                                Masukkan ID model kustom yang didukung oleh provider akun AI ini.
                               </p>
                             </div>
                           ) : (
@@ -1714,141 +1744,324 @@ export default function AiBotProfilesView({ sessions }: Props) {
                               <option value="__custom__">➕ Ketik ID Model Manual (Custom)...</option>
                             </select>
                           )}
-                          <p className="text-[10px] text-gray-400 mt-1">
-                            ✓ Kunci API otomatis diambil dari akun ini ({connections.find((c) => c.id === editingProfile.connectionId)?.apiKeyMasked}). Tidak perlu diketik ulang.
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-3 pt-1">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div>
-                            <label className="label">AI Provider</label>
-                            <select
-                              className="input text-xs"
-                              value={editingProfile.provider}
-                              onChange={(e) => {
-                                const newProv = e.target.value as any;
-                                const defaultMod =
-                                  PROVIDER_MODELS[newProv]?.[0]?.id || "gemini-3.6-flash";
-                                const matchingConn = connections.find((c) => c.provider === newProv);
-                                if (matchingConn) {
-                                  setEditingProfile({
-                                    ...editingProfile,
-                                    provider: newProv,
-                                    model: matchingConn.defaultModel || defaultMod,
-                                    connectionId: matchingConn.id,
-                                    connectionName: matchingConn.name,
-                                    hasKey: matchingConn.hasKey,
-                                    apiKeyMasked: matchingConn.apiKeyMasked,
-                                  });
-                                } else {
-                                  setEditingProfile({
-                                    ...editingProfile,
-                                    provider: newProv,
-                                    model: defaultMod,
-                                    connectionId: undefined,
-                                    connectionName: undefined,
-                                    hasKey: false,
-                                    apiKeyMasked: "",
-                                  });
-                                }
-                                setKeyInput("");
-                              }}
-                            >
-                              <option value="gemini">Google Gemini (Gratis & Cepat)</option>
-                              <option value="grok">xAI Grok (Cerdas & Reasoning)</option>
-                              <option value="deepseek">DeepSeek AI (Super Hemat & Cerdas)</option>
-                              <option value="openai">OpenAI (ChatGPT GPT-4o)</option>
-                              <option value="openrouter">OpenRouter (Multi-Model Hub)</option>
-                            </select>
-                          </div>
-
-                          <div>
-                            <div className="flex items-center justify-between pb-1">
-                              <label className="label mb-0">Model AI</label>
-                              <button
-                                type="button"
-                                onClick={() => setIsCustomProfileModel(!isCustomProfileModel)}
-                                className="text-[10px] text-purple-400 hover:text-purple-300 font-medium transition-colors"
-                              >
-                                {isCustomProfileModel ? "← Pilih dari Daftar" : "+ Ketik ID Model Manual"}
-                              </button>
-                            </div>
-                            {isCustomProfileModel ? (
-                              <input
-                                type="text"
-                                required
-                                value={editingProfile.model || ""}
-                                onChange={(e) =>
-                                  setEditingProfile({ ...editingProfile, model: e.target.value.trim() })
-                                }
-                                placeholder="Cth: custom-model-id"
-                                className="input text-xs font-mono"
-                              />
-                            ) : (
-                              <select
-                                className="input text-xs"
-                                value={
-                                  isKnownModel(editingProfile.provider, editingProfile.model)
-                                    ? editingProfile.model
-                                    : "__custom__"
-                                }
-                                onChange={(e) => {
-                                  if (e.target.value === "__custom__") {
-                                    setIsCustomProfileModel(true);
-                                  } else {
-                                    setEditingProfile({ ...editingProfile, model: e.target.value });
-                                  }
-                                }}
-                              >
-                                {(PROVIDER_MODELS[editingProfile.provider] || []).map((m) => (
-                                  <option key={m.id} value={m.id}>
-                                    {m.name}
-                                  </option>
-                                ))}
-                                <option value="__custom__">➕ Ketik ID Model Manual (Custom)...</option>
-                              </select>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* API Key */}
-                        <div>
-                          <label className="label flex items-center justify-between">
-                            <span>API Key {editingProfile.provider.toUpperCase()}</span>
-                            {editingProfile.hasKey && (
-                              <span className="text-[11px] text-emerald-400">
-                                ✓ Key tersimpan ({editingProfile.apiKeyMasked})
-                              </span>
-                            )}
-                          </label>
-                          <div className="relative">
-                            <input
-                              type={showKey ? "text" : "password"}
-                              value={keyInput}
-                              onChange={(e) => setKeyInput(e.target.value)}
-                              placeholder={
-                                editingProfile.hasKey
-                                  ? "Biarkan kosong jika tidak ingin mengubah key"
-                                  : "Masukkan API Key Anda..."
-                              }
-                              className="input text-xs pr-10 font-mono"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowKey(!showKey)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                            >
-                              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                          </div>
-                          <p className="text-[10px] text-gray-500 mt-1">
-                            Tip: Daftarkan akun di menu "Kelola Akun AI" agar Anda tidak perlu mengetik API Key setiap membuat profil baru.
+                          <p className="text-[10px] text-gray-400 mt-1.5 flex items-center gap-1">
+                            <span>✓ Kunci API tersimpan di Akun AI</span>
+                            <span className="font-mono text-purple-300">({connections.find((c) => c.id === editingProfile.connectionId)?.apiKeyMasked})</span>
+                            <span>— tidak ada duplikasi data di profil.</span>
                           </p>
                         </div>
                       </div>
                     )}
+                  </div>
+
+                  {/* ── Jadwal & Jam Operasional Bot (Schedule Mode) ──────────────── */}
+                  <div className="card p-4 space-y-4 bg-gray-900/50 border-gray-800">
+                    <div className="flex items-center justify-between pb-1 border-b border-gray-800/80">
+                      <div>
+                        <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-purple-400" />
+                          <span>Jadwal Operasional Bot (Schedule Mode)</span>
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          Tentukan kapan asisten AI aktif menjawab pesan masuk pelanggan.
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Mode Buttons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingProfile({ ...editingProfile, scheduleMode: "always" })
+                        }
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          editingProfile.scheduleMode === "always" || !editingProfile.scheduleMode
+                            ? "bg-purple-950/40 border-purple-500/80 shadow-lg shadow-purple-950/30"
+                            : "bg-gray-900/60 border-gray-800 hover:border-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Zap className={`w-4 h-4 ${editingProfile.scheduleMode === "always" || !editingProfile.scheduleMode ? "text-purple-400" : "text-gray-400"}`} />
+                          <span className="text-xs font-semibold text-white">Selalu Aktif (24/7)</span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 leading-snug">
+                          Bot merespons pesan kapan saja setiap saat tanpa batasan waktu.
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingProfile({ ...editingProfile, scheduleMode: "after_hours" })
+                        }
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          editingProfile.scheduleMode === "after_hours"
+                            ? "bg-purple-950/40 border-purple-500/80 shadow-lg shadow-purple-950/30"
+                            : "bg-gray-900/60 border-gray-800 hover:border-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Moon className={`w-4 h-4 ${editingProfile.scheduleMode === "after_hours" ? "text-indigo-400" : "text-gray-400"}`} />
+                          <span className="text-xs font-semibold text-white">Di Luar Jam Kerja</span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 leading-snug">
+                          HANYA aktif saat toko tutup / malam hari / hari libur.
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingProfile({ ...editingProfile, scheduleMode: "work_hours" })
+                        }
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          editingProfile.scheduleMode === "work_hours"
+                            ? "bg-purple-950/40 border-purple-500/80 shadow-lg shadow-purple-950/30"
+                            : "bg-gray-900/60 border-gray-800 hover:border-gray-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Briefcase className={`w-4 h-4 ${editingProfile.scheduleMode === "work_hours" ? "text-emerald-400" : "text-gray-400"}`} />
+                          <span className="text-xs font-semibold text-white">Hanya Jam Kerja</span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 leading-snug">
+                          HANYA aktif selama jam kerja operasional kantor/toko.
+                        </p>
+                      </button>
+                    </div>
+
+                    {/* Operational Hours & Days (if not always) */}
+                    {editingProfile.scheduleMode !== "always" && editingProfile.scheduleMode && (
+                      <div className="p-3.5 rounded-xl bg-gray-950/60 border border-gray-800 space-y-3.5 animate-in fade-in duration-200">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="label text-[11px] mb-1 flex items-center gap-1.5">
+                              <Sun className="w-3.5 h-3.5 text-amber-400" />
+                              <span>Jam Mulai Kerja (Buka)</span>
+                            </label>
+                            <input
+                              type="time"
+                              value={editingProfile.workHoursStart || "08:00"}
+                              onChange={(e) =>
+                                setEditingProfile({
+                                  ...editingProfile,
+                                  workHoursStart: e.target.value,
+                                })
+                              }
+                              className="input text-xs"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="label text-[11px] mb-1 flex items-center gap-1.5">
+                              <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>Jam Selesai Kerja (Tutup)</span>
+                            </label>
+                            <input
+                              type="time"
+                              value={editingProfile.workHoursEnd || "17:00"}
+                              onChange={(e) =>
+                                setEditingProfile({
+                                  ...editingProfile,
+                                  workHoursEnd: e.target.value,
+                                })
+                              }
+                              className="input text-xs"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="label text-[11px] mb-1.5 flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-purple-400" />
+                            <span>Hari Kerja Operasional</span>
+                          </label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {[
+                              { id: 1, label: "Senin" },
+                              { id: 2, label: "Selasa" },
+                              { id: 3, label: "Rabu" },
+                              { id: 4, label: "Kamis" },
+                              { id: 5, label: "Jumat" },
+                              { id: 6, label: "Sabtu" },
+                              { id: 7, label: "Minggu" },
+                            ].map((day) => {
+                              const activeDays = editingProfile.workDays || [1, 2, 3, 4, 5];
+                              const isActive = activeDays.includes(day.id);
+                              return (
+                                <button
+                                  type="button"
+                                  key={day.id}
+                                  onClick={() => {
+                                    const next = isActive
+                                      ? activeDays.filter((d) => d !== day.id)
+                                      : [...activeDays, day.id].sort((a, b) => a - b);
+                                    setEditingProfile({ ...editingProfile, workDays: next });
+                                  }}
+                                  className={`px-3 py-1 text-xs rounded-lg font-medium transition-all ${
+                                    isActive
+                                      ? "bg-purple-600 text-white shadow-md shadow-purple-900/30"
+                                      : "bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700"
+                                  }`}
+                                >
+                                  {day.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <p className="text-[10px] text-gray-500 mt-1">
+                            Pilih hari-hari ketika jam operasional di atas berlaku (Waktu Indonesia Barat / Asia:Jakarta).
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Parameter Generasi AI (Advanced Tuning) ───────────────────── */}
+                  <div className="card p-4 space-y-4 bg-gray-900/50 border-gray-800">
+                    <div className="flex items-center justify-between pb-1 border-b border-gray-800/80">
+                      <div>
+                        <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                          <Sliders className="w-4 h-4 text-purple-400" />
+                          <span>Parameter Generasi AI (Tuning Lanjutan)</span>
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          Atur tingkat kreativitas, batas panjang respon, dan memori riwayat pesan bot.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Temperature Slider */}
+                      <div className="p-3 rounded-xl bg-gray-950/60 border border-gray-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="label text-[11px] mb-0 font-medium text-gray-200">
+                            Kreativitas (Temperature)
+                          </label>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
+                            (editingProfile.temperature ?? 0.7) <= 0.3
+                              ? "bg-cyan-950/80 text-cyan-300 border border-cyan-800/60"
+                              : (editingProfile.temperature ?? 0.7) <= 0.7
+                              ? "bg-emerald-950/80 text-emerald-300 border border-emerald-800/60"
+                              : "bg-purple-950/80 text-purple-300 border border-purple-800/60"
+                          }`}>
+                            {editingProfile.temperature ?? 0.7}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={editingProfile.temperature ?? 0.7}
+                          onChange={(e) =>
+                            setEditingProfile({
+                              ...editingProfile,
+                              temperature: parseFloat(e.target.value),
+                            })
+                          }
+                          className="w-full accent-purple-500 cursor-pointer"
+                        />
+                        <p className="text-[10px] text-gray-400 leading-snug">
+                          {(editingProfile.temperature ?? 0.7) <= 0.3
+                            ? "Presisi & Faktual: Cocok untuk data resmi, SOP kaku, dan katalog harga."
+                            : (editingProfile.temperature ?? 0.7) <= 0.7
+                            ? "Seimbang (Rekomendasi): Percakapan luwes, ramah, dan tetap akurat."
+                            : "Sangat Kreatif: Jawaban lebih ekspresif, variatif, dan dinamis."}
+                        </p>
+                      </div>
+
+                      {/* Max Tokens */}
+                      <div className="p-3 rounded-xl bg-gray-950/60 border border-gray-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="label text-[11px] mb-0 font-medium text-gray-200">
+                            Batas Panjang (Max Tokens)
+                          </label>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/60 font-mono font-bold">
+                            {editingProfile.maxTokens ?? 500}
+                          </span>
+                        </div>
+                        <input
+                          type="number"
+                          min="100"
+                          max="2000"
+                          step="50"
+                          value={editingProfile.maxTokens ?? 500}
+                          onChange={(e) =>
+                            setEditingProfile({
+                              ...editingProfile,
+                              maxTokens: parseInt(e.target.value) || 500,
+                            })
+                          }
+                          className="input text-xs font-mono py-1 px-2.5"
+                        />
+                        <div className="flex items-center gap-1.5 pt-1">
+                          {[250, 500, 1000].map((t) => (
+                            <button
+                              type="button"
+                              key={t}
+                              onClick={() => setEditingProfile({ ...editingProfile, maxTokens: t })}
+                              className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+                                (editingProfile.maxTokens ?? 500) === t
+                                  ? "bg-purple-600 text-white"
+                                  : "bg-gray-800 text-gray-400 hover:text-white"
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-gray-400 leading-snug">
+                          500 token setara ~350-400 kata. Membatasi token membantu menghemat biaya API.
+                        </p>
+                      </div>
+
+                      {/* Context Window */}
+                      <div className="p-3 rounded-xl bg-gray-950/60 border border-gray-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="label text-[11px] mb-0 font-medium text-gray-200">
+                            Memori Chat (Context Window)
+                          </label>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/60 font-mono font-bold">
+                            {editingProfile.contextWindow ?? 8} Pesan
+                          </span>
+                        </div>
+                        <input
+                          type="number"
+                          min="2"
+                          max="20"
+                          step="1"
+                          value={editingProfile.contextWindow ?? 8}
+                          onChange={(e) =>
+                            setEditingProfile({
+                              ...editingProfile,
+                              contextWindow: parseInt(e.target.value) || 8,
+                            })
+                          }
+                          className="input text-xs font-mono py-1 px-2.5"
+                        />
+                        <div className="flex items-center gap-1.5 pt-1">
+                          {[4, 8, 16].map((w) => (
+                            <button
+                              type="button"
+                              key={w}
+                              onClick={() => setEditingProfile({ ...editingProfile, contextWindow: w })}
+                              className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+                                (editingProfile.contextWindow ?? 8) === w
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-gray-800 text-gray-400 hover:text-white"
+                              }`}
+                            >
+                              {w} Pesan
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-gray-400 leading-snug">
+                          Jumlah pesan riwayat sebelumnya yang disertakan agar bot memahami alur obrolan.
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* ── Filter Kontak Pengirim (Target Pelanggan) ──────────────────── */}

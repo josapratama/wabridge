@@ -333,7 +333,6 @@ export const aiBotConfigs = pgTable("AiBotConfig", {
     onDelete: "set null",
   }),
   provider: text("provider").default("gemini").notNull(),
-  apiKey: text("apiKey").default("").notNull(),
   model: text("model").default("gemini-3.6-flash").notNull(),
   systemPrompt: text("systemPrompt").notNull(),
   knowledgeBase: text("knowledgeBase"),

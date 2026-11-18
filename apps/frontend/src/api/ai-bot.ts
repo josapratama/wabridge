@@ -30,7 +30,7 @@ export interface AiBotProfile {
   handoverMessage?: string;
   handoverDurationMinutes?: number;
   targetSessionIds?: string[];
-  scheduleMode?: "always" | "after_hours";
+  scheduleMode?: "always" | "after_hours" | "work_hours";
   workHoursStart?: string;
   workHoursEnd?: string;
   workDays?: number[];
