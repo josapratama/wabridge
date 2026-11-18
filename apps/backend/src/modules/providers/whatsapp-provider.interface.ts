@@ -18,4 +18,6 @@ export interface WhatsAppProvider {
   ): Promise<ProviderWebhookEvent[]>;
   sendTextMessage(input: SendTextMessageCommand): Promise<SendMessageResult>;
   getHealth(configId?: string, sessionId?: string): Promise<ProviderHealthResult>;
+  sendReaction?(sessionId: string, to: string, messageId: string, emoji: string): Promise<boolean>;
+  deleteMessage?(sessionId: string, to: string, messageId: string): Promise<boolean>;
 }

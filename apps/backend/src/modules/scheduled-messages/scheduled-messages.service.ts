@@ -44,7 +44,7 @@ export class ScheduledMessagesService {
       userId,
       sessionId: dto.sessionId,
       to: dto.to,
-      type: "text",
+      type: (dto.type as any) || (dto.mediaUrl ? "image" : "text"),
       content: dto.content,
       mediaUrl: dto.mediaUrl,
       scheduledAt: dto.scheduledAt,
@@ -82,6 +82,8 @@ export class ScheduledMessagesService {
           sessionId: scheduled.sessionId,
           to: scheduled.to,
           message: scheduled.content,
+          type: (scheduled.type as any) || (scheduled.mediaUrl ? "image" : "text"),
+          mediaUrl: scheduled.mediaUrl,
         });
         await this.repo.update(scheduled.id, {
           status: "sent",

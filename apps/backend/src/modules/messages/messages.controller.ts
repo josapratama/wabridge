@@ -73,4 +73,18 @@ export class MessagesController {
   findById(@Param("id") id: string, @Request() req: any) {
     return this.service.findById(id, req.user.id);
   }
+
+  @Post(":id/react")
+  react(
+    @Param("id") id: string,
+    @Body() body: { emoji: string },
+    @Request() req: any,
+  ) {
+    return this.service.react(id, body?.emoji || "", req.user.id);
+  }
+
+  @Post(":id/unsend")
+  unsend(@Param("id") id: string, @Request() req: any) {
+    return this.service.unsend(id, req.user.id);
+  }
 }

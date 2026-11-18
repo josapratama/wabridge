@@ -64,7 +64,12 @@ export class AutoReplyService {
    * Check if an inbound message matches any auto-reply rule.
    * Returns the reply content if matched, null otherwise.
    */
-  async match(sessionId: string, inboundText: string): Promise<string | null> {
+  async match(
+    sessionId: string,
+    inboundText: string,
+    contactName?: string,
+    phone?: string,
+  ): Promise<string | null> {
     const rules = await this.repo.findActiveForSession(sessionId);
     const text = inboundText.toLowerCase();
 
@@ -93,7 +98,32 @@ export class AutoReplyService {
 
       if (matched) {
         this.logger.log(`Auto-reply rule "${rule.name}" matched`, "AutoReply");
-        return rule.replyContent;
+        let content = rule.replyContent;
+
+        const hour = new Date().getHours();
+        const greeting =
+          hour >= 4 && hour < 11
+            ? "Selamat pagi"
+            : hour >= 11 && hour < 15
+              ? "Selamat siang"
+              : hour >= 15 && hour < 18
+                ? "Selamat sore"
+                : "Selamat malam";
+
+        content = content
+          .replace(/\{\{\s*name\s*\}\}/gi, contactName || "Kak")
+          .replace(/\{\{\s*phone\s*\}\}/gi, phone || "")
+          .replace(/\{\{\s*date\s*\}\}/gi, new Date().toLocaleDateString("id-ID"))
+          .replace(
+            /\{\{\s*time\s*\}\}/gi,
+            new Date().toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          )
+          .replace(/\{\{\s*greeting\s*\}\}/gi, greeting);
+
+        return content;
       }
     }
 

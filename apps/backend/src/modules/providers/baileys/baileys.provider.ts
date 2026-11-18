@@ -489,9 +489,13 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
               const lastTime = this.lastReplyTimeByJid.get(from) || 0;
               // 4 second anti-loop cooldown
               if (now - lastTime > 4000) {
+                const senderPhone = from.split("@")[0].replace(/\D/g, "");
+                const senderName = msg.pushName || undefined;
                 let replyContent = await this.autoReplyService.match(
                   effectiveSessionId,
                   content,
+                  senderName,
+                  senderPhone,
                 );
                 if (!replyContent && this.aiBotService) {
                   let sessionUserId: string | undefined;
@@ -687,63 +691,113 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
         // non-fatal if presence update fails
       }
 
+      // Quoted / reply-to message context
+      let sendOptions: Record<string, unknown> = {};
+      if (input.quotedMessageId) {
+        try {
+          const quotedMsg = await this.messageRepo.findById(input.quotedMessageId);
+          if (quotedMsg) {
+            sendOptions.quoted = {
+              key: {
+                remoteJid: jid,
+                id: quotedMsg.externalMessageId || quotedMsg.id,
+                fromMe: quotedMsg.direction === "outbound",
+              },
+              message: {
+                conversation: quotedMsg.content || "[Media / Pesan]",
+              },
+            };
+          }
+        } catch {
+          // ignore quoted lookup failure
+        }
+      }
+
       let result: Awaited<ReturnType<typeof inst.sock.sendMessage>>;
 
       switch (type) {
         case "image":
           if (mediaMimeType === "image/svg+xml") {
-            result = await inst.sock.sendMessage(jid, {
-              document: mediaSource,
-              caption: mediaCaption || message,
-              mimetype: mediaMimeType,
-              fileName: mediaCaption || "vector.svg",
-            });
+            result = await inst.sock.sendMessage(
+              jid,
+              {
+                document: mediaSource,
+                caption: mediaCaption || message,
+                mimetype: mediaMimeType,
+                fileName: mediaCaption || "vector.svg",
+              },
+              sendOptions,
+            );
           } else {
-            result = await inst.sock.sendMessage(jid, {
-              image: mediaSource,
-              caption: mediaCaption || message,
-              mimetype: mediaMimeType ?? "image/jpeg",
-            });
+            result = await inst.sock.sendMessage(
+              jid,
+              {
+                image: mediaSource,
+                caption: mediaCaption || message,
+                mimetype: mediaMimeType ?? "image/jpeg",
+              },
+              sendOptions,
+            );
           }
           break;
 
         case "document":
-          result = await inst.sock.sendMessage(jid, {
-            document: mediaSource,
-            caption: mediaCaption || message,
-            mimetype: mediaMimeType ?? "application/octet-stream",
-            fileName: mediaCaption || "file",
-          });
+          result = await inst.sock.sendMessage(
+            jid,
+            {
+              document: mediaSource,
+              caption: mediaCaption || message,
+              mimetype: mediaMimeType ?? "application/octet-stream",
+              fileName: mediaCaption || "file",
+            },
+            sendOptions,
+          );
           break;
 
         case "audio":
-          result = await inst.sock.sendMessage(jid, {
-            audio: mediaSource,
-            mimetype: mediaMimeType ?? "audio/mp4",
-            ptt: true, // Voice Note mode
-          });
+          result = await inst.sock.sendMessage(
+            jid,
+            {
+              audio: mediaSource,
+              mimetype: mediaMimeType ?? "audio/mp4",
+              ptt: true, // Voice Note mode
+            },
+            sendOptions,
+          );
           break;
 
         case "video":
-          result = await inst.sock.sendMessage(jid, {
-            video: mediaSource,
-            caption: mediaCaption || message,
-            mimetype: mediaMimeType ?? "video/mp4",
-          });
+          result = await inst.sock.sendMessage(
+            jid,
+            {
+              video: mediaSource,
+              caption: mediaCaption || message,
+              mimetype: mediaMimeType ?? "video/mp4",
+            },
+            sendOptions,
+          );
           break;
 
         case "location":
-          result = await inst.sock.sendMessage(jid, {
-            location: {
-              degreesLatitude: latitude ?? 0,
-              degreesLongitude: longitude ?? 0,
-              name: locationName,
+          result = await inst.sock.sendMessage(
+            jid,
+            {
+              location: {
+                degreesLatitude: latitude ?? 0,
+                degreesLongitude: longitude ?? 0,
+                name: locationName,
+              },
             },
-          });
+            sendOptions,
+          );
           break;
 
         default:
-          result = await inst.sock.sendMessage(jid, { text: message });
+          result = await inst.sock.sendMessage(
+            jid,
+            { text: message },
+            sendOptions,
+          );
           break;
       }
 
@@ -805,6 +859,99 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
           ? "Baileys engine ready (standby, 0 sessions)"
           : `Baileys engine operational (${connected}/${total} connected)`,
     };
+  }
+
+  async sendReaction(
+    sessionId: string,
+    to: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<boolean> {
+    const inst = this.findSession(undefined, sessionId);
+    if (!inst?.sock || !inst.connectionReady) return false;
+
+    let jid = to.trim();
+    if (!jid.includes("@")) {
+      jid = jid.startsWith("120363")
+        ? `${jid}@g.us`
+        : `${jid.replace(/\D/g, "")}@s.whatsapp.net`;
+    }
+
+    try {
+      let keyId = messageId;
+      let fromMe = false;
+      const msg = await this.messageRepo.findById(messageId);
+      if (msg) {
+        keyId = msg.externalMessageId || msg.id;
+        fromMe = msg.direction === "outbound";
+      }
+
+      await inst.sock.sendMessage(jid, {
+        react: {
+          text: emoji,
+          key: {
+            remoteJid: jid,
+            id: keyId,
+            fromMe,
+          },
+        },
+      });
+      return true;
+    } catch (err) {
+      this.logger.warn(
+        `Failed to send reaction: ${err}`,
+        "BaileysWhatsAppProvider",
+      );
+      return false;
+    }
+  }
+
+  async deleteMessage(
+    sessionId: string,
+    to: string,
+    messageId: string,
+  ): Promise<boolean> {
+    const inst = this.findSession(undefined, sessionId);
+    if (!inst?.sock || !inst.connectionReady) return false;
+
+    let jid = to.trim();
+    if (!jid.includes("@")) {
+      jid = jid.startsWith("120363")
+        ? `${jid}@g.us`
+        : `${jid.replace(/\D/g, "")}@s.whatsapp.net`;
+    }
+
+    try {
+      let keyId = messageId;
+      let fromMe = true;
+      const msg = await this.messageRepo.findById(messageId);
+      if (msg) {
+        keyId = msg.externalMessageId || msg.id;
+        fromMe = msg.direction === "outbound";
+      }
+
+      await inst.sock.sendMessage(jid, {
+        delete: {
+          remoteJid: jid,
+          id: keyId,
+          fromMe,
+        },
+      });
+
+      if (msg) {
+        await this.messageRepo.update(msg.id, {
+          status: "deleted",
+          content: "[Pesan ditarik / Dihapus untuk semua]",
+        });
+      }
+      return true;
+    } catch (err) {
+      this.logger.warn(
+        `Failed to delete message: ${err}`,
+        "BaileysWhatsAppProvider",
+      );
+      return false;
+    }
   }
 
   isConnected(configId?: string, sessionId?: string): boolean {

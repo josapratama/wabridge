@@ -47,6 +47,8 @@ import {
   Bell,
   BellOff,
   Calendar,
+  CornerUpLeft,
+  Smile,
 } from "lucide-react";
 
 interface Conversation {
@@ -105,6 +107,12 @@ export default function LiveChat() {
     type: "image" | "document";
     mimeType: string;
   } | null>(null);
+
+  // Quoted reply, In-chat search, and Reactions
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [showInChatSearch, setShowInChatSearch] = useState(false);
+  const [inChatSearchQuery, setInChatSearchQuery] = useState("");
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
 
   // Sound & Desktop Notifications
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
@@ -788,6 +796,7 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
         mediaUrl: attachment?.url,
         mediaCaption: messageContent || undefined,
         mediaMimeType: attachment?.mimeType,
+        quotedMessageId: replyingTo?.id,
       });
 
       if (res.success && res.data) {
@@ -802,6 +811,7 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
         });
         setInputText("");
         setAttachment(null);
+        setReplyingTo(null);
         setSendError(null);
       } else {
         const errorMsg =
@@ -819,6 +829,30 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
       setSendError(err?.message || "Failed to send message");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleReact = async (messageId: string, emoji: string) => {
+    try {
+      await messagesApi.react(messageId, emoji);
+    } catch (err) {
+      console.error("Failed to react to message", err);
+    }
+  };
+
+  const handleUnsend = async (messageId: string) => {
+    if (!confirm(t("livechat.confirm_unsend", "Tarik pesan ini untuk semua orang?"))) return;
+    try {
+      await messagesApi.unsend(messageId);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, status: "failed", content: "[Pesan ditarik / Dihapus untuk semua]" }
+            : m
+        )
+      );
+    } catch (err) {
+      console.error("Failed to unsend message", err);
     }
   };
 
@@ -1186,6 +1220,23 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                     </button>
                   )}
 
+                  {/* In-Chat Search Toggle */}
+                  <button
+                    onClick={() => {
+                      setShowInChatSearch(!showInChatSearch);
+                      if (showInChatSearch) setInChatSearchQuery("");
+                    }}
+                    className={`text-xs px-2 sm:px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${
+                      showInChatSearch
+                        ? "bg-brand-950/70 border-brand-700/70 text-brand-300"
+                        : "border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-750"
+                    }`}
+                    title="Cari kata kunci dalam riwayat obrolan ini"
+                  >
+                    <Search className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="hidden xl:inline">Cari Pesan</span>
+                  </button>
+
                   {/* Export Chat History */}
                   <button
                     onClick={handleExportChat}
@@ -1279,19 +1330,71 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                 </div>
               )}
 
+              {/* In-Chat Search Bar */}
+              {showInChatSearch && (
+                <div className="bg-gray-900 border-b border-gray-800 px-4 py-2 flex items-center justify-between gap-3 animate-in fade-in">
+                  <div className="flex-1 flex items-center gap-2">
+                    <Search className="w-4 h-4 text-brand-400 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Cari kata kunci, resi, invoice dalam percakapan ini..."
+                      value={inChatSearchQuery}
+                      onChange={(e) => setInChatSearchQuery(e.target.value)}
+                      className="bg-transparent text-xs text-white placeholder:text-gray-500 outline-none w-full"
+                      autoFocus
+                    />
+                    {inChatSearchQuery && (
+                      <span className="text-[11px] text-gray-400 shrink-0 font-medium font-mono">
+                        {
+                          activeConv.messages.filter(
+                            (m) =>
+                              m.content &&
+                              m.content
+                                .toLowerCase()
+                                .includes(inChatSearchQuery.toLowerCase()),
+                          ).length
+                        }{" "}
+                        pesan cocok
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowInChatSearch(false);
+                      setInChatSearchQuery("");
+                    }}
+                    className="text-gray-400 hover:text-white p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
               {/* Chat Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {activeConv.messages.map((m) => {
                   const isOutbound = m.direction === "outbound";
+                  const isSearchMatch =
+                    inChatSearchQuery &&
+                    m.content &&
+                    m.content
+                      .toLowerCase()
+                      .includes(inChatSearchQuery.toLowerCase());
                   return (
                     <div
                       key={m.id}
-                      className={`flex flex-col ${
+                      onMouseEnter={() => setHoveredMessageId(m.id)}
+                      onMouseLeave={() => setHoveredMessageId(null)}
+                      className={`group relative flex flex-col ${
                         isOutbound ? "items-end" : "items-start"
                       }`}
                     >
                       <div
-                        className={`max-w-[75%] rounded-2xl p-3 shadow-md text-xs ${
+                        className={`max-w-[75%] rounded-2xl p-3 shadow-md text-xs relative ${
+                          isSearchMatch
+                            ? "ring-2 ring-amber-400 shadow-amber-500/20"
+                            : ""
+                        } ${
                           isOutbound
                             ? m.status === "failed"
                               ? "bg-red-950/70 border border-red-800/80 text-red-100 rounded-br-none"
@@ -1299,6 +1402,64 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                             : "bg-gray-800 text-gray-100 rounded-bl-none border border-gray-700/60"
                         }`}
                       >
+                        {/* Hover Quick Actions (Reply, React, Unsend) */}
+                        <div
+                          className={`absolute -top-3 ${
+                            isOutbound ? "right-2" : "left-2"
+                          } hidden group-hover:flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-full px-2 py-0.5 shadow-lg z-20 transition-all`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setReplyingTo(m)}
+                            className="p-1 hover:text-brand-300 text-gray-400 transition-colors"
+                            title="Balas / Kutip pesan ini"
+                          >
+                            <CornerUpLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleReact(m.id, "👍")}
+                            className="hover:scale-125 transition-transform text-xs p-0.5"
+                            title="Reaksi Jempol"
+                          >
+                            👍
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleReact(m.id, "❤️")}
+                            className="hover:scale-125 transition-transform text-xs p-0.5"
+                            title="Reaksi Hati"
+                          >
+                            ❤️
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleReact(m.id, "😂")}
+                            className="hover:scale-125 transition-transform text-xs p-0.5"
+                            title="Reaksi Tertawa"
+                          >
+                            😂
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleReact(m.id, "🙏")}
+                            className="hover:scale-125 transition-transform text-xs p-0.5"
+                            title="Reaksi Terima Kasih"
+                          >
+                            🙏
+                          </button>
+                          {isOutbound && m.status !== "failed" && (
+                            <button
+                              type="button"
+                              onClick={() => void handleUnsend(m.id)}
+                              className="p-1 hover:text-red-400 text-gray-400 transition-colors ml-0.5"
+                              title="Tarik / Hapus untuk semua orang"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+
                         {/* Media Display */}
                         {m.mediaUrl && m.type === "image" && (
                           <div className="mb-2 rounded-lg overflow-hidden border border-white/10">
@@ -1397,6 +1558,27 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                 })}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Replying Context Bar */}
+              {replyingTo && (
+                <div className="px-4 py-2 bg-gray-900 border-t border-brand-500/50 flex items-center justify-between text-xs text-brand-300 animate-in fade-in">
+                  <div className="flex items-center gap-2 truncate">
+                    <CornerUpLeft className="w-4 h-4 text-brand-400 shrink-0" />
+                    <span className="font-semibold text-white">
+                      Membalas {replyingTo.direction === "outbound" ? "Anda" : activeConv?.name || "Kontak"}:
+                    </span>
+                    <span className="text-gray-400 truncate max-w-sm">
+                      {replyingTo.content || "[Media]"}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setReplyingTo(null)}
+                    className="text-gray-400 hover:text-white p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
 
               {/* Attachment Preview Bar */}
               {attachment && (

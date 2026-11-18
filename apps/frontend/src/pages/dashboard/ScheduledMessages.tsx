@@ -1,18 +1,33 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   scheduledMessagesApi,
   sessionsApi,
+  contactsApi,
+  messagesApi,
   ScheduledMessage,
   Session,
+  Contact,
+  BASE,
 } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
-import { Clock, Plus, X, RefreshCw, Ban } from "lucide-react";
+import {
+  Clock,
+  Plus,
+  X,
+  RefreshCw,
+  Ban,
+  Paperclip,
+  Image as ImageIcon,
+  FileText,
+  User,
+} from "lucide-react";
 import { useI18n } from "../../context/I18nContext";
 
 export default function ScheduledMessages() {
   const { t } = useI18n();
   const [messages, setMessages] = useState<ScheduledMessage[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -20,15 +35,20 @@ export default function ScheduledMessages() {
     to: "",
     content: "",
     scheduledAt: "",
+    type: "text",
+    mediaUrl: "",
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setLoading(true);
-    const [m, s] = await Promise.all([
+    const [m, s, c] = await Promise.all([
       scheduledMessagesApi.list(),
       sessionsApi.list(),
+      contactsApi.list(),
     ]);
     if (m.data)
       setMessages(
@@ -39,12 +59,45 @@ export default function ScheduledMessages() {
         ),
       );
     if (s.data) setSessions(s.data.filter((s) => s.status === "active"));
+    if (c.data) setContacts(c.data);
     setLoading(false);
   };
 
   useEffect(() => {
     void load();
   }, []);
+
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingMedia(true);
+    setError("");
+
+    const isImage = file.type.startsWith("image/");
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64 = reader.result as string;
+        const res = await messagesApi.uploadMedia({
+          base64,
+          filename: file.name,
+          mimeType: file.type || "application/octet-stream",
+        });
+        if (res.data?.url) {
+          setForm((prev) => ({
+            ...prev,
+            mediaUrl: res.data!.url,
+            type: isImage ? "image" : "document",
+          }));
+        }
+      } catch (err: any) {
+        setError("Gagal mengunggah berkas: " + (err?.message || ""));
+      } finally {
+        setUploadingMedia(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +106,14 @@ export default function ScheduledMessages() {
     const res = await scheduledMessagesApi.create(form);
     if (res.success) {
       setShowForm(false);
-      setForm({ sessionId: "", to: "", content: "", scheduledAt: "" });
+      setForm({
+        sessionId: "",
+        to: "",
+        content: "",
+        scheduledAt: "",
+        type: "text",
+        mediaUrl: "",
+      });
       await load();
     } else {
       setError(res.message);
@@ -68,6 +128,12 @@ export default function ScheduledMessages() {
 
   const sessionName = (id: string) =>
     sessions.find((s) => s.id === id)?.name ?? id.slice(0, 8) + "…";
+
+  const getContactName = (phone: string) => {
+    const clean = phone.replace(/\D/g, "");
+    const found = contacts.find((c) => c.phone.replace(/\D/g, "") === clean);
+    return found ? found.name : null;
+  };
 
   const statusColor: Record<string, string> = {
     pending: "text-yellow-400",
@@ -144,7 +210,32 @@ export default function ScheduledMessages() {
                 )}
               </div>
               <div>
-                <label className="label">{t("scheduled.recipient")} *</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="label mb-0">{t("scheduled.recipient")} *</label>
+                  {contacts.length > 0 && (
+                    <span className="text-[10px] text-gray-400">
+                      Pilih dari kontak atau ketik nomor
+                    </span>
+                  )}
+                </div>
+                {contacts.length > 0 && (
+                  <select
+                    className="input mb-2 text-xs"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setForm({ ...form, to: e.target.value });
+                      }
+                    }}
+                    defaultValue=""
+                  >
+                    <option value="">-- Pilih dari Kontak CRM --</option>
+                    {contacts.map((c) => (
+                      <option key={c.id} value={c.phone}>
+                        {c.name} (+{c.phone})
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <input
                   className="input"
                   placeholder="628123456789"
@@ -152,6 +243,40 @@ export default function ScheduledMessages() {
                   value={form.to}
                   onChange={(e) => setForm({ ...form, to: e.target.value })}
                 />
+              </div>
+              <div>
+                <label className="label">Lampiran Media (Opsional)</label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleMediaUpload}
+                  className="hidden"
+                  accept="image/*,.pdf,.doc,.docx"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingMedia}
+                    className="btn-secondary text-xs flex items-center gap-1.5"
+                  >
+                    <Paperclip className={`w-3.5 h-3.5 ${uploadingMedia ? "animate-spin" : ""}`} />
+                    <span>{uploadingMedia ? "Mengunggah..." : "Unggah Berkas / Gambar"}</span>
+                  </button>
+                  {form.mediaUrl && (
+                    <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-brand-950/60 border border-brand-700/50 text-brand-300 text-xs truncate max-w-[220px]">
+                      {form.type === "image" ? <ImageIcon className="w-3.5 h-3.5 shrink-0" /> : <FileText className="w-3.5 h-3.5 shrink-0" />}
+                      <span className="truncate">{form.mediaUrl.split("/").pop()}</span>
+                      <button
+                        type="button"
+                        onClick={() => setForm({ ...form, mediaUrl: "", type: "text" })}
+                        className="text-red-400 hover:text-red-300 ml-1"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="label">{t("scheduled.content")} *</label>
@@ -321,11 +446,32 @@ export default function ScheduledMessages() {
                   <td className="px-5 py-3 text-xs text-gray-400">
                     {sessionName(m.sessionId)}
                   </td>
-                  <td className="px-5 py-3 text-xs text-gray-400 font-mono">
-                    {m.to}
+                  <td className="px-5 py-3 text-xs text-gray-300 font-mono">
+                    <div>
+                      {getContactName(m.to) && (
+                        <p className="font-semibold text-white font-sans text-xs">
+                          {getContactName(m.to)}
+                        </p>
+                      )}
+                      <p className="text-gray-400 text-[11px]">{m.to}</p>
+                    </div>
                   </td>
-                  <td className="px-5 py-3 text-gray-200 text-xs max-w-[200px] truncate">
-                    {m.content}
+                  <td className="px-5 py-3 text-gray-200 text-xs max-w-[240px]">
+                    <div className="space-y-1">
+                      {m.mediaUrl && (
+                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-brand-950/60 border border-brand-700/50 text-[11px] text-brand-300">
+                          {m.type === "image" ? (
+                            <ImageIcon className="w-3 h-3" />
+                          ) : (
+                            <FileText className="w-3 h-3" />
+                          )}
+                          <span className="truncate max-w-[120px]">
+                            {m.mediaUrl.split("/").pop()}
+                          </span>
+                        </div>
+                      )}
+                      <p className="truncate">{m.content}</p>
+                    </div>
                   </td>
                   <td className="px-5 py-3">
                     <span

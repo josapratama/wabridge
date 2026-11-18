@@ -38,7 +38,9 @@ export interface ScheduledMessage {
   id: string;
   sessionId: string;
   to: string;
+  type?: string;
   content: string;
+  mediaUrl?: string;
   scheduledAt: string;
   status: "pending" | "sent" | "failed" | "cancelled";
   messageId?: string;
@@ -53,6 +55,8 @@ export const scheduledMessagesApi = {
     to: string;
     content: string;
     scheduledAt: string;
+    type?: string;
+    mediaUrl?: string;
   }) =>
     request<ScheduledMessage>("/scheduled-messages", {
       method: "POST",

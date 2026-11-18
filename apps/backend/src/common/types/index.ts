@@ -22,7 +22,8 @@ export type MessageStatus =
   | "delivered"
   | "read"
   | "failed"
-  | "received";
+  | "received"
+  | "deleted";
 
 // ─────────────────────────────────────────────
 // Entities
@@ -142,6 +143,8 @@ export interface SendTextMessageCommand {
   latitude?: number;
   longitude?: number;
   locationName?: string;
+  // Quoted reply
+  quotedMessageId?: string;
 }
 
 export interface SendMessageResult {

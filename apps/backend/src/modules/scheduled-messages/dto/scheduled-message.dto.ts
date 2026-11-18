@@ -24,6 +24,10 @@ export class CreateScheduledMessageDto {
   @IsString()
   mediaUrl?: string;
 
+  @IsOptional()
+  @IsString()
+  type?: string;
+
   @IsDateString()
   scheduledAt!: string;
 }

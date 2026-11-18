@@ -111,6 +111,7 @@ export class MessagesService {
           latitude: dto.latitude,
           longitude: dto.longitude,
           locationName: dto.locationName,
+          quotedMessageId: dto.quotedMessageId,
         });
 
         if (result.success) {
@@ -289,6 +290,60 @@ export class MessagesService {
     }
 
     return message;
+  }
+
+  async react(
+    messageId: string,
+    emoji: string,
+    userId?: string,
+  ): Promise<{ success: boolean }> {
+    const msg = await this.messageRepo.findById(messageId);
+    if (!msg) throw new NotFoundException(`Message ${messageId} not found`);
+
+    const session = await this.sessionRepo.findById(msg.sessionId);
+    if (!session) throw new NotFoundException(`Session not found`);
+    if (userId && session.userId && session.userId !== userId) {
+      throw new BadRequestException("Unauthorized access to this session");
+    }
+
+    const provider = this.routingService.getProvider(session.providerType);
+    if (provider.sendReaction) {
+      const recipient = msg.direction === "inbound" ? msg.from : msg.to;
+      const success = await provider.sendReaction(
+        msg.sessionId,
+        recipient,
+        msg.id,
+        emoji,
+      );
+      return { success };
+    }
+    return { success: false };
+  }
+
+  async unsend(
+    messageId: string,
+    userId?: string,
+  ): Promise<{ success: boolean }> {
+    const msg = await this.messageRepo.findById(messageId);
+    if (!msg) throw new NotFoundException(`Message ${messageId} not found`);
+
+    const session = await this.sessionRepo.findById(msg.sessionId);
+    if (!session) throw new NotFoundException(`Session not found`);
+    if (userId && session.userId && session.userId !== userId) {
+      throw new BadRequestException("Unauthorized access to this session");
+    }
+
+    const provider = this.routingService.getProvider(session.providerType);
+    if (provider.deleteMessage) {
+      const recipient = msg.direction === "inbound" ? msg.from : msg.to;
+      const success = await provider.deleteMessage(
+        msg.sessionId,
+        recipient,
+        msg.id,
+      );
+      return { success };
+    }
+    return { success: false };
   }
 
   private sleep(ms: number): Promise<void> {

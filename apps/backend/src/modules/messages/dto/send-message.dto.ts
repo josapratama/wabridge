@@ -52,4 +52,8 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   locationName?: string;
+
+  @IsOptional()
+  @IsString()
+  quotedMessageId?: string;
 }

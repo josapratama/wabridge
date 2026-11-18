@@ -28,6 +28,7 @@ export interface SendMessageBody {
   latitude?: number;
   longitude?: number;
   locationName?: string;
+  quotedMessageId?: string;
 }
 
 export const messagesApi = {
@@ -37,6 +38,15 @@ export const messagesApi = {
     request<Message>("/messages/send", {
       method: "POST",
       body: JSON.stringify(body),
+    }),
+  react: (id: string, emoji: string) =>
+    request<{ success: boolean }>(`/messages/${id}/react`, {
+      method: "POST",
+      body: JSON.stringify({ emoji }),
+    }),
+  unsend: (id: string) =>
+    request<{ success: boolean }>(`/messages/${id}/unsend`, {
+      method: "POST",
     }),
   uploadMedia: (body: { base64: string; filename: string; mimeType: string }) =>
     request<{ success: boolean; url: string; filename: string; mimeType: string }>(
