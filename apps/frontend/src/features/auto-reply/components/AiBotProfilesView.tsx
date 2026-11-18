@@ -2390,7 +2390,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
                         <label className="label">Durasi Jeda AI Setelah Alih CS</label>
                         <select
                           className="input text-xs"
-                          value={editingProfile.handoverDurationMinutes || 120}
+                          value={editingProfile.handoverDurationMinutes !== undefined ? editingProfile.handoverDurationMinutes : 120}
                           onChange={(e) =>
                             setEditingProfile({
                               ...editingProfile,
@@ -2398,10 +2398,13 @@ export default function AiBotProfilesView({ sessions }: Props) {
                             })
                           }
                         >
+                          <option value={0}>Nonaktif (Tanpa Jeda / Langsung Balas)</option>
+                          <option value={5}>5 Menit</option>
+                          <option value={10}>10 Menit</option>
                           <option value={15}>15 Menit</option>
                           <option value={30}>30 Menit</option>
                           <option value={60}>1 Jam</option>
-                          <option value={120}>2 Jam (Rekomendasi)</option>
+                          <option value={120}>2 Jam (Default)</option>
                           <option value={240}>4 Jam</option>
                           <option value={720}>12 Jam</option>
                           <option value={1440}>24 Jam (1 Hari)</option>

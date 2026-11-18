@@ -856,6 +856,10 @@ export class AiBotService implements OnModuleInit {
     jid: string,
     durationMinutes: number = 120,
   ): { paused: boolean; pausedUntil: number } {
+    if (durationMinutes <= 0) {
+      this.resumeForJid(userId, jid);
+      return { paused: false, pausedUntil: 0 };
+    }
     let userPaused = this.pausedJids.get(userId);
     if (!userPaused) {
       userPaused = new Map<string, number>();
@@ -989,7 +993,7 @@ export class AiBotService implements OnModuleInit {
 
   // ── Multi-Session Resolution & Reply Generation ────────────────────────────
 
-  private async resolveProfileForSession(
+  async resolveProfileForSession(
     sessionId?: string,
     sessionUserId?: string,
   ): Promise<AiBotProfile | null> {
@@ -1243,12 +1247,19 @@ export class AiBotService implements OnModuleInit {
       );
 
       if (isHandover) {
-        const pauseMinutes = profile.handoverDurationMinutes || 120;
-        userPausedMap.set(fromJid, Date.now() + pauseMinutes * 60 * 1000);
-        this.logger.log(
-          `Human handover triggered for ${fromJid} (Profile: "${profile.name}"). AI paused for ${pauseMinutes}m.`,
-          "AiBotService",
-        );
+        const pauseMinutes = profile.handoverDurationMinutes !== undefined ? profile.handoverDurationMinutes : 120;
+        if (pauseMinutes > 0) {
+          userPausedMap.set(fromJid, Date.now() + pauseMinutes * 60 * 1000);
+          this.logger.log(
+            `Human handover triggered for ${fromJid} (Profile: "${profile.name}"). AI paused for ${pauseMinutes}m.`,
+            "AiBotService",
+          );
+        } else {
+          this.logger.log(
+            `Human handover triggered for ${fromJid} (Profile: "${profile.name}"), but handover pause duration is 0m. AI will not be paused.`,
+            "AiBotService",
+          );
+        }
         return (
           profile.handoverMessage ||
           "Baik kak, pesan Anda telah dialihkan ke Tim Customer Service (Manusia). Mohon tunggu sebentar ya kak."

@@ -812,7 +812,7 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
             }
 
             // AUTO HUMAN TAKEOVER:
-            // If the human admin sends a message directly from the phone, automatically pause AI for 120 minutes!
+            // If the human admin sends a message directly from the phone, automatically pause AI based on configured profile setting!
             const isGroup = to.endsWith("@g.us");
             if (!isGroup && this.aiBotService) {
               let sessionUserId = "default";
@@ -823,15 +823,33 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                 } catch {}
               }
 
-              this.aiBotService.pauseForJid(sessionUserId, to, 120);
-              const alt = this.lidToPhoneMap.get(to);
-              if (alt) {
-                this.aiBotService.pauseForJid(sessionUserId, alt, 120);
+              let pauseMinutes = 120;
+              try {
+                const rawProfile = await this.aiBotService.resolveProfileForSession(
+                  effectiveSessionId,
+                  sessionUserId,
+                );
+                if (rawProfile && rawProfile.handoverDurationMinutes !== undefined && rawProfile.handoverDurationMinutes !== null) {
+                  pauseMinutes = Number(rawProfile.handoverDurationMinutes);
+                }
+              } catch {}
+
+              if (pauseMinutes > 0) {
+                this.aiBotService.pauseForJid(sessionUserId, to, pauseMinutes);
+                const alt = this.lidToPhoneMap.get(to);
+                if (alt) {
+                  this.aiBotService.pauseForJid(sessionUserId, alt, pauseMinutes);
+                }
+                this.logger.log(
+                  `[Auto Handover] Admin sent message from physical phone to ${to}. AI automatically paused for ${pauseMinutes} minutes.`,
+                  "BaileysWhatsAppProvider",
+                );
+              } else {
+                this.logger.log(
+                  `[Auto Handover] Admin sent message from physical phone to ${to}, but handover pause is disabled (0 minutes). AI remains active.`,
+                  "BaileysWhatsAppProvider",
+                );
               }
-              this.logger.log(
-                `[Auto Handover] Admin sent message from physical phone to ${to}. AI automatically paused for 120 minutes.`,
-                "BaileysWhatsAppProvider",
-              );
             }
           }
         }
