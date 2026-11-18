@@ -45,9 +45,16 @@ export default function BroadcastTable({ jobs, onStart, onCancel }: Props) {
             return (
               <tr key={job.id} className="hover:bg-gray-850/50 transition-colors">
                 <td className="px-5 py-3.5">
-                  <p className="font-semibold text-gray-200">{job.name}</p>
-                  <p className="text-xs text-gray-400">
-                    {job.totalCount} {t("broadcast.recipients", "recipients")}
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-200">{job.name}</p>
+                    {job.content?.startsWith("[MEDIA:") && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 font-medium">
+                        Media
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 truncate max-w-xs">
+                    {job.content?.replace(/^\[MEDIA:\s*[^\]]+\]\s*/i, "") || `${job.totalCount} recipients`}
                   </p>
                 </td>
                 <td className="px-5 py-3.5 w-44">

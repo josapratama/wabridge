@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Session, Contact } from "../../../api/client";
+import { messagesApi } from "../../../api/messages";
 import { useI18n } from "../../../context/I18nContext";
-import { X, Play, RefreshCw } from "lucide-react";
+import { X, Play, RefreshCw, Paperclip, Image as ImageIcon, FileText, Trash2, Loader2 } from "lucide-react";
 
 interface Props {
   sessions: Session[];
@@ -36,6 +37,48 @@ export default function BroadcastForm({
   const [selectedTag, setSelectedTag] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [mediaAttachment, setMediaAttachment] = useState<{
+    url: string;
+    filename: string;
+    type: string;
+  } | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      setError("Ukuran file maksimal 15MB");
+      return;
+    }
+
+    setUploadingMedia(true);
+    setError("");
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64 = reader.result as string;
+        const res = await messagesApi.uploadMedia({
+          base64,
+          filename: file.name,
+          mimeType: file.type || "application/octet-stream",
+        });
+        if (res.data?.url) {
+          setMediaAttachment({
+            url: res.data.url,
+            filename: file.name,
+            type: file.type.startsWith("image/") ? "image" : "document",
+          });
+        }
+      } catch (err: any) {
+        setError(err?.message || "Gagal mengunggah media");
+      } finally {
+        setUploadingMedia(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const getRecipients = (): string[] => {
     if (useContacts) {
@@ -59,10 +102,14 @@ export default function BroadcastForm({
     }
     setSaving(true);
     setError("");
+    const finalContent = mediaAttachment
+      ? `[MEDIA: ${mediaAttachment.url}]\n${form.content}`
+      : form.content;
+
     const res = await onSubmit({
       name: form.name,
       sessionId: form.sessionId,
-      content: form.content,
+      content: finalContent,
       recipients,
       delayMs: parseInt(form.delayMs),
     });
@@ -165,6 +212,57 @@ export default function BroadcastForm({
             <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1.5">
               <span>💡 <strong className="text-brand-400">Anti-Ban & Variabel:</strong> Didukung Spintax <code className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">{"{Halo|Hai}"}</code> &amp; variabel <code className="bg-gray-800 px-1 py-0.5 rounded text-gray-300">{"{{name}}"}</code></span>
             </p>
+
+            {/* Media Attachment Upload for Broadcast */}
+            <div className="mt-2.5 pt-2.5 border-t border-gray-800/80">
+              <label className="text-xs text-gray-300 font-medium mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Paperclip className="w-3.5 h-3.5 text-brand-400" />
+                  Lampiran Media Siaran (Opsional Gambar / PDF)
+                </span>
+                {uploadingMedia && (
+                  <span className="text-[11px] text-brand-400 flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Mengunggah...
+                  </span>
+                )}
+              </label>
+
+              {mediaAttachment ? (
+                <div className="flex items-center justify-between p-2.5 bg-gray-900 border border-brand-500/30 rounded-lg">
+                  <div className="flex items-center gap-2 truncate">
+                    {mediaAttachment.type === "image" ? (
+                      <ImageIcon className="w-4 h-4 text-brand-400 shrink-0" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+                    )}
+                    <span className="text-xs text-white font-medium truncate">
+                      {mediaAttachment.filename}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMediaAttachment(null)}
+                    className="p-1 text-gray-400 hover:text-red-400"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="border border-dashed border-gray-700 hover:border-brand-500/60 rounded-lg p-2.5 flex items-center justify-center gap-2 cursor-pointer transition-colors bg-gray-900/50 hover:bg-gray-800/50">
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*,.pdf"
+                    onChange={handleFileUpload}
+                    disabled={uploadingMedia}
+                  />
+                  <Paperclip className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs text-gray-400 hover:text-gray-300">
+                    Klik untuk melampirkan flyer promo (JPG, PNG, PDF)
+                  </span>
+                </label>
+              )}
+            </div>
           </div>
 
           {/* Recipients */}

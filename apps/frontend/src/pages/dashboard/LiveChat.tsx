@@ -724,6 +724,23 @@ export default function LiveChat() {
     if (c.sessionId && sessions.some((s) => s.id === c.sessionId)) {
       setSelectedSessionId(c.sessionId);
     }
+    // Mark as Read / Trigger WhatsApp Blue Ticks
+    if (c.sessionId) {
+      void messagesApi
+        .markAsRead(c.sessionId, c.jid)
+        .then(() => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.sessionId === c.sessionId &&
+              m.direction === "inbound" &&
+              (m.from === c.jid || m.from.includes(c.phone))
+                ? { ...m, status: "read" }
+                : m,
+            ),
+          );
+        })
+        .catch(() => {});
+    }
   };
 
   // Auto scroll to bottom when active conversation messages change
@@ -836,7 +853,7 @@ export default function LiveChat() {
           .then((mRes) => {
             if (mRes.data) setMessages(mRes.data);
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     } catch (err: any) {
       console.error("Failed to send live chat message", err);
@@ -1456,45 +1473,55 @@ export default function LiveChat() {
                           )}
                         </div>
 
-                        {/* Media Display */}
-                        {m.mediaUrl && m.type === "image" && (
-                          <div className="mb-2 rounded-lg overflow-hidden border border-white/10">
-                            <img
-                              src={resolveMediaUrl(m.mediaUrl)}
-                              alt="Attached image"
-                              className="max-h-60 w-full object-cover cursor-pointer hover:opacity-95 rounded-lg"
-                              onClick={() => setLightboxImage(resolveMediaUrl(m.mediaUrl))}
-                            />
-                          </div>
-                        )}
-                        {m.mediaUrl && m.type === "audio" && (
-                          <div className="my-2 p-1 bg-black/20 rounded-xl">
-                            <audio
-                              controls
-                              className="w-56 h-8 rounded"
-                              src={resolveMediaUrl(m.mediaUrl)}
-                            />
-                          </div>
-                        )}
-                        {m.mediaUrl && m.type === "document" && (
-                          <a
-                            href={resolveMediaUrl(m.mediaUrl)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-2 mb-2 rounded bg-black/20 hover:bg-black/30 transition-colors"
-                          >
-                            <FileText className="w-5 h-5 text-brand-300" />
-                            <span className="truncate max-w-[200px]">
-                              {m.mediaCaption || t("livechat.download_document")}
-                            </span>
-                            <Download className="w-3.5 h-3.5 ml-auto opacity-70" />
-                          </a>
-                        )}
+                        {/* Deleted Message Notice or Media & Text Content */}
+                        {m.status === "deleted" ? (
+                          <p className="italic text-gray-400 text-xs flex items-center gap-1.5 py-0.5 select-none">
+                            <span className="opacity-70">🚫</span>
+                            <span>{t("livechat.message_deleted", "Pesan ini telah ditarik")}</span>
+                          </p>
+                        ) : (
+                          <>
+                            {/* Media Display */}
+                            {m.mediaUrl && m.type === "image" && (
+                              <div className="mb-2 rounded-lg overflow-hidden border border-white/10">
+                                <img
+                                  src={resolveMediaUrl(m.mediaUrl)}
+                                  alt="Attached image"
+                                  className="max-h-60 w-full object-cover cursor-pointer hover:opacity-95 rounded-lg"
+                                  onClick={() => setLightboxImage(resolveMediaUrl(m.mediaUrl))}
+                                />
+                              </div>
+                            )}
+                            {m.mediaUrl && m.type === "audio" && (
+                              <div className="my-2 p-1 bg-black/20 rounded-xl">
+                                <audio
+                                  controls
+                                  className="w-56 h-8 rounded"
+                                  src={resolveMediaUrl(m.mediaUrl)}
+                                />
+                              </div>
+                            )}
+                            {m.mediaUrl && m.type === "document" && (
+                              <a
+                                href={resolveMediaUrl(m.mediaUrl)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 p-2 mb-2 rounded bg-black/20 hover:bg-black/30 transition-colors"
+                              >
+                                <FileText className="w-5 h-5 text-brand-300" />
+                                <span className="truncate max-w-[200px]">
+                                  {m.mediaCaption || t("livechat.download_document")}
+                                </span>
+                                <Download className="w-3.5 h-3.5 ml-auto opacity-70" />
+                              </a>
+                            )}
 
-                        {/* Text Content */}
-                        <p className="whitespace-pre-wrap leading-relaxed">
-                          {m.content}
-                        </p>
+                            {/* Text Content */}
+                            <p className="whitespace-pre-wrap leading-relaxed">
+                              {m.content}
+                            </p>
+                          </>
+                        )}
 
                         {/* Timestamp & Status */}
                         <div

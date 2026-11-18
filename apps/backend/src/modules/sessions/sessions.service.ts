@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  OnApplicationBootstrap,
 } from "@nestjs/common";
 import { v4 as uuidv4 } from "uuid";
 import type { Session } from "../../common/types";
@@ -15,7 +16,7 @@ import { ProviderRoutingService } from "../provider-routing/provider-routing.ser
 import { AppLogger } from "../../common/logger/app.logger";
 
 @Injectable()
-export class SessionsService {
+export class SessionsService implements OnApplicationBootstrap {
   constructor(
     @Inject(SessionRepository)
     private readonly sessionRepo: SessionRepository,
@@ -24,6 +25,40 @@ export class SessionsService {
     private readonly routingService: ProviderRoutingService,
     private readonly logger: AppLogger,
   ) {}
+
+  onApplicationBootstrap(): void {
+    // Wait 3 seconds for database and socket managers to be fully initialized
+    setTimeout(async () => {
+      try {
+        const allSessions = await this.sessionRepo.findAll();
+        const activeSessions = allSessions.filter((s) => s.status === "active");
+        if (activeSessions.length === 0) return;
+
+        this.logger.log(
+          `Bootstrapping ${activeSessions.length} active WhatsApp session(s)...`,
+          "SessionsService",
+        );
+
+        for (const session of activeSessions) {
+          try {
+            await this.activate(session.id);
+            // Stagger 1.5s between sessions to avoid CPU spikes / socket collision
+            await new Promise((r) => setTimeout(r, 1500));
+          } catch (err) {
+            this.logger.warn(
+              `Auto-reconnect failed for session ${session.id} (${session.name}): ${err}`,
+              "SessionsService",
+            );
+          }
+        }
+      } catch (err) {
+        this.logger.warn(
+          `Failed to bootstrap active sessions on startup: ${err}`,
+          "SessionsService",
+        );
+      }
+    }, 3000);
+  }
 
   async create(userId: string, dto: CreateSessionDto): Promise<Session> {
     const config = await this.configRepo.findById(dto.providerConfigId);

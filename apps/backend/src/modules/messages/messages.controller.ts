@@ -87,4 +87,16 @@ export class MessagesController {
   unsend(@Param("id") id: string, @Request() req: any) {
     return this.service.unsend(id, req.user.id);
   }
+
+  @Post("read")
+  markAsRead(
+    @Body() body: { sessionId: string; jid: string },
+    @Request() req: any,
+  ) {
+    return this.service.markConversationAsRead(
+      body?.sessionId,
+      body?.jid,
+      req.user.id,
+    );
+  }
 }

@@ -358,6 +358,46 @@ export class MessagesService {
     return { success: false };
   }
 
+  async markConversationAsRead(
+    sessionId: string,
+    jid: string,
+    userId?: string,
+  ): Promise<{ success: boolean; count: number }> {
+    const session = await this.sessionRepo.findById(sessionId);
+    if (!session) throw new NotFoundException(`Session not found`);
+    if (userId && session.userId && session.userId !== userId) {
+      throw new BadRequestException("Unauthorized access to this session");
+    }
+
+    const allMessages = await this.messageRepo.findBySessionId(sessionId);
+    const cleanNumber = jid.replace(/\D/g, "");
+    const unreadInbound = allMessages.filter(
+      (m) =>
+        m.direction === "inbound" &&
+        m.status !== "read" &&
+        (m.from.includes(cleanNumber) || m.from === jid),
+    );
+
+    if (unreadInbound.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    const provider = this.routingService.getProvider(session.providerType);
+    if (provider.markAsRead) {
+      await provider.markAsRead(
+        sessionId,
+        jid,
+        unreadInbound.map((m) => m.id),
+      );
+    } else {
+      for (const m of unreadInbound) {
+        await this.messageRepo.update(m.id, { status: "read" });
+      }
+    }
+
+    return { success: true, count: unreadInbound.length };
+  }
+
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }

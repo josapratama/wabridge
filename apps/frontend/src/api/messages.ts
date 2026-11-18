@@ -12,7 +12,7 @@ export interface Message {
   mediaUrl?: string;
   mediaCaption?: string;
   mediaMimeType?: string;
-  status: "queued" | "sent" | "delivered" | "read" | "failed" | "received";
+  status: "queued" | "sent" | "delivered" | "read" | "failed" | "received" | "deleted";
   createdAt: string;
   updatedAt: string;
 }
@@ -47,6 +47,11 @@ export const messagesApi = {
   unsend: (id: string) =>
     request<{ success: boolean }>(`/messages/${id}/unsend`, {
       method: "POST",
+    }),
+  markAsRead: (sessionId: string, jid: string) =>
+    request<{ success: boolean; count: number }>("/messages/read", {
+      method: "POST",
+      body: JSON.stringify({ sessionId, jid }),
     }),
   uploadMedia: (body: { base64: string; filename: string; mimeType: string }) =>
     request<{ success: boolean; url: string; filename: string; mimeType: string }>(

@@ -954,6 +954,54 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
     }
   }
 
+  async markAsRead(
+    sessionId: string,
+    to: string,
+    messageIds: string[],
+  ): Promise<boolean> {
+    const inst = this.findSession(undefined, sessionId);
+    if (!inst?.sock || !inst.connectionReady) return false;
+
+    try {
+      let jid = to.trim();
+      if (!jid.includes("@")) {
+        if (jid.length >= 18 && jid.startsWith("120363")) {
+          jid = `${jid}@g.us`;
+        } else {
+          jid = `${jid.replace(/\D/g, "")}@s.whatsapp.net`;
+        }
+      }
+      jid = jid.replace(/:\d+@/, "@");
+
+      const keys: Array<{ remoteJid: string; id: string; fromMe: boolean }> = [];
+
+      for (const mId of messageIds) {
+        let externalId = mId;
+        const msg = await this.messageRepo.findById(mId);
+        if (msg) {
+          externalId = msg.externalMessageId || msg.id;
+          await this.messageRepo.update(msg.id, { status: "read" });
+        }
+        keys.push({
+          remoteJid: jid,
+          id: externalId,
+          fromMe: false,
+        });
+      }
+
+      if (keys.length > 0) {
+        await inst.sock.readMessages(keys);
+      }
+      return true;
+    } catch (err) {
+      this.logger.warn(
+        `Failed to mark messages as read: ${err}`,
+        "BaileysWhatsAppProvider",
+      );
+      return false;
+    }
+  }
+
   isConnected(configId?: string, sessionId?: string): boolean {
     return this.findSession(configId, sessionId)?.connectionReady ?? false;
   }

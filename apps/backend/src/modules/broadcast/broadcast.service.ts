@@ -176,11 +176,27 @@ export class BroadcastService implements OnApplicationBootstrap {
         .replace(/\{\{\s*phone\s*\}\}/gi, phone)
         .replace(/\{\{\s*date\s*\}\}/gi, new Date().toLocaleDateString("id-ID"));
 
+      // Extract media if present in [MEDIA: <url>] format
+      let broadcastMediaUrl: string | undefined = undefined;
+      let cleanContent = personalizedContent;
+      const mediaMatch = personalizedContent.match(/^\[MEDIA:\s*([^\s\]]+)\]\s*/i);
+      if (mediaMatch) {
+        broadcastMediaUrl = mediaMatch[1];
+        cleanContent = personalizedContent.replace(mediaMatch[0], "").trim();
+      }
+
       try {
         await this.messagesService.send({
           sessionId: job.sessionId,
           to: phone,
-          message: personalizedContent,
+          message: cleanContent,
+          type: broadcastMediaUrl
+            ? broadcastMediaUrl.toLowerCase().endsWith(".pdf")
+              ? "document"
+              : "image"
+            : "text",
+          mediaUrl: broadcastMediaUrl,
+          mediaCaption: cleanContent || undefined,
         });
         sentCount++;
       } catch (err) {
