@@ -46,6 +46,7 @@ export interface BaileysSessionInstance {
   isConnecting: boolean;
   connectionReady: boolean;
   store: InMemoryStore | null;
+  reconnectTimer?: NodeJS.Timeout | null;
 }
 
 @Injectable()
@@ -86,6 +87,7 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
         isConnecting: false,
         connectionReady: false,
         store: null,
+        reconnectTimer: null,
       };
       this.sessions.set(configId, inst);
     }
@@ -152,14 +154,20 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
       return { success: true, message: "Connection already in progress" };
     }
 
+    if (inst.reconnectTimer) {
+      clearTimeout(inst.reconnectTimer);
+      inst.reconnectTimer = null;
+    }
+
     // Close existing socket for this specific session if any
     if (inst.sock) {
       try {
-        inst.sock.end(undefined);
+        // Remove listeners before calling .end() so the old socket's close event doesn't trigger another reconnect!
         inst.sock.ev.removeAllListeners("connection.update");
         inst.sock.ev.removeAllListeners("creds.update");
         inst.sock.ev.removeAllListeners("messages.upsert");
         inst.sock.ev.removeAllListeners("messages.update");
+        inst.sock.end(undefined);
       } catch (e) {
         // ignore
       }
@@ -245,6 +253,11 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
           inst.connectionReady = false;
           inst.qrCodeData = null;
 
+          if (inst.reconnectTimer) {
+            clearTimeout(inst.reconnectTimer);
+            inst.reconnectTimer = null;
+          }
+
           const statusCode = (lastDisconnect?.error as any)?.output
             ?.statusCode;
 
@@ -281,7 +294,8 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
               "BaileysWhatsAppProvider",
             );
             this.clearSession(config.id);
-            setTimeout(() => {
+            inst.reconnectTimer = setTimeout(() => {
+              inst.reconnectTimer = null;
               void this.connectAccount(input);
             }, 2000);
           } else if (statusCode === 408 || statusCode === DisconnectReason.timedOut) {
@@ -295,7 +309,8 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
               `[Session ${config.id}] Reconnecting in 10 seconds...`,
               "BaileysWhatsAppProvider",
             );
-            setTimeout(() => {
+            inst.reconnectTimer = setTimeout(() => {
+              inst.reconnectTimer = null;
               void this.connectAccount(input);
             }, 10000);
           }
@@ -304,6 +319,10 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
           inst.connectionReady = true;
           inst.qrCodeData = null;
           inst.pairingCode = null;
+          if (inst.reconnectTimer) {
+            clearTimeout(inst.reconnectTimer);
+            inst.reconnectTimer = null;
+          }
           this.logger.log(
             `[Session ${config.id}] Baileys connection opened successfully`,
             "BaileysWhatsAppProvider",
@@ -672,19 +691,8 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                       throw new Error("Baileys socket instance not found or closed");
                     }
 
-                    // Human typing indicator: only shown right before sending, for 800 - 1400ms
-                    try {
-                      await currentSock.sendPresenceUpdate("composing", targetJid);
-                      if (from !== targetJid) {
-                        try {
-                          await currentSock.sendPresenceUpdate("composing", from);
-                        } catch {}
-                      }
-                      const typingDelay = Math.floor(800 + Math.random() * 600);
-                      await new Promise((r) => setTimeout(r, typingDelay));
-                    } catch {}
-
-                    // Send response with quoted: msg for cryptographic session continuity
+                    // Send response immediately with quoted: msg for cryptographic session continuity
+                    // (Omit standalone composing presence to prevent contacts from being stuck in "typing..." / PHP)
                     let sentMsg: any = null;
                     try {
                       sentMsg = await currentSock.sendMessage(
@@ -714,16 +722,6 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                         // Fallback 2: try sending without quoted header
                         sentMsg = await currentSock.sendMessage(targetJid, { text: replyContent });
                       }
-                    } finally {
-                      // Turn off composing indicator immediately after sending
-                      try {
-                        await currentSock.sendPresenceUpdate("paused", targetJid);
-                        if (from !== targetJid) {
-                          try {
-                            await currentSock.sendPresenceUpdate("paused", from);
-                          } catch {}
-                        }
-                      } catch {}
                     }
 
                     this.logger.log(
@@ -965,17 +963,6 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
         } else if (fs.existsSync(mediaUrl)) {
           mediaSource = fs.readFileSync(mediaUrl);
         }
-      }
-
-      // Human typing / presence simulation for anti-ban safety
-      try {
-        await inst.sock.presenceSubscribe(jid);
-        await inst.sock.sendPresenceUpdate(type === "audio" ? "recording" : "composing", jid);
-        const typingDelay = Math.floor(600 + Math.random() * 800);
-        await new Promise((r) => setTimeout(r, typingDelay));
-        await inst.sock.sendPresenceUpdate("paused", jid);
-      } catch {
-        // non-fatal if presence update fails
       }
 
       // Quoted / reply-to message context
@@ -1302,6 +1289,10 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
     );
 
     try {
+      if (inst.reconnectTimer) {
+        clearTimeout(inst.reconnectTimer);
+        inst.reconnectTimer = null;
+      }
       if (inst.sock) {
         try {
           inst.sock.ev.removeAllListeners("messages.upsert");

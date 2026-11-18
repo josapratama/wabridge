@@ -13,7 +13,7 @@
     "test:watch": "bun test --watch",
     "lint": "bunx eslint 'src/**/*.ts' 'test/**/*.ts'",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
+    "db:push": "drizzle-kit push --force",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
   },
