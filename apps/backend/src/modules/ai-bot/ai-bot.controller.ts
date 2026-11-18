@@ -105,10 +105,12 @@ export class AiBotController {
   async testProfile(
     @Param("id") id: string,
     @Req() req: any,
-    @Body("message") message: string,
+    @Body() body: any,
   ) {
     const userId = req.user?.id || "default";
-    return this.service.testProfile(id, message, userId);
+    const message = typeof body === "string" ? body : body?.message || "Halo";
+    const draft = body?.draft;
+    return this.service.testProfile(id, message, userId, draft);
   }
 
   // ── Legacy Single-Config Compatibility Endpoints ──────────────────────────

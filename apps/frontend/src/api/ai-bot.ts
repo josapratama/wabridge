@@ -101,10 +101,10 @@ export const aiBotApi = {
     request<AiBotProfile>(`/ai-bot/profiles/${id}/toggle`, {
       method: "PATCH",
     }),
-  testProfile: (id: string, message: string) =>
-    request<{ reply: string }>(`/ai-bot/profiles/${id}/test`, {
+  testProfile: (id: string, message: string, draft?: Partial<AiBotProfile>) =>
+    request<{ reply: string; error?: string }>(`/ai-bot/profiles/${id}/test`, {
       method: "POST",
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, draft }),
     }),
 
   // Legacy compatibility

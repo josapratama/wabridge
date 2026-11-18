@@ -627,42 +627,41 @@ export default function AiBotProfilesView({ sessions }: Props) {
     setTestingAi(true);
 
     try {
-      if (editingProfile && editingProfile.id) {
-        const res = await aiBotApi.testProfile(editingProfile.id, msgToSend.trim());
-        const replyText =
-          res.data?.reply ||
-          "Maaf, AI tidak memberikan respons atau API key belum valid.";
-        setSimulatorChat((prev) => [
-          ...prev,
-          {
-            role: "bot",
-            text: replyText,
-            time: new Date().toLocaleTimeString("id-ID", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          },
-        ]);
-      } else {
-        const res = await aiBotApi.testPrompt(msgToSend.trim());
-        setSimulatorChat((prev) => [
-          ...prev,
-          {
-            role: "bot",
-            text: res.data?.reply || "AI merespons.",
-            time: new Date().toLocaleTimeString("id-ID", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          },
-        ]);
-      }
-    } catch (err: any) {
+      const targetId = editingProfile?.id || "temp-test";
+      const draftPayload = editingProfile
+        ? {
+            ...editingProfile,
+            apiKey: keyInput.trim() || undefined,
+          }
+        : undefined;
+
+      const res = await aiBotApi.testProfile(targetId, msgToSend.trim(), draftPayload);
+      const replyText =
+        res.data?.reply ||
+        (res as any)?.reply ||
+        "Maaf, AI tidak memberikan respons atau API key belum valid.";
       setSimulatorChat((prev) => [
         ...prev,
         {
           role: "bot",
-          text: `⚠️ Gagal menghasilkan jawaban: ${err?.message || "Periksa Akun AI atau API Key"}`,
+          text: replyText,
+          time: new Date().toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        },
+      ]);
+    } catch (err: any) {
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Periksa Akun AI atau API Key";
+      setSimulatorChat((prev) => [
+        ...prev,
+        {
+          role: "bot",
+          text: `⚠️ Gagal: ${errMsg}`,
           time: new Date().toLocaleTimeString("id-ID", {
             hour: "2-digit",
             minute: "2-digit",

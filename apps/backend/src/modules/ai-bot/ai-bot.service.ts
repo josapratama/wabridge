@@ -360,12 +360,8 @@ export class AiBotService implements OnModuleInit {
     if (copy.connectionId) {
       const conn = this.connections.get(copy.connectionId);
       if (conn) {
-        if (!copy.apiKey || copy.apiKey.trim() === "") {
-          copy.apiKey = conn.apiKey;
-        }
-        if (!copy.provider) {
-          copy.provider = conn.provider;
-        }
+        copy.apiKey = conn.apiKey;
+        copy.provider = conn.provider;
         if (!copy.model) {
           copy.model = conn.defaultModel;
         }
@@ -609,14 +605,17 @@ export class AiBotService implements OnModuleInit {
     if (!p) throw new NotFoundException(`AI Profile ${profileId} not found`);
 
     const now = new Date().toISOString();
-    // Keep existing apiKey if not provided or empty
-    const apiKey =
+    // Keep existing apiKey if not provided or empty, unless connectionId is selected
+    let apiKey =
       update.apiKey !== undefined && update.apiKey.trim() !== "" ? update.apiKey : p.apiKey;
+    if (update.connectionId && (!update.apiKey || update.apiKey.trim() === "")) {
+      apiKey = "";
+    }
 
     p = {
       ...p,
       ...update,
-      apiKey,
+      apiKey: apiKey || "",
       id: profileId,
       updatedAt: now,
     };
@@ -977,25 +976,53 @@ export class AiBotService implements OnModuleInit {
     profileId: string,
     message: string,
     userId: string = "default",
-  ): Promise<{ reply: string }> {
+    draft?: Partial<AiBotProfile>,
+  ): Promise<{ reply: string; error?: string }> {
     const rawProfile = this.profiles.get(profileId);
-    if (!rawProfile) throw new NotFoundException(`AI Profile ${profileId} not found`);
-    const profile = this.hydrateProfile(rawProfile);
-    if (!profile.apiKey) throw new Error("API Key belum diisi pada profil ini atau akun AI yang ditautkan.");
+    const base: AiBotProfile = rawProfile || {
+      ...DEFAULT_PROFILE_TEMPLATE,
+      id: profileId,
+      userId,
+      name: "Test Profile",
+      createdAt: "",
+      updatedAt: "",
+    };
+    const merged: AiBotProfile = {
+      ...base,
+      ...(draft || {}),
+      name: draft?.name || base.name || "Test Profile",
+      apiKey: draft?.apiKey !== undefined ? draft.apiKey : base.apiKey,
+      id: profileId,
+    };
+    const profile = this.hydrateProfile(merged);
+
+    if (!profile.apiKey) {
+      return {
+        reply:
+          "⚠️ API Key belum diisi pada profil ini atau akun AI yang ditautkan. Pastikan akun AI yang dipilih memiliki API Key yang valid.",
+      };
+    }
 
     let effectiveSystemPrompt = profile.systemPrompt;
     if (profile.knowledgeBase && profile.knowledgeBase.trim() !== "") {
       effectiveSystemPrompt += `\n\nKNOWLEDGE BASE & INFORMASI BISNIS/FAQ:\n${profile.knowledgeBase}`;
     }
 
-    let reply = "";
-    if (profile.provider === "gemini") {
-      reply = await this.callGemini(profile, message, effectiveSystemPrompt, []);
-    } else {
-      reply = await this.callOpenAiCompatible(profile, message, effectiveSystemPrompt, []);
+    try {
+      let reply = "";
+      if (profile.provider === "gemini") {
+        reply = await this.callGemini(profile, message, effectiveSystemPrompt, []);
+      } else {
+        reply = await this.callOpenAiCompatible(profile, message, effectiveSystemPrompt, []);
+      }
+      return { reply };
+    } catch (err: any) {
+      const errMsg = err?.message || "Kesalahan server saat menghubungi AI.";
+      return {
+        reply: `⚠️ Gagal menghubungi AI: ${errMsg}`,
+        error: errMsg,
+      };
     }
-
-    return { reply };
   }
 
   async draftReply(jid: string, message?: string, userId: string = "default"): Promise<string> {
