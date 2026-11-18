@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import {
   aiBotApi,
   AiBotProfile,
+  AiConnection,
   Session,
 } from "../../../api/client";
 import {
@@ -27,6 +28,13 @@ import {
   X,
   FileText,
   Search,
+  Key,
+  Users,
+  UserCheck,
+  UserX,
+  Play,
+  Settings,
+  Shield,
 } from "lucide-react";
 import { useI18n } from "../../../context/I18nContext";
 
@@ -107,6 +115,17 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
   },
 ];
 
+function formatPhoneNumberDisplay(num: string): string {
+  const digits = num.replace(/\D/g, "");
+  if (digits.startsWith("62") && digits.length >= 10) {
+    return `+62 ${digits.slice(2, 5)}-${digits.slice(5, 9)}-${digits.slice(9)}`;
+  }
+  if (digits.startsWith("08") && digits.length >= 10) {
+    return `+62 ${digits.slice(1, 4)}-${digits.slice(4, 8)}-${digits.slice(8)}`;
+  }
+  return num;
+}
+
 interface Props {
   sessions: Session[];
 }
@@ -114,6 +133,7 @@ interface Props {
 export default function AiBotProfilesView({ sessions }: Props) {
   const { t } = useI18n();
   const [profiles, setProfiles] = useState<AiBotProfile[]>([]);
+  const [connections, setConnections] = useState<AiConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
@@ -122,9 +142,24 @@ export default function AiBotProfilesView({ sessions }: Props) {
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [keyInput, setKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
+  const [phoneInput, setPhoneInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Connection Management Modal state
+  const [isConnManagerOpen, setIsConnManagerOpen] = useState(false);
+  const [editingConn, setEditingConn] = useState<Partial<AiConnection> | null>(null);
+  const [isCreatingConn, setIsCreatingConn] = useState(false);
+  const [connKeyInput, setConnKeyInput] = useState("");
+  const [showConnKey, setShowConnKey] = useState(false);
+  const [savingConn, setSavingConn] = useState(false);
+  const [testingConnId, setTestingConnId] = useState<string | null>(null);
+  const [connTestResult, setConnTestResult] = useState<{
+    id: string;
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   // Simulator state
   const [simulatorChat, setSimulatorChat] = useState<
@@ -143,20 +178,24 @@ export default function AiBotProfilesView({ sessions }: Props) {
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const kbFileInputRef = useRef<HTMLInputElement>(null);
 
-  const loadProfiles = async () => {
+  const loadData = async () => {
     setLoading(true);
     try {
-      const res = await aiBotApi.listProfiles();
-      if (res.data) setProfiles(res.data);
+      const [resProfiles, resConns] = await Promise.all([
+        aiBotApi.listProfiles(),
+        aiBotApi.listConnections(),
+      ]);
+      if (resProfiles.data) setProfiles(resProfiles.data);
+      if (resConns.data) setConnections(resConns.data);
     } catch (e) {
-      console.error("Failed to load AI profiles", e);
+      console.error("Failed to load AI bot data", e);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    void loadProfiles();
+    void loadData();
   }, []);
 
   useEffect(() => {
@@ -171,8 +210,9 @@ export default function AiBotProfilesView({ sessions }: Props) {
       (acc, p) => acc + (p.sessionCount || (p.targetSessionIds || []).length || 0),
       0,
     );
-    return { total, active, assignedSessionsCount };
-  }, [profiles]);
+    const connCount = connections.length;
+    return { total, active, assignedSessionsCount, connCount };
+  }, [profiles, connections]);
 
   // Filtered profiles
   const filteredProfiles = useMemo(() => {
@@ -183,21 +223,26 @@ export default function AiBotProfilesView({ sessions }: Props) {
         p.name.toLowerCase().includes(q) ||
         (p.description && p.description.toLowerCase().includes(q)) ||
         p.model.toLowerCase().includes(q) ||
-        p.provider.toLowerCase().includes(q),
+        p.provider.toLowerCase().includes(q) ||
+        (p.connectionName && p.connectionName.toLowerCase().includes(q)),
     );
   }, [profiles, search]);
 
   const openNewProfile = () => {
+    // Pick first connection if available
+    const firstConn = connections[0];
     const newProf: AiBotProfile = {
       id: "",
       name: `Profil AI #${profiles.length + 1}`,
       description: "Asisten otomatis untuk sesi tertentu",
       isEnabled: true,
-      provider: "gemini",
+      connectionId: firstConn?.id,
+      connectionName: firstConn?.name,
+      provider: firstConn?.provider || "gemini",
       apiKey: "",
-      apiKeyMasked: "",
-      hasKey: false,
-      model: "gemini-3.6-flash",
+      apiKeyMasked: firstConn?.apiKeyMasked || "",
+      hasKey: !!firstConn?.hasKey,
+      model: firstConn?.defaultModel || "gemini-3.6-flash",
       systemPrompt:
         "Anda adalah asisten virtual WhatsApp yang ramah, profesional, dan membantu. Jawab pertanyaan pengguna dengan jelas, sopan, dan ringkas dalam Bahasa Indonesia.",
       knowledgeBase: "",
@@ -222,6 +267,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
     setIsCreatingNew(true);
     setKeyInput("");
     setShowKey(false);
+    setPhoneInput("");
     setSaveSuccessMsg("");
     setSimulatorChat([
       {
@@ -237,6 +283,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
     setIsCreatingNew(false);
     setKeyInput("");
     setShowKey(false);
+    setPhoneInput("");
     setSaveSuccessMsg("");
     setSimulatorChat([
       {
@@ -251,8 +298,196 @@ export default function AiBotProfilesView({ sessions }: Props) {
     setEditingProfile(null);
     setIsCreatingNew(false);
     setKeyInput("");
+    setPhoneInput("");
     setSaveSuccessMsg("");
   };
+
+  // ── Connection Management Handlers ──────────────────────────────────────────
+
+  const openNewConnection = () => {
+    setEditingConn({
+      name: `Akun AI #${connections.length + 1}`,
+      provider: "gemini",
+      defaultModel: "gemini-3.6-flash",
+      apiKey: "",
+    });
+    setIsCreatingConn(true);
+    setConnKeyInput("");
+    setShowConnKey(false);
+    setConnTestResult(null);
+  };
+
+  const openEditConnection = (conn: AiConnection) => {
+    setEditingConn({ ...conn });
+    setIsCreatingConn(false);
+    setConnKeyInput("");
+    setShowConnKey(false);
+    setConnTestResult(null);
+  };
+
+  const handleSaveConnection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingConn) return;
+    setSavingConn(true);
+
+    try {
+      const payload: Partial<AiConnection> = {
+        name: editingConn.name,
+        provider: editingConn.provider,
+        defaultModel: editingConn.defaultModel,
+      };
+      if (connKeyInput.trim()) {
+        payload.apiKey = connKeyInput.trim();
+      }
+
+      let saved: AiConnection | null = null;
+      if (isCreatingConn) {
+        if (!connKeyInput.trim()) {
+          alert("Silakan masukkan API Key untuk akun AI baru.");
+          setSavingConn(false);
+          return;
+        }
+        payload.apiKey = connKeyInput.trim();
+        const res = await aiBotApi.createConnection(payload);
+        if (res.data) saved = res.data;
+      } else if (editingConn.id) {
+        const res = await aiBotApi.updateConnection(editingConn.id, payload);
+        if (res.data) saved = res.data;
+      }
+
+      if (saved) {
+        // Refresh connections
+        const resConns = await aiBotApi.listConnections();
+        if (resConns.data) setConnections(resConns.data);
+
+        // If editingProfile was open, we can select this saved connection
+        if (editingProfile) {
+          setEditingProfile({
+            ...editingProfile,
+            connectionId: saved.id,
+            connectionName: saved.name,
+            provider: saved.provider,
+            model: saved.defaultModel,
+          });
+        }
+
+        setEditingConn(null);
+        setIsCreatingConn(false);
+        setConnKeyInput("");
+      }
+    } catch (err: any) {
+      alert(`Gagal menyimpan akun AI: ${err?.message || "Kesalahan server"}`);
+    } finally {
+      setSavingConn(false);
+    }
+  };
+
+  const handleDeleteConnection = async (id: string) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus akun AI ini? Profil yang menggunakan akun ini perlu memilih akun lain.")) {
+      return;
+    }
+    try {
+      await aiBotApi.deleteConnection(id);
+      const resConns = await aiBotApi.listConnections();
+      if (resConns.data) setConnections(resConns.data);
+      if (editingProfile?.connectionId === id) {
+        setEditingProfile({ ...editingProfile, connectionId: undefined, connectionName: undefined });
+      }
+    } catch (err: any) {
+      alert(`Gagal menghapus akun AI: ${err?.message}`);
+    }
+  };
+
+  const handleTestConnectionLive = async (connId?: string, prov?: string, model?: string, key?: string) => {
+    const targetId = connId || editingConn?.id || "temp";
+    setTestingConnId(targetId);
+    setConnTestResult(null);
+
+    try {
+      const res = await aiBotApi.testConnection({
+        connectionId: connId,
+        provider: prov || editingConn?.provider,
+        model: model || editingConn?.defaultModel,
+        apiKey: key || (connKeyInput.trim() || undefined),
+      });
+
+      if (res.data?.success) {
+        setConnTestResult({
+          id: targetId,
+          success: true,
+          message: res.data.reply || "Koneksi API valid dan responsif!",
+        });
+      } else {
+        setConnTestResult({
+          id: targetId,
+          success: false,
+          message: "API merespons dengan kesalahan.",
+        });
+      }
+    } catch (err: any) {
+      setConnTestResult({
+        id: targetId,
+        success: false,
+        message: err?.message || "Gagal menghubungi provider AI. Periksa API Key.",
+      });
+    } finally {
+      setTestingConnId(null);
+    }
+  };
+
+  // ── Phone Number Filter Handlers ──────────────────────────────────────────
+
+  const handleAddPhoneNumber = () => {
+    if (!editingProfile || !phoneInput.trim()) return;
+    const rawList = phoneInput
+      .split(/[\s,;\n]+/)
+      .map((s) => s.trim().replace(/[^\d+]/g, ""))
+      .filter(Boolean);
+
+    if (rawList.length === 0) return;
+
+    const mode = editingProfile.senderFilterMode || "whitelist";
+    const targetKey = mode === "whitelist" ? "whitelistNumbers" : "blacklistNumbers";
+    const current = editingProfile[targetKey] || [];
+
+    const added: string[] = [];
+    for (let num of rawList) {
+      if (num.startsWith("08")) num = "62" + num.slice(1);
+      if (num.startsWith("+")) num = num.slice(1);
+      if (!current.includes(num) && !added.includes(num)) {
+        added.push(num);
+      }
+    }
+
+    setEditingProfile({
+      ...editingProfile,
+      [targetKey]: [...current, ...added],
+    });
+    setPhoneInput("");
+  };
+
+  const handleRemovePhoneNumber = (num: string) => {
+    if (!editingProfile) return;
+    const mode = editingProfile.senderFilterMode || "whitelist";
+    const targetKey = mode === "whitelist" ? "whitelistNumbers" : "blacklistNumbers";
+    const current = editingProfile[targetKey] || [];
+    setEditingProfile({
+      ...editingProfile,
+      [targetKey]: current.filter((n) => n !== num),
+    });
+  };
+
+  const handleClearAllPhoneNumbers = () => {
+    if (!editingProfile) return;
+    const mode = editingProfile.senderFilterMode || "whitelist";
+    const targetKey = mode === "whitelist" ? "whitelistNumbers" : "blacklistNumbers";
+    setEditingProfile({
+      ...editingProfile,
+      [targetKey]: [],
+    });
+  };
+
+  // ── Profile Handlers ──────────────────────────────────────────────────────
 
   const handleToggleActive = async (p: AiBotProfile) => {
     try {
@@ -271,7 +506,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
     try {
       const res = await aiBotApi.duplicateProfile(p.id);
       if (res.data) {
-        await loadProfiles();
+        await loadData();
         openEditProfile(res.data);
       }
     } catch (e) {
@@ -285,7 +520,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
       if (res.data?.success) {
         setDeleteConfirmId(null);
         if (editingProfile?.id === id) closeEditor();
-        await loadProfiles();
+        await loadData();
       }
     } catch (e) {
       console.error("Delete error", e);
@@ -303,6 +538,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
         name: editingProfile.name,
         description: editingProfile.description,
         isEnabled: editingProfile.isEnabled,
+        connectionId: editingProfile.connectionId || undefined,
         provider: editingProfile.provider,
         model: editingProfile.model,
         systemPrompt: editingProfile.systemPrompt,
@@ -340,7 +576,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
       if (saved) {
         setSaveSuccessMsg("Profil AI berhasil disimpan!");
         setKeyInput("");
-        await loadProfiles();
+        await loadData();
         setTimeout(() => setSaveSuccessMsg(""), 3500);
         if (isCreatingNew) {
           setIsCreatingNew(false);
@@ -390,7 +626,6 @@ export default function AiBotProfilesView({ sessions }: Props) {
           },
         ]);
       } else {
-        // Fallback test
         const res = await aiBotApi.testPrompt(msgToSend.trim());
         setSimulatorChat((prev) => [
           ...prev,
@@ -409,7 +644,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
         ...prev,
         {
           role: "bot",
-          text: `⚠️ Gagal menghasilkan jawaban: ${err?.message || "Periksa API Key dan Model AI"}`,
+          text: `⚠️ Gagal menghasilkan jawaban: ${err?.message || "Periksa Akun AI atau API Key"}`,
           time: new Date().toLocaleTimeString("id-ID", {
             hour: "2-digit",
             minute: "2-digit",
@@ -501,12 +736,12 @@ export default function AiBotProfilesView({ sessions }: Props) {
         </div>
 
         <div className="card p-3 sm:p-4 bg-gray-900/60 border-gray-800 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center shrink-0">
-            <Bot className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+            <Key className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs text-gray-400 font-medium">Multi-Persona</p>
-            <p className="text-xs text-emerald-400 font-semibold mt-0.5">Tersedia</p>
+            <p className="text-xs text-gray-400 font-medium">Akun AI Terdaftar</p>
+            <p className="text-lg sm:text-xl font-bold text-indigo-300">{stats.connCount}</p>
           </div>
         </div>
       </div>
@@ -519,7 +754,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari profil AI berdasarkan nama, model, atau provider..."
+            placeholder="Cari profil AI berdasarkan nama, model, provider, akun..."
             className="input pl-9 pr-8 text-xs py-2 w-full bg-gray-950/60 border-gray-800 focus:border-brand-500"
           />
           {search && (
@@ -532,15 +767,29 @@ export default function AiBotProfilesView({ sessions }: Props) {
           )}
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
           <button
-            onClick={() => void loadProfiles()}
+            onClick={() => void loadData()}
             disabled={loading}
             className="btn-secondary text-xs"
-            title="Refresh Profil"
+            title="Refresh Data"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           </button>
+
+          {/* Button: Kelola Akun AI */}
+          <button
+            onClick={() => setIsConnManagerOpen(true)}
+            className="btn-secondary text-xs flex items-center gap-1.5 border-indigo-500/30 hover:border-indigo-500/60 bg-indigo-950/20 text-indigo-300 hover:text-white"
+          >
+            <Key className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Kelola Akun AI</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-indigo-500/20 text-indigo-300 font-mono">
+              {connections.length}
+            </span>
+          </button>
+
+          {/* Button: Tambah Profil AI */}
           <button
             onClick={openNewProfile}
             className="btn-primary text-xs shadow-lg shadow-brand-500/20"
@@ -564,7 +813,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
           <div>
             <h3 className="text-base font-bold text-white">Belum Ada Profil AI</h3>
             <p className="text-xs text-gray-400 max-w-md mt-1">
-              Buat profil AI pertama Anda untuk mengatur aturan prompt, knowledge base FAQ, dan model AI untuk nomor WhatsApp Anda.
+              Buat profil AI pertama Anda untuk mengatur aturan prompt, knowledge base FAQ, dan target nomor WhatsApp yang ingin dibalas.
             </p>
           </div>
           <button onClick={openNewProfile} className="btn-primary text-xs mt-2 shadow-lg shadow-brand-500/20">
@@ -614,11 +863,40 @@ export default function AiBotProfilesView({ sessions }: Props) {
                     </label>
                   </div>
 
-                  {/* Pills Model & Sessions */}
+                  {/* Badges: Provider, Model, Account & Target */}
                   <div className="flex flex-wrap items-center gap-1.5 pt-1">
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-950 border border-gray-800 text-gray-300 font-mono">
                       {p.provider.toUpperCase()} · {p.model}
                     </span>
+
+                    {p.connectionName ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-950/50 text-indigo-300 border border-indigo-800/60 flex items-center gap-1">
+                        <Key className="w-3 h-3 text-indigo-400" />
+                        <span>{p.connectionName}</span>
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-950 text-gray-400 border border-gray-800">
+                        Kunci Manual
+                      </span>
+                    )}
+
+                    {p.senderFilterMode === "whitelist" ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-950/40 text-emerald-300 border border-emerald-800/60 flex items-center gap-1">
+                        <UserCheck className="w-3 h-3 text-emerald-400" />
+                        <span>Whitelist ({(p.whitelistNumbers || []).length} No)</span>
+                      </span>
+                    ) : p.senderFilterMode === "blacklist" ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-950/40 text-red-300 border border-red-800/60 flex items-center gap-1">
+                        <UserX className="w-3 h-3 text-red-400" />
+                        <span>Blacklist ({(p.blacklistNumbers || []).length} No)</span>
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-950 text-gray-400 border border-gray-800 flex items-center gap-1">
+                        <Users className="w-3 h-3 text-gray-500" />
+                        <span>Semua Nomor</span>
+                      </span>
+                    )}
+
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                         hasAssignedSessions
@@ -626,10 +904,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
                           : "bg-gray-800/60 text-gray-400 border-gray-700/60"
                       }`}
                     >
-                      🔗 {p.sessionCount || (p.targetSessionIds || []).length} Sesi Terhubung
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-950 border border-gray-800 text-gray-400">
-                      Jeda CS: {p.handoverDurationMinutes || 120}m
+                      🔗 {p.sessionCount || (p.targetSessionIds || []).length} Sesi
                     </span>
                   </div>
                 </div>
@@ -702,7 +977,339 @@ export default function AiBotProfilesView({ sessions }: Props) {
         </div>
       )}
 
-      {/* Profile Studio / Full Editor Modal */}
+      {/* ── Modal: Kelola Akun & Kredensial AI Provider ─────────────────────────── */}
+      {isConnManagerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="card w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl border-gray-750 my-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 bg-gray-900/90">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shrink-0">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Daftar Akun & Kredensial AI</h3>
+                  <p className="text-xs text-gray-400">
+                    Daftarkan API Key sekali saja. Anda dapat memilih akun ini saat membuat aturan/profil AI baru.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsConnManagerOpen(false);
+                  setEditingConn(null);
+                }}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content List */}
+            <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 bg-gray-950/40">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-gray-400">
+                  {connections.length} Akun Provider AI Terdaftar
+                </span>
+                <button
+                  onClick={openNewConnection}
+                  className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 shadow-md shadow-brand-500/20"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Daftarkan Akun AI Baru</span>
+                </button>
+              </div>
+
+              {/* Status Message from Testing */}
+              {connTestResult && (
+                <div
+                  className={`p-3 rounded-xl border text-xs flex items-start gap-2.5 animate-in fade-in ${
+                    connTestResult.success
+                      ? "bg-emerald-950/40 border-emerald-800/80 text-emerald-300"
+                      : "bg-red-950/40 border-red-800/80 text-red-300"
+                  }`}
+                >
+                  {connTestResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <strong className="block font-semibold">
+                      {connTestResult.success ? "Uji Koneksi Berhasil" : "Uji Koneksi Gagal"}
+                    </strong>
+                    <span className="text-[11px] opacity-90">{connTestResult.message}</span>
+                  </div>
+                  <button
+                    onClick={() => setConnTestResult(null)}
+                    className="text-gray-400 hover:text-white p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Connections Cards Grid */}
+              {connections.length === 0 ? (
+                <div className="card p-8 text-center space-y-3 bg-gray-900/30 border-dashed border-gray-800">
+                  <div className="w-10 h-10 mx-auto rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                    <Key className="w-5 h-5" />
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Belum ada akun AI yang didaftarkan. Tambahkan akun Google Gemini, xAI Grok, atau DeepSeek sekarang.
+                  </p>
+                  <button
+                    onClick={openNewConnection}
+                    className="btn-primary text-xs mx-auto py-1.5 px-3"
+                  >
+                    + Daftarkan Akun Pertama
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {connections.map((c) => (
+                    <div
+                      key={c.id}
+                      className="p-3.5 rounded-xl bg-gray-900/70 border border-gray-800 hover:border-gray-700 space-y-2.5 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono border ${
+                              c.provider === "gemini"
+                                ? "bg-blue-950/60 text-blue-300 border-blue-800/60"
+                                : c.provider === "grok"
+                                ? "bg-zinc-900 text-zinc-100 border-zinc-700"
+                                : c.provider === "deepseek"
+                                ? "bg-cyan-950/60 text-cyan-300 border-cyan-800/60"
+                                : c.provider === "openai"
+                                ? "bg-emerald-950/60 text-emerald-300 border-emerald-800/60"
+                                : "bg-orange-950/60 text-orange-300 border-orange-800/60"
+                            }`}
+                          >
+                            {c.provider}
+                          </span>
+                          <h4 className="text-xs font-bold text-white truncate max-w-[150px]">
+                            {c.name}
+                          </h4>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => openEditConnection(c)}
+                            className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-800"
+                            title="Edit Akun"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => void handleDeleteConnection(c.id)}
+                            className="p-1 rounded text-red-400 hover:text-red-300 hover:bg-red-950/50"
+                            title="Hapus Akun"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1 text-[11px] font-mono">
+                        <div className="flex items-center justify-between text-gray-400">
+                          <span>Model Default:</span>
+                          <span className="text-gray-200">{c.defaultModel}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-gray-400">
+                          <span>API Key:</span>
+                          <span className="text-emerald-400 font-semibold">{c.apiKeyMasked || "Belum ada"}</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-1.5 border-t border-gray-800/70 flex items-center justify-between">
+                        <span className="text-[10px] text-gray-500">
+                          ID: {c.id.slice(0, 12)}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={testingConnId === c.id}
+                          onClick={() => void handleTestConnectionLive(c.id, c.provider, c.defaultModel)}
+                          className="btn-secondary text-[10px] py-1 px-2.5 flex items-center gap-1"
+                        >
+                          {testingConnId === c.id ? (
+                            <RefreshCw className="w-3 h-3 animate-spin text-purple-400" />
+                          ) : (
+                            <Play className="w-3 h-3 text-emerald-400" />
+                          )}
+                          <span>{testingConnId === c.id ? "Menguji..." : "Uji Koneksi"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 border-t border-gray-800 bg-gray-900/60 flex justify-end">
+              <button
+                onClick={() => {
+                  setIsConnManagerOpen(false);
+                  setEditingConn(null);
+                }}
+                className="btn-secondary text-xs px-4 py-1.5"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Sub-Modal: Tambah / Edit Akun AI Provider ──────────────────────────── */}
+      {editingConn && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="card w-full max-w-md p-5 space-y-4 shadow-2xl border-gray-750">
+            <div className="flex items-center justify-between pb-2 border-b border-gray-800">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <Key className="w-4 h-4 text-indigo-400" />
+                <span>{isCreatingConn ? "Daftarkan Akun AI Baru" : `Edit Akun: ${editingConn.name}`}</span>
+              </h4>
+              <button
+                onClick={() => setEditingConn(null)}
+                className="text-gray-400 hover:text-white p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveConnection} className="space-y-3.5">
+              <div>
+                <label className="label">Nama Akun / Label *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingConn.name || ""}
+                  onChange={(e) => setEditingConn({ ...editingConn, name: e.target.value })}
+                  placeholder="Cth: Google Gemini Utama, xAI Grok Bisnis"
+                  className="input text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="label">AI Provider</label>
+                  <select
+                    className="input text-xs"
+                    value={editingConn.provider || "gemini"}
+                    onChange={(e) => {
+                      const newProv = e.target.value as any;
+                      const defMod = PROVIDER_MODELS[newProv]?.[0]?.id || "gemini-3.6-flash";
+                      setEditingConn({
+                        ...editingConn,
+                        provider: newProv,
+                        defaultModel: defMod,
+                      });
+                    }}
+                  >
+                    <option value="gemini">Google Gemini</option>
+                    <option value="grok">xAI Grok</option>
+                    <option value="deepseek">DeepSeek AI</option>
+                    <option value="openai">OpenAI (ChatGPT)</option>
+                    <option value="openrouter">OpenRouter</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label">Model Default</label>
+                  <select
+                    className="input text-xs"
+                    value={editingConn.defaultModel}
+                    onChange={(e) =>
+                      setEditingConn({ ...editingConn, defaultModel: e.target.value })
+                    }
+                  >
+                    {(PROVIDER_MODELS[editingConn.provider || "gemini"] || []).map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="label flex items-center justify-between">
+                  <span>API Key {editingConn.provider?.toUpperCase()} *</span>
+                  {editingConn.apiKeyMasked && (
+                    <span className="text-[10px] text-emerald-400">
+                      Tersimpan: {editingConn.apiKeyMasked}
+                    </span>
+                  )}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConnKey ? "text" : "password"}
+                    value={connKeyInput}
+                    onChange={(e) => setConnKeyInput(e.target.value)}
+                    placeholder={
+                      isCreatingConn
+                        ? "Masukkan API Key dari dashboard provider..."
+                        : "Biarkan kosong jika tidak ingin mengubah key"
+                    }
+                    className="input text-xs pr-10 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConnKey(!showConnKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showConnKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-gray-800">
+                <button
+                  type="button"
+                  disabled={testingConnId === "temp"}
+                  onClick={() =>
+                    void handleTestConnectionLive(
+                      editingConn.id,
+                      editingConn.provider,
+                      editingConn.defaultModel,
+                      connKeyInput.trim() || undefined,
+                    )
+                  }
+                  className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                >
+                  {testingConnId === "temp" ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Play className="w-3.5 h-3.5 text-emerald-400" />
+                  )}
+                  <span>Tes Kunci</span>
+                </button>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingConn(null)}
+                    className="btn-secondary text-xs py-1.5 px-3"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingConn}
+                    className="btn-primary text-xs py-1.5 px-4 font-semibold"
+                  >
+                    {savingConn ? "Menyimpan..." : "Simpan Akun AI"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Profile Studio / Full Editor Modal ─────────────────────────────────── */}
       {editingProfile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
           <div className="card w-full max-w-6xl max-h-[94vh] flex flex-col overflow-hidden shadow-2xl border-gray-750 my-auto">
@@ -717,7 +1324,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
                     {isCreatingNew ? "Buat Profil AI Baru" : `Edit Profil: ${editingProfile.name}`}
                   </h2>
                   <p className="text-xs text-gray-400">
-                    Atur instruksi, knowledge base FAQ, dan tautkan ke sesi WhatsApp pilihan.
+                    Atur instruksi, knowledge base FAQ, target nomor pengirim, dan tautkan ke sesi WhatsApp pilihan.
                   </p>
                 </div>
               </div>
@@ -844,86 +1451,367 @@ export default function AiBotProfilesView({ sessions }: Props) {
                     </div>
                   </div>
 
-                  {/* AI Provider & Model */}
-                  <div className="card p-4 space-y-3 bg-gray-900/50 border-gray-800">
-                    <span className="text-xs font-bold text-white uppercase tracking-wider block pb-1 border-b border-gray-800/80">
-                      Provider & Model AI
-                    </span>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* AI Provider & Model (Akun Terdaftar vs Manual) */}
+                  <div className="card p-4 space-y-3.5 bg-gray-900/50 border-gray-800">
+                    <div className="flex items-center justify-between pb-1 border-b border-gray-800/80">
                       <div>
-                        <label className="label">AI Provider</label>
-                        <select
-                          className="input text-xs"
-                          value={editingProfile.provider}
-                          onChange={(e) => {
-                            const newProv = e.target.value as any;
-                            const defaultMod =
-                              PROVIDER_MODELS[newProv]?.[0]?.id || "gemini-3.6-flash";
+                        <span className="text-xs font-bold text-white uppercase tracking-wider block">
+                          Provider & Model AI
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          Pilih akun AI yang sudah terdaftar tanpa perlu mengetik ulang API key.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={openNewConnection}
+                        className="btn-secondary text-[11px] py-1 px-2.5 flex items-center gap-1.5"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-purple-400" />
+                        <span>+ Akun AI Baru</span>
+                      </button>
+                    </div>
+
+                    {/* Connection Selector */}
+                    <div>
+                      <label className="label">Pilih Akun AI / Kredensial Terdaftar</label>
+                      <select
+                        className="input text-xs"
+                        value={editingProfile.connectionId || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (!val) {
                             setEditingProfile({
                               ...editingProfile,
-                              provider: newProv,
-                              model: defaultMod,
+                              connectionId: undefined,
+                              connectionName: undefined,
                             });
-                          }}
-                        >
-                          <option value="gemini">Google Gemini (Gratis & Cepat)</option>
-                          <option value="grok">xAI Grok (Cerdas & Reasoning)</option>
-                          <option value="deepseek">DeepSeek AI (Super Hemat & Cerdas)</option>
-                          <option value="openai">OpenAI (ChatGPT GPT-4o)</option>
-                          <option value="openrouter">OpenRouter (Multi-Model Hub)</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="label">Model AI</label>
-                        <select
-                          className="input text-xs"
-                          value={editingProfile.model}
-                          onChange={(e) =>
-                            setEditingProfile({ ...editingProfile, model: e.target.value })
+                          } else {
+                            const conn = connections.find((c) => c.id === val);
+                            if (conn) {
+                              setEditingProfile({
+                                ...editingProfile,
+                                connectionId: conn.id,
+                                connectionName: conn.name,
+                                provider: conn.provider,
+                                model: conn.defaultModel || PROVIDER_MODELS[conn.provider]?.[0]?.id || "gemini-3.6-flash",
+                              });
+                              setKeyInput("");
+                            }
                           }
-                        >
-                          {(PROVIDER_MODELS[editingProfile.provider] || []).map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                        }}
+                      >
+                        <option value="">-- Kunci Manual (Kustom untuk Profil Ini Saja) --</option>
+                        {connections.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} ({c.provider.toUpperCase()} · {c.defaultModel} · {c.apiKeyMasked})
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
-                    {/* API Key */}
-                    <div>
-                      <label className="label flex items-center justify-between">
-                        <span>API Key {editingProfile.provider.toUpperCase()}</span>
-                        {editingProfile.hasKey && (
-                          <span className="text-[11px] text-emerald-400">
-                            ✓ Key tersimpan ({editingProfile.apiKeyMasked})
+                    {/* Active Connection Info vs Manual */}
+                    {editingProfile.connectionId ? (
+                      <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-800/40 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-purple-300 font-medium flex items-center gap-1.5">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            Terhubung ke: <strong className="text-white">{connections.find((c) => c.id === editingProfile.connectionId)?.name}</strong>
                           </span>
-                        )}
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showKey ? "text" : "password"}
-                          value={keyInput}
-                          onChange={(e) => setKeyInput(e.target.value)}
-                          placeholder={
-                            editingProfile.hasKey
-                              ? "Biarkan kosong jika tidak ingin mengubah key"
-                              : "Masukkan API Key Anda..."
-                          }
-                          className="input text-xs pr-10 font-mono"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowKey(!showKey)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                        >
-                          {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-purple-900/60 text-purple-200 border border-purple-700/50 uppercase font-mono">
+                            {editingProfile.provider}
+                          </span>
+                        </div>
+
+                        <div>
+                          <label className="label text-[11px]">Model AI untuk Profil Ini</label>
+                          <select
+                            className="input text-xs"
+                            value={editingProfile.model}
+                            onChange={(e) =>
+                              setEditingProfile({ ...editingProfile, model: e.target.value })
+                            }
+                          >
+                            {(PROVIDER_MODELS[editingProfile.provider] || []).map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            ✓ Kunci API otomatis diambil dari akun ini ({connections.find((c) => c.id === editingProfile.connectionId)?.apiKeyMasked}). Tidak perlu diketik ulang.
+                          </p>
+                        </div>
                       </div>
+                    ) : (
+                      <div className="space-y-3 pt-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="label">AI Provider</label>
+                            <select
+                              className="input text-xs"
+                              value={editingProfile.provider}
+                              onChange={(e) => {
+                                const newProv = e.target.value as any;
+                                const defaultMod =
+                                  PROVIDER_MODELS[newProv]?.[0]?.id || "gemini-3.6-flash";
+                                setEditingProfile({
+                                  ...editingProfile,
+                                  provider: newProv,
+                                  model: defaultMod,
+                                });
+                              }}
+                            >
+                              <option value="gemini">Google Gemini (Gratis & Cepat)</option>
+                              <option value="grok">xAI Grok (Cerdas & Reasoning)</option>
+                              <option value="deepseek">DeepSeek AI (Super Hemat & Cerdas)</option>
+                              <option value="openai">OpenAI (ChatGPT GPT-4o)</option>
+                              <option value="openrouter">OpenRouter (Multi-Model Hub)</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="label">Model AI</label>
+                            <select
+                              className="input text-xs"
+                              value={editingProfile.model}
+                              onChange={(e) =>
+                                setEditingProfile({ ...editingProfile, model: e.target.value })
+                              }
+                            >
+                              {(PROVIDER_MODELS[editingProfile.provider] || []).map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* API Key */}
+                        <div>
+                          <label className="label flex items-center justify-between">
+                            <span>API Key {editingProfile.provider.toUpperCase()}</span>
+                            {editingProfile.hasKey && (
+                              <span className="text-[11px] text-emerald-400">
+                                ✓ Key tersimpan ({editingProfile.apiKeyMasked})
+                              </span>
+                            )}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showKey ? "text" : "password"}
+                              value={keyInput}
+                              onChange={(e) => setKeyInput(e.target.value)}
+                              placeholder={
+                                editingProfile.hasKey
+                                  ? "Biarkan kosong jika tidak ingin mengubah key"
+                                  : "Masukkan API Key Anda..."
+                              }
+                              className="input text-xs pr-10 font-mono"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowKey(!showKey)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                            >
+                              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-gray-500 mt-1">
+                            Tip: Daftarkan akun di menu "Kelola Akun AI" agar Anda tidak perlu mengetik API Key setiap membuat profil baru.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Filter Kontak Pengirim (Target Pelanggan) ──────────────────── */}
+                  <div className="card p-4 space-y-4 bg-gray-900/50 border-gray-800">
+                    <div className="flex items-center justify-between pb-1 border-b border-gray-800/80">
+                      <div>
+                        <span className="text-xs font-bold text-white uppercase tracking-wider block">
+                          Filter Kontak Pengirim (Target Pelanggan)
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          Tentukan kontak mana saja yang akan dibalas otomatis oleh AI pada profil ini.
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono px-2 py-0.5 rounded bg-gray-800 text-gray-300 border border-gray-700">
+                        {editingProfile.senderFilterMode === "whitelist"
+                          ? `${(editingProfile.whitelistNumbers || []).length} Nomor Whitelist`
+                          : editingProfile.senderFilterMode === "blacklist"
+                          ? `${(editingProfile.blacklistNumbers || []).length} Nomor Blacklist`
+                          : "Semua Kontak"}
+                      </span>
                     </div>
+
+                    {/* Mode Selector Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingProfile({ ...editingProfile, senderFilterMode: "all" })
+                        }
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          !editingProfile.senderFilterMode || editingProfile.senderFilterMode === "all"
+                            ? "bg-purple-950/40 border-purple-500/80 text-white shadow-lg shadow-purple-950/40"
+                            : "bg-gray-950/40 border-gray-800/80 text-gray-400 hover:border-gray-700 hover:text-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Users className="w-4 h-4 text-purple-400" />
+                          <span className="text-xs font-bold text-white">Semua Nomor</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 leading-tight">
+                          AI membalas semua pesan yang masuk ke sesi ini.
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingProfile({ ...editingProfile, senderFilterMode: "whitelist" })
+                        }
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          editingProfile.senderFilterMode === "whitelist"
+                            ? "bg-emerald-950/40 border-emerald-500/80 text-white shadow-lg shadow-emerald-950/40"
+                            : "bg-gray-950/40 border-gray-800/80 text-gray-400 hover:border-gray-700 hover:text-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <UserCheck className="w-4 h-4 text-emerald-400" />
+                          <span className="text-xs font-bold text-white">Nomor Tertentu</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 leading-tight">
+                          HANYA balas nomor yang didaftarkan (Whitelist).
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingProfile({ ...editingProfile, senderFilterMode: "blacklist" })
+                        }
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          editingProfile.senderFilterMode === "blacklist"
+                            ? "bg-red-950/40 border-red-500/80 text-white shadow-lg shadow-red-950/40"
+                            : "bg-gray-950/40 border-gray-800/80 text-gray-400 hover:border-gray-700 hover:text-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <UserX className="w-4 h-4 text-red-400" />
+                          <span className="text-xs font-bold text-white">Kecualikan Nomor</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 leading-tight">
+                          Balas semua KECUALI nomor yang didaftarkan (Blacklist).
+                        </p>
+                      </button>
+                    </div>
+
+                    {/* Whitelist / Blacklist Dynamic Number Tag Manager */}
+                    {(editingProfile.senderFilterMode === "whitelist" ||
+                      editingProfile.senderFilterMode === "blacklist") && (
+                      <div className="p-3.5 rounded-xl bg-gray-950/60 border border-gray-800/90 space-y-3 animate-in fade-in duration-150">
+                        <div className="flex items-center justify-between">
+                          <label className="label text-[11px] font-semibold text-gray-300">
+                            {editingProfile.senderFilterMode === "whitelist"
+                              ? "Daftar Nomor yang HANYA Dibalas oleh AI (Whitelist)"
+                              : "Daftar Nomor yang DIBLOKIR / DIABAIKAN oleh AI (Blacklist)"}
+                          </label>
+                          {((editingProfile.senderFilterMode === "whitelist"
+                            ? editingProfile.whitelistNumbers
+                            : editingProfile.blacklistNumbers) || []).length > 0 && (
+                            <button
+                              type="button"
+                              onClick={handleClearAllPhoneNumbers}
+                              className="text-[10px] text-red-400 hover:text-red-300 transition-colors"
+                            >
+                              Hapus Semua
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Input Add Number */}
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={phoneInput}
+                            onChange={(e) => setPhoneInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddPhoneNumber();
+                              }
+                            }}
+                            placeholder="Ketik nomor HP (contoh: 628123456789 atau 08123456789), pisahkan koma jika banyak..."
+                            className="input text-xs font-mono flex-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddPhoneNumber}
+                            className="btn-primary text-xs px-3.5 py-1.5 shrink-0"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>Tambah</span>
+                          </button>
+                        </div>
+
+                        {/* Numbers Chips Container */}
+                        {((editingProfile.senderFilterMode === "whitelist"
+                          ? editingProfile.whitelistNumbers
+                          : editingProfile.blacklistNumbers) || []).length === 0 ? (
+                          <div className="p-3 rounded-lg border border-dashed border-gray-800 text-center text-xs text-gray-500 italic">
+                            Belum ada nomor yang didaftarkan. Masukkan nomor WhatsApp di atas lalu klik Tambah.
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-1">
+                            {((editingProfile.senderFilterMode === "whitelist"
+                              ? editingProfile.whitelistNumbers
+                              : editingProfile.blacklistNumbers) || []).map((num) => (
+                              <span
+                                key={num}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono border ${
+                                  editingProfile.senderFilterMode === "whitelist"
+                                    ? "bg-emerald-950/40 border-emerald-800/60 text-emerald-300"
+                                    : "bg-red-950/40 border-red-800/60 text-red-300"
+                                }`}
+                              >
+                                <span>{formatPhoneNumberDisplay(num)}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePhoneNumber(num)}
+                                  className="p-0.5 hover:bg-black/30 rounded text-gray-400 hover:text-white transition-colors"
+                                  title="Hapus nomor ini"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Ignore Groups Checkbox */}
+                    <label className="flex items-start gap-3 p-3 rounded-xl bg-gray-950/40 border border-gray-800/80 cursor-pointer hover:border-gray-700 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={editingProfile.ignoreGroups !== false}
+                        onChange={(e) =>
+                          setEditingProfile({ ...editingProfile, ignoreGroups: e.target.checked })
+                        }
+                        className="mt-0.5 rounded bg-gray-900 border-gray-700 text-purple-600 focus:ring-0"
+                      />
+                      <div>
+                        <span className="text-xs font-bold text-white block">
+                          Abaikan Chat Grup (Hanya Balas Pesan Pribadi / DM)
+                        </span>
+                        <span className="text-[11px] text-gray-400 block mt-0.5">
+                          Sangat direkomendasikan agar AI asisten tidak merespons obrolan di dalam grup WhatsApp dan hanya menjawab chat langsung dari pelanggan.
+                        </span>
+                      </div>
+                    </label>
                   </div>
 
                   {/* System Prompt & Persona */}
@@ -1150,24 +2038,30 @@ export default function AiBotProfilesView({ sessions }: Props) {
                   )}
                 </div>
 
-                {/* Chat Message Bubbles */}
-                <div className="flex-1 p-3.5 space-y-3 overflow-y-auto max-h-[380px] sm:max-h-[460px] bg-gray-950/30">
-                  {simulatorChat.map((msg, i) => (
+                {/* Message Bubble Feed */}
+                <div
+                  className="flex-1 p-4 overflow-y-auto space-y-3 min-h-[300px] max-h-[500px]"
+                  style={{
+                    backgroundImage: `radial-gradient(circle at center, rgba(31, 41, 55, 0.4) 1px, transparent 1px)`,
+                    backgroundSize: "20px 20px",
+                  }}
+                >
+                  {simulatorChat.map((msg, index) => (
                     <div
-                      key={i}
+                      key={index}
                       className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed shadow-md ${
+                        className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-sm ${
                           msg.role === "user"
-                            ? "bg-emerald-600 text-white rounded-br-none"
-                            : "bg-gray-800 text-gray-200 border border-gray-700/80 rounded-bl-none"
+                            ? "bg-purple-600 text-white rounded-tr-none"
+                            : "bg-gray-800 text-gray-100 border border-gray-700/70 rounded-tl-none"
                         }`}
                       >
                         <p className="whitespace-pre-wrap">{msg.text}</p>
                         <span
-                          className={`text-[9px] block text-right mt-1 ${
-                            msg.role === "user" ? "text-emerald-200" : "text-gray-400"
+                          className={`text-[9px] block text-right mt-1 opacity-70 ${
+                            msg.role === "user" ? "text-purple-200" : "text-gray-400"
                           }`}
                         >
                           {msg.time}
@@ -1176,30 +2070,32 @@ export default function AiBotProfilesView({ sessions }: Props) {
                     </div>
                   ))}
                   {testingAi && (
-                    <div className="flex items-center gap-2 text-xs text-gray-400 p-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                      <span>AI sedang mengetik balasan...</span>
+                    <div className="flex items-start">
+                      <div className="bg-gray-800 rounded-2xl rounded-tl-none px-3.5 py-2.5 border border-gray-700/70 text-xs text-gray-400 flex items-center gap-2">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                        <span>AI sedang memproses jawaban...</span>
+                      </div>
                     </div>
                   )}
                   <div ref={chatBottomRef} />
                 </div>
 
-                {/* Chat Input Bar */}
+                {/* Input box */}
                 <form
                   onSubmit={(e) => void handleSendSimulator(e)}
-                  className="p-3 border-t border-gray-800 bg-gray-950 flex items-center gap-2"
+                  className="p-3 border-t border-gray-800 bg-gray-950/80 flex items-center gap-2"
                 >
                   <input
                     type="text"
                     value={testInput}
                     onChange={(e) => setTestInput(e.target.value)}
                     placeholder="Ketik pesan untuk mengetes bot..."
-                    className="input text-xs py-2 flex-1 bg-gray-900 border-gray-750 focus:border-emerald-500"
+                    className="input text-xs flex-1 bg-gray-900 border-gray-800"
                   />
                   <button
                     type="submit"
                     disabled={testingAi || !testInput.trim()}
-                    className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="btn-primary p-2 text-xs shrink-0"
                   >
                     <Send className="w-4 h-4" />
                   </button>

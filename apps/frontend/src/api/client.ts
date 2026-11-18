@@ -37,7 +37,7 @@ export type {
 } from "./automation";
 
 export { aiBotApi } from "./ai-bot";
-export type { AiBotConfig, AiBotProfile } from "./ai-bot";
+export type { AiBotConfig, AiBotProfile, AiConnection } from "./ai-bot";
 
 export { contactsApi, broadcastApi } from "./contacts";
 export type { Contact, BroadcastJob } from "./contacts";

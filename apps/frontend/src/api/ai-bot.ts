@@ -1,10 +1,24 @@
 import { request } from "./base";
 
+export interface AiConnection {
+  id: string;
+  name: string;
+  provider: "gemini" | "openai" | "openrouter" | "deepseek" | "grok";
+  apiKey?: string;
+  apiKeyMasked: string;
+  hasKey: boolean;
+  defaultModel: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface AiBotProfile {
   id: string;
   name: string;
   description?: string;
   isEnabled: boolean;
+  connectionId?: string; // Links to registered AiConnection
+  connectionName?: string;
   provider: "gemini" | "openai" | "openrouter" | "deepseek" | "grok";
   apiKey?: string;
   apiKeyMasked: string;
@@ -35,6 +49,33 @@ export interface AiBotProfile {
 export type AiBotConfig = AiBotProfile;
 
 export const aiBotApi = {
+  // AI Connections (Koneksi Provider AI)
+  listConnections: () => request<AiConnection[]>("/ai-bot/connections"),
+  createConnection: (body: Partial<AiConnection>) =>
+    request<AiConnection>("/ai-bot/connections", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateConnection: (id: string, body: Partial<AiConnection>) =>
+    request<AiConnection>(`/ai-bot/connections/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  deleteConnection: (id: string) =>
+    request<{ success: boolean }>(`/ai-bot/connections/${id}`, {
+      method: "DELETE",
+    }),
+  testConnection: (body: {
+    provider?: string;
+    apiKey?: string;
+    connectionId?: string;
+    model?: string;
+  }) =>
+    request<{ success: boolean; reply: string }>("/ai-bot/connections/test", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
   // Profiles
   listProfiles: () => request<AiBotProfile[]>("/ai-bot/profiles"),
   getProfile: (id: string) => request<AiBotProfile>(`/ai-bot/profiles/${id}`),

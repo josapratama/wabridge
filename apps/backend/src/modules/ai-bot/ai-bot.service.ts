@@ -9,12 +9,29 @@ import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
 import * as path from "path";
 
+export interface AiConnection {
+  id: string;
+  userId?: string;
+  name: string;
+  provider: "gemini" | "openai" | "openrouter" | "deepseek" | "grok";
+  apiKey: string;
+  defaultModel: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AiConnectionResponse = Omit<AiConnection, "apiKey"> & {
+  apiKeyMasked: string;
+  hasKey: boolean;
+};
+
 export interface AiBotProfile {
   id: string;
   userId?: string;
   name: string;
   description?: string;
   isEnabled: boolean;
+  connectionId?: string; // Links to registered AiConnection
   provider: "gemini" | "openai" | "openrouter" | "deepseek" | "grok";
   apiKey: string;
   model: string;
@@ -45,6 +62,7 @@ export type AiBotProfileResponse = Omit<AiBotProfile, "apiKey"> & {
   apiKeyMasked: string;
   hasKey: boolean;
   sessionCount?: number;
+  connectionName?: string;
 };
 
 export type AiBotConfigResponse = AiBotProfileResponse;
@@ -79,9 +97,11 @@ const DEFAULT_PROFILE_TEMPLATE: Omit<AiBotProfile, "id" | "name" | "createdAt" |
 @Injectable()
 export class AiBotService implements OnModuleInit {
   private profilesDir = path.join(process.cwd(), "data", "ai_bot_profiles");
+  private connectionsFile = path.join(process.cwd(), "data", "ai_connections.json");
   private legacyConfigsDir = path.join(process.cwd(), "data", "ai_bot_configs");
   private legacyConfigPath = path.join(process.cwd(), "ai_bot_config.json");
   private profiles = new Map<string, AiBotProfile>();
+  private connections = new Map<string, AiConnection>();
   // userId -> Map(fromJid -> pausedUntil)
   private pausedJids = new Map<string, Map<string, number>>();
   private statsByUserId = new Map<string, { repliesSentToday: number; lastResetDate: string }>();
@@ -106,14 +126,19 @@ export class AiBotService implements OnModuleInit {
       if (!fs.existsSync(this.profilesDir)) {
         fs.mkdirSync(this.profilesDir, { recursive: true });
       }
+      const connDir = path.dirname(this.connectionsFile);
+      if (!fs.existsSync(connDir)) {
+        fs.mkdirSync(connDir, { recursive: true });
+      }
     } catch (e) {
-      this.logger.warn(`Could not create ai_bot_profiles dir: ${e}`, "AiBotService");
+      this.logger.warn(`Could not create ai dirs: ${e}`, "AiBotService");
     }
   }
 
   async onModuleInit() {
     this.ensureDir();
     await this.loadAllProfiles();
+    this.loadAllConnections();
   }
 
   private async loadAllProfiles() {
@@ -222,6 +247,54 @@ export class AiBotService implements OnModuleInit {
     }
   }
 
+  private loadAllConnections() {
+    try {
+      if (fs.existsSync(this.connectionsFile)) {
+        const raw = fs.readFileSync(this.connectionsFile, "utf-8");
+        const list = JSON.parse(raw) as AiConnection[];
+        for (const conn of list) {
+          if (conn.id) this.connections.set(conn.id, conn);
+        }
+      }
+    } catch (e) {
+      this.logger.warn(`Could not load ai_connections: ${e}`, "AiBotService");
+    }
+
+    // Auto-seed connections from profiles if connections list is empty
+    if (this.connections.size === 0) {
+      for (const p of this.profiles.values()) {
+        if (p.apiKey && p.apiKey.trim().length > 0) {
+          const connId = `conn-${p.provider}-${Date.now().toString(36)}`;
+          const conn: AiConnection = {
+            id: connId,
+            userId: p.userId,
+            name: `${p.provider.toUpperCase()} (${p.name || "Akun Utama"})`,
+            provider: p.provider,
+            apiKey: p.apiKey,
+            defaultModel: p.model || "gemini-3.6-flash",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+          this.connections.set(conn.id, conn);
+          p.connectionId = conn.id;
+          this.saveProfileToDisk(p);
+        }
+      }
+      this.saveConnectionsToDisk();
+    }
+  }
+
+  private saveConnectionsToDisk() {
+    try {
+      const list = Array.from(this.connections.values());
+      const dir = path.dirname(this.connectionsFile);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(this.connectionsFile, JSON.stringify(list, null, 2), "utf-8");
+    } catch (e) {
+      this.logger.error(`Could not save ai_connections: ${e}`, undefined, "AiBotService");
+    }
+  }
+
   private saveProfileToDisk(p: AiBotProfile): void {
     this.ensureDir();
     const filePath = path.join(this.profilesDir, `${p.id}.json`);
@@ -282,16 +355,184 @@ export class AiBotService implements OnModuleInit {
     }
   }
 
+  hydrateProfile(p: AiBotProfile): AiBotProfile {
+    const copy = { ...p };
+    if (copy.connectionId) {
+      const conn = this.connections.get(copy.connectionId);
+      if (conn) {
+        if (!copy.apiKey || copy.apiKey.trim() === "") {
+          copy.apiKey = conn.apiKey;
+        }
+        if (!copy.provider) {
+          copy.provider = conn.provider;
+        }
+        if (!copy.model) {
+          copy.model = conn.defaultModel;
+        }
+      }
+    } else if (!copy.apiKey || copy.apiKey.trim() === "") {
+      // Find fallback connection by matching provider
+      for (const conn of this.connections.values()) {
+        if (conn.provider === copy.provider && conn.apiKey) {
+          copy.apiKey = conn.apiKey;
+          break;
+        }
+      }
+    }
+    return copy;
+  }
+
   private toResponse(p: AiBotProfile, sessionCount: number = 0): AiBotProfileResponse {
-    const hasKey = !!p.apiKey && p.apiKey.trim().length > 0;
-    const apiKeyMasked = hasKey ? `${p.apiKey.slice(0, 4)}...${p.apiKey.slice(-4)}` : "";
+    let connName: string | undefined = undefined;
+    let effectiveApiKey = p.apiKey;
+    if (p.connectionId) {
+      const conn = this.connections.get(p.connectionId);
+      if (conn) {
+        connName = conn.name;
+        if (!effectiveApiKey || effectiveApiKey.trim() === "") {
+          effectiveApiKey = conn.apiKey;
+        }
+      }
+    }
+    const hasKey = !!effectiveApiKey && effectiveApiKey.trim().length > 0;
+    const apiKeyMasked = hasKey ? `${effectiveApiKey.slice(0, 4)}...${effectiveApiKey.slice(-4)}` : "";
     const { apiKey, ...safe } = p;
     return {
       ...safe,
+      connectionId: p.connectionId,
+      connectionName: connName,
       apiKeyMasked,
       hasKey,
       sessionCount,
     };
+  }
+
+  // ── AI Connections CRUD ───────────────────────────────────────────────────
+
+  async listConnections(userId?: string): Promise<AiConnectionResponse[]> {
+    const list = Array.from(this.connections.values());
+    if (userId) {
+      const filtered = list.filter((c) => !c.userId || c.userId === userId || c.userId === "default");
+      return filtered.map((c) => this.toConnectionResponse(c));
+    }
+    return list.map((c) => this.toConnectionResponse(c));
+  }
+
+  getConnection(id: string): AiConnection | null {
+    return this.connections.get(id) || null;
+  }
+
+  private toConnectionResponse(c: AiConnection): AiConnectionResponse {
+    const hasKey = !!c.apiKey && c.apiKey.trim().length > 0;
+    const apiKeyMasked = hasKey ? `${c.apiKey.slice(0, 4)}...${c.apiKey.slice(-4)}` : "";
+    const { apiKey, ...safe } = c;
+    return {
+      ...safe,
+      apiKeyMasked,
+      hasKey,
+    };
+  }
+
+  async createConnection(userId: string, data: Partial<AiConnection>): Promise<AiConnectionResponse> {
+    const now = new Date().toISOString();
+    const id = `conn-${uuidv4().slice(0, 8)}`;
+    const conn: AiConnection = {
+      id,
+      userId,
+      name: data.name?.trim() || `Akun ${data.provider?.toUpperCase() || "AI"}`,
+      provider: data.provider || "gemini",
+      apiKey: data.apiKey?.trim() || "",
+      defaultModel: data.defaultModel?.trim() || (data.provider === "gemini" ? "gemini-3.6-flash" : "gpt-4o-mini"),
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.connections.set(id, conn);
+    this.saveConnectionsToDisk();
+    this.logger.log(`Created AI Connection "${conn.name}" (${conn.id})`, "AiBotService");
+    return this.toConnectionResponse(conn);
+  }
+
+  async updateConnection(id: string, userId: string, data: Partial<AiConnection>): Promise<AiConnectionResponse> {
+    const existing = this.connections.get(id);
+    if (!existing) throw new NotFoundException(`AI Connection ${id} not found`);
+    const now = new Date().toISOString();
+    const apiKey =
+      data.apiKey !== undefined && data.apiKey.trim() !== "" ? data.apiKey.trim() : existing.apiKey;
+    const updated: AiConnection = {
+      ...existing,
+      ...data,
+      apiKey,
+      id,
+      updatedAt: now,
+    };
+    this.connections.set(id, updated);
+    this.saveConnectionsToDisk();
+    this.logger.log(`Updated AI Connection "${updated.name}" (${updated.id})`, "AiBotService");
+    return this.toConnectionResponse(updated);
+  }
+
+  async deleteConnection(id: string): Promise<{ success: boolean }> {
+    const existing = this.connections.get(id);
+    if (!existing) throw new NotFoundException(`AI Connection ${id} not found`);
+    this.connections.delete(id);
+    this.saveConnectionsToDisk();
+    // Unlink profiles using this connection
+    for (const p of this.profiles.values()) {
+      if (p.connectionId === id) {
+        p.connectionId = undefined;
+        this.saveProfileToDisk(p);
+      }
+    }
+    this.logger.log(`Deleted AI Connection ${id}`, "AiBotService");
+    return { success: true };
+  }
+
+  async testConnection(data: {
+    provider?: string;
+    apiKey?: string;
+    connectionId?: string;
+    model?: string;
+  }): Promise<{ success: boolean; reply: string }> {
+    let apiKey = data.apiKey;
+    let provider = data.provider as any;
+    let model = data.model;
+
+    if (data.connectionId) {
+      const conn = this.connections.get(data.connectionId);
+      if (conn) {
+        apiKey = apiKey || conn.apiKey;
+        provider = provider || conn.provider;
+        model = model || conn.defaultModel;
+      }
+    }
+
+    if (!apiKey) throw new Error("API Key belum diisi untuk diuji.");
+
+    const dummyProfile: AiBotProfile = {
+      id: "test",
+      name: "Test Connection",
+      isEnabled: true,
+      provider: provider || "gemini",
+      apiKey: apiKey,
+      model: model || (provider === "gemini" ? "gemini-3.6-flash" : "gpt-4o-mini"),
+      systemPrompt:
+        "Jawablah dengan satu kalimat singkat dan sopan dalam bahasa Indonesia bahwa koneksi API AI berhasil terhubung dan siap digunakan.",
+      createdAt: "",
+      updatedAt: "",
+    };
+
+    let reply = "";
+    if (dummyProfile.provider === "gemini") {
+      reply = await this.callGemini(dummyProfile, "Halo, tes koneksi API", dummyProfile.systemPrompt, []);
+    } else {
+      reply = await this.callOpenAiCompatible(
+        dummyProfile,
+        "Halo, tes koneksi API",
+        dummyProfile.systemPrompt,
+        [],
+      );
+    }
+    return { success: true, reply };
   }
 
   // ── Profile CRUD ───────────────────────────────────────────────────────────
@@ -573,8 +814,12 @@ export class AiBotService implements OnModuleInit {
     userId: string = "default",
     sessionId?: string,
   ): Promise<string | null> {
-    const profile = await this.resolveProfileForSession(sessionId);
-    if (!profile || !profile.isEnabled || !profile.apiKey) {
+    const rawProfile = await this.resolveProfileForSession(sessionId);
+    if (!rawProfile || !rawProfile.isEnabled) {
+      return null;
+    }
+    const profile = this.hydrateProfile(rawProfile);
+    if (!profile.apiKey) {
       return null;
     }
 
@@ -725,9 +970,10 @@ export class AiBotService implements OnModuleInit {
     message: string,
     userId: string = "default",
   ): Promise<{ reply: string }> {
-    const profile = this.profiles.get(profileId);
-    if (!profile) throw new NotFoundException(`AI Profile ${profileId} not found`);
-    if (!profile.apiKey) throw new Error("API Key belum diisi pada profil ini.");
+    const rawProfile = this.profiles.get(profileId);
+    if (!rawProfile) throw new NotFoundException(`AI Profile ${profileId} not found`);
+    const profile = this.hydrateProfile(rawProfile);
+    if (!profile.apiKey) throw new Error("API Key belum diisi pada profil ini atau akun AI yang ditautkan.");
 
     let effectiveSystemPrompt = profile.systemPrompt;
     if (profile.knowledgeBase && profile.knowledgeBase.trim() !== "") {

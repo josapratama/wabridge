@@ -19,6 +19,40 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 export class AiBotController {
   constructor(private readonly service: AiBotService) {}
 
+  // ── AI Connections (Koneksi Provider AI) ──────────────────────────────────
+
+  @Get("connections")
+  async listConnections(@Req() req: any) {
+    const userId = req.user?.id || "default";
+    return this.service.listConnections(userId);
+  }
+
+  @Post("connections")
+  async createConnection(@Req() req: any, @Body() body: any) {
+    const userId = req.user?.id || "default";
+    return this.service.createConnection(userId, body);
+  }
+
+  @Put("connections/:id")
+  async updateConnection(
+    @Param("id") id: string,
+    @Req() req: any,
+    @Body() body: any,
+  ) {
+    const userId = req.user?.id || "default";
+    return this.service.updateConnection(id, userId, body);
+  }
+
+  @Delete("connections/:id")
+  async deleteConnection(@Param("id") id: string) {
+    return this.service.deleteConnection(id);
+  }
+
+  @Post("connections/test")
+  async testConnection(@Body() body: any) {
+    return this.service.testConnection(body);
+  }
+
   // ── Multi-Profile Endpoints ───────────────────────────────────────────────
 
   @Get("profiles")
