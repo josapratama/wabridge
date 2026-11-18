@@ -521,18 +521,26 @@ export class AiBotService implements OnModuleInit {
       updatedAt: "",
     };
 
-    let reply = "";
-    if (dummyProfile.provider === "gemini") {
-      reply = await this.callGemini(dummyProfile, "Halo, tes koneksi API", dummyProfile.systemPrompt, []);
-    } else {
-      reply = await this.callOpenAiCompatible(
-        dummyProfile,
-        "Halo, tes koneksi API",
-        dummyProfile.systemPrompt,
-        [],
-      );
+    try {
+      let reply = "";
+      if (dummyProfile.provider === "gemini") {
+        reply = await this.callGemini(dummyProfile, "Halo, tes koneksi API", dummyProfile.systemPrompt, []);
+      } else {
+        reply = await this.callOpenAiCompatible(
+          dummyProfile,
+          "Halo, tes koneksi API",
+          dummyProfile.systemPrompt,
+          [],
+        );
+      }
+      return { success: true, reply };
+    } catch (err: any) {
+      return {
+        success: false,
+        reply: "",
+        error: err.message || "Gagal menghubungkan ke provider AI.",
+      } as any;
     }
-    return { success: true, reply };
   }
 
   // ── Profile CRUD ───────────────────────────────────────────────────────────
@@ -1042,7 +1050,12 @@ export class AiBotService implements OnModuleInit {
 
     if (!res.ok) {
       const errText = await res.text();
-      throw new Error(`Gemini API error ${res.status}: ${errText}`);
+      let cleanMsg = errText;
+      try {
+        const j = JSON.parse(errText);
+        cleanMsg = j.error?.message || j.message || errText;
+      } catch {}
+      throw new Error(`Google Gemini (${res.status}): ${cleanMsg}`);
     }
 
     const data = (await res.json()) as any;
@@ -1100,7 +1113,12 @@ export class AiBotService implements OnModuleInit {
 
     if (!res.ok) {
       const errText = await res.text();
-      throw new Error(`${cfg.provider.toUpperCase()} API error ${res.status}: ${errText}`);
+      let cleanMsg = errText;
+      try {
+        const j = JSON.parse(errText);
+        cleanMsg = j.error?.message || j.message || errText;
+      } catch {}
+      throw new Error(`${cfg.provider.toUpperCase()} (${res.status}): ${cleanMsg}`);
     }
 
     const data = (await res.json()) as any;

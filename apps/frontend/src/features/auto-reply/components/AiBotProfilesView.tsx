@@ -430,17 +430,23 @@ export default function AiBotProfilesView({ sessions }: Props) {
           message: res.data.reply || "Koneksi API valid dan responsif!",
         });
       } else {
+        const errorDetail = (res.data as any)?.error || (res as any)?.message || "API merespons dengan kesalahan.";
         setConnTestResult({
           id: targetId,
           success: false,
-          message: "API merespons dengan kesalahan.",
+          message: errorDetail,
         });
       }
     } catch (err: any) {
+      const errorDetail =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "Gagal menghubungi provider AI. Periksa API Key.";
       setConnTestResult({
         id: targetId,
         success: false,
-        message: err?.message || "Gagal menghubungi provider AI. Periksa API Key.",
+        message: errorDetail,
       });
     } finally {
       setTestingConnId(null);
@@ -1302,7 +1308,9 @@ export default function AiBotProfilesView({ sessions }: Props) {
                     onChange={(e) => setConnKeyInput(e.target.value)}
                     placeholder={
                       isCreatingConn
-                        ? "Masukkan API Key dari dashboard provider..."
+                        ? editingConn.provider === "gemini"
+                          ? "Masukkan API Key Google AI Studio (berawalan AIzaSy...)"
+                          : "Masukkan API Key dari dashboard provider..."
                         : "Biarkan kosong jika tidak ingin mengubah key"
                     }
                     className="input text-xs pr-10 font-mono"
@@ -1315,6 +1323,16 @@ export default function AiBotProfilesView({ sessions }: Props) {
                     {showConnKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {editingConn.provider === "gemini" && (
+                  <p className="text-[10px] text-amber-400/90 mt-1">
+                    ℹ️ Gunakan API Key dari <strong>aistudio.google.com</strong> (wajib diawali <code>AIzaSy...</code>). Token OAuth atau key Google Cloud IAM akan ditolak.
+                  </p>
+                )}
+                {editingConn.provider === "openrouter" && (
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    ℹ️ Gunakan API Key dari <strong>openrouter.ai/keys</strong>. Model <code>:free</code> sering mengalami antrean / limit upstream (429).
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-gray-800">
