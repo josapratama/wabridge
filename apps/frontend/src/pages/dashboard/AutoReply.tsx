@@ -65,19 +65,14 @@ export default function AutoReply() {
 
   return (
     <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-5">
-      {/* Top Header & Subtitle */}
+      {/* Page Subtitle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-            {t("autoreply.page_title", "Balas Otomatis & AI")}
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
-            {t(
-              "autoreply.page_subtitle",
-              "Kelola aturan balasan otomatis berbasis kata kunci serta profil kecerdasan buatan (LLM) untuk nomor WhatsApp Anda."
-            )}
-          </p>
-        </div>
+        <p className="text-xs sm:text-sm text-gray-400">
+          {t(
+            "autoreply.page_subtitle",
+            "Kelola aturan balasan otomatis berbasis kata kunci serta profil kecerdasan buatan (LLM) untuk nomor WhatsApp Anda."
+          )}
+        </p>
       </div>
 
       {/* Tabs Switcher */}

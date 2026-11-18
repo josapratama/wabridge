@@ -37,12 +37,9 @@ export default function ApiKeys() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-bold text-white">{t("apikeys.title", "API Keys & Integrasi")}</h1>
-          <p className="text-xs sm:text-sm text-gray-400">
-            {t("apikeys.subtitle", "Kelola token autentikasi untuk mengakses REST API WhatsApp Gateway secara programatik")}
-          </p>
-        </div>
+        <p className="text-xs sm:text-sm text-gray-400">
+          {t("apikeys.subtitle", "Kelola token autentikasi untuk mengakses REST API WhatsApp Gateway secara programatik")}
+        </p>
         <div className="flex gap-2">
           <button
             onClick={() => void load()}

@@ -314,14 +314,9 @@ export default function Sessions() {
 
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-            {t("sessions.title", "Sesi WhatsApp")}
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
-            {t("sessions.subtitle", "Daftar sesi akun WhatsApp aktif dan gateway yang terhubung")}
-          </p>
-        </div>
+        <p className="text-xs sm:text-sm text-gray-400">
+          {t("sessions.subtitle", "Daftar sesi akun WhatsApp aktif dan gateway yang terhubung")}
+        </p>
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => void load()}

@@ -59,16 +59,11 @@ export default function Messages() {
     <div className="p-3.5 sm:p-6 space-y-4 sm:space-y-5">
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-            {t("messages.title", "Log Pesan WhatsApp")}
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
-            {t("table.showing", "Menampilkan")}{" "}
-            <span className="font-semibold text-gray-200">{filtered.length}</span>{" "}
-            {t("messages.title_count", "pesan yang tercatat")}
-          </p>
-        </div>
+        <p className="text-xs sm:text-sm text-gray-400">
+          {t("table.showing", "Menampilkan")}{" "}
+          <span className="font-semibold text-gray-200">{filtered.length}</span>{" "}
+          {t("messages.title_count", "pesan yang tercatat")}
+        </p>
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => void load()}
