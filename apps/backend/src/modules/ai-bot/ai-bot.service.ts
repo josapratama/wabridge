@@ -137,8 +137,8 @@ export class AiBotService implements OnModuleInit {
 
   async onModuleInit() {
     this.ensureDir();
+    await this.loadAllConnections();
     await this.loadAllProfiles();
-    this.loadAllConnections();
   }
 
   private async loadAllProfiles() {
@@ -170,13 +170,13 @@ export class AiBotService implements OnModuleInit {
           const p: AiBotProfile = {
             id: row.id,
             userId: row.userId || existing?.userId || undefined,
-            name: existing?.name || (row as any).name || "Default Assistant",
-            description: existing?.description || (row as any).description || "Asisten WhatsApp",
+            name: row.name || existing?.name || "Default Assistant",
+            description: row.description || existing?.description || "Asisten WhatsApp",
             isEnabled: row.isEnabled,
-            connectionId: existing?.connectionId,
-            provider: existing?.provider || (row.provider as any) || "gemini",
+            connectionId: row.connectionId || existing?.connectionId,
+            provider: (row.provider as any) || existing?.provider || "gemini",
             apiKey: existing?.apiKey !== undefined ? existing.apiKey : (row.apiKey || ""),
-            model: existing?.model || row.model || "gemini-3.6-flash",
+            model: row.model || existing?.model || "gemini-3.6-flash",
             systemPrompt: row.systemPrompt || existing?.systemPrompt || DEFAULT_PROFILE_TEMPLATE.systemPrompt,
             knowledgeBase: row.knowledgeBase ?? existing?.knowledgeBase ?? "",
             handoverKeywords:
@@ -188,20 +188,22 @@ export class AiBotService implements OnModuleInit {
               existing?.handoverMessage ??
               DEFAULT_PROFILE_TEMPLATE.handoverMessage,
             handoverDurationMinutes:
-              existing?.handoverDurationMinutes ?? DEFAULT_PROFILE_TEMPLATE.handoverDurationMinutes,
-            targetSessionIds: existing?.targetSessionIds ?? [],
-            scheduleMode: existing?.scheduleMode ?? "always",
-            workHoursStart: existing?.workHoursStart ?? "08:00",
-            workHoursEnd: existing?.workHoursEnd ?? "17:00",
-            workDays: existing?.workDays ?? [1, 2, 3, 4, 5],
-            temperature: existing?.temperature ?? 0.7,
-            maxTokens: existing?.maxTokens ?? 500,
-            contextWindow: existing?.contextWindow ?? 8,
-            senderFilterMode: existing?.senderFilterMode ?? "all",
-            whitelistNumbers: existing?.whitelistNumbers ?? [],
-            blacklistNumbers: existing?.blacklistNumbers ?? [],
-            ignoreGroups: existing?.ignoreGroups ?? true,
-            createdAt: existing?.createdAt || now,
+              row.handoverDurationMinutes ??
+              existing?.handoverDurationMinutes ??
+              DEFAULT_PROFILE_TEMPLATE.handoverDurationMinutes,
+            targetSessionIds: (row.targetSessionIds as string[]) ?? existing?.targetSessionIds ?? [],
+            scheduleMode: (row.scheduleMode as any) ?? existing?.scheduleMode ?? "always",
+            workHoursStart: row.workHoursStart ?? existing?.workHoursStart ?? "08:00",
+            workHoursEnd: row.workHoursEnd ?? existing?.workHoursEnd ?? "17:00",
+            workDays: (row.workDays as number[]) ?? existing?.workDays ?? [1, 2, 3, 4, 5],
+            temperature: row.temperature ?? existing?.temperature ?? 0.7,
+            maxTokens: row.maxTokens ?? existing?.maxTokens ?? 500,
+            contextWindow: row.contextWindow ?? existing?.contextWindow ?? 8,
+            senderFilterMode: (row.senderFilterMode as any) ?? existing?.senderFilterMode ?? "all",
+            whitelistNumbers: (row.whitelistNumbers as string[]) ?? existing?.whitelistNumbers ?? [],
+            blacklistNumbers: (row.blacklistNumbers as string[]) ?? existing?.blacklistNumbers ?? [],
+            ignoreGroups: row.ignoreGroups ?? existing?.ignoreGroups ?? true,
+            createdAt: row.createdAt ? row.createdAt.toISOString() : (existing?.createdAt || now),
             updatedAt: row.updatedAt?.toISOString() || now,
           };
           this.profiles.set(p.id, p);
@@ -248,20 +250,46 @@ export class AiBotService implements OnModuleInit {
     }
   }
 
-  private loadAllConnections() {
+  private async loadAllConnections() {
+    // 1. Load from PostgreSQL table AiConnection
+    if (this.db) {
+      try {
+        const rows = await this.db.select().from(schema.aiConnections);
+        for (const r of rows) {
+          const conn: AiConnection = {
+            id: r.id,
+            userId: r.userId || undefined,
+            name: r.name,
+            provider: r.provider as any,
+            apiKey: r.apiKey,
+            defaultModel: r.defaultModel,
+            createdAt: r.createdAt.toISOString(),
+            updatedAt: r.updatedAt.toISOString(),
+          };
+          this.connections.set(conn.id, conn);
+        }
+      } catch (e) {
+        this.logger.warn(`Could not load ai_connections from DB: ${e}`, "AiBotService");
+      }
+    }
+
+    // 2. Load from disk backup if any connection not in DB yet
     try {
       if (fs.existsSync(this.connectionsFile)) {
         const raw = fs.readFileSync(this.connectionsFile, "utf-8");
         const list = JSON.parse(raw) as AiConnection[];
         for (const conn of list) {
-          if (conn.id) this.connections.set(conn.id, conn);
+          if (conn.id && !this.connections.has(conn.id)) {
+            this.connections.set(conn.id, conn);
+            void this.saveConnectionToDb(conn);
+          }
         }
       }
     } catch (e) {
       this.logger.warn(`Could not load ai_connections: ${e}`, "AiBotService");
     }
 
-    // Auto-seed connections from profiles if connections list is empty
+    // Auto-seed connections from profiles if connections list is still empty
     if (this.connections.size === 0) {
       for (const p of this.profiles.values()) {
         if (p.apiKey && p.apiKey.trim().length > 0) {
@@ -279,9 +307,62 @@ export class AiBotService implements OnModuleInit {
           this.connections.set(conn.id, conn);
           p.connectionId = conn.id;
           this.saveProfileToDisk(p);
+          void this.saveConnectionToDb(conn);
         }
       }
-      this.saveConnectionsToDisk();
+    }
+
+    this.saveConnectionsToDisk();
+  }
+
+  private async saveConnectionToDb(c: AiConnection): Promise<void> {
+    if (!this.db) return;
+    try {
+      let targetUserId = c.userId || null;
+      if (!targetUserId) {
+        const anyUser = await this.db.select({ id: schema.users.id }).from(schema.users).limit(1);
+        if (anyUser.length > 0) targetUserId = anyUser[0].id;
+      }
+      const existing = await this.db
+        .select()
+        .from(schema.aiConnections)
+        .where(eq(schema.aiConnections.id, c.id))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await this.db
+          .update(schema.aiConnections)
+          .set({
+            name: c.name,
+            provider: c.provider,
+            apiKey: c.apiKey,
+            defaultModel: c.defaultModel,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.aiConnections.id, c.id));
+      } else {
+        await this.db.insert(schema.aiConnections).values({
+          id: c.id,
+          userId: targetUserId,
+          name: c.name,
+          provider: c.provider,
+          apiKey: c.apiKey,
+          defaultModel: c.defaultModel,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+    } catch (e) {
+      this.logger.warn(`Could not sync connection ${c.id} to database: ${e}`, "AiBotService");
+    }
+  }
+
+  private async deleteConnectionFromDb(id: string): Promise<void> {
+    if (!this.db) return;
+    try {
+      await this.db.delete(schema.aiConnections).where(eq(schema.aiConnections.id, id));
+    } catch (e) {
+      this.logger.warn(`Could not delete connection ${id} from database: ${e}`, "AiBotService");
     }
   }
 
@@ -321,34 +402,45 @@ export class AiBotService implements OnModuleInit {
         .where(eq(schema.aiBotConfigs.id, p.id))
         .limit(1);
 
+      const dbValues: any = {
+        name: p.name,
+        description: p.description ?? null,
+        isEnabled: p.isEnabled,
+        connectionId: p.connectionId ?? null,
+        provider: p.provider,
+        apiKey: p.apiKey || "",
+        model: p.model,
+        systemPrompt: p.systemPrompt,
+        knowledgeBase: p.knowledgeBase ?? null,
+        handoverKeywords: p.handoverKeywords ?? null,
+        handoverMessage: p.handoverMessage ?? null,
+        handoverDurationMinutes: p.handoverDurationMinutes ?? 120,
+        targetSessionIds: p.targetSessionIds ?? null,
+        scheduleMode: p.scheduleMode ?? "always",
+        workHoursStart: p.workHoursStart ?? "08:00",
+        workHoursEnd: p.workHoursEnd ?? "17:00",
+        workDays: p.workDays ?? null,
+        temperature: p.temperature ?? 0.7,
+        maxTokens: p.maxTokens ?? 500,
+        contextWindow: p.contextWindow ?? 8,
+        senderFilterMode: p.senderFilterMode ?? "all",
+        whitelistNumbers: p.whitelistNumbers ?? null,
+        blacklistNumbers: p.blacklistNumbers ?? null,
+        ignoreGroups: p.ignoreGroups ?? true,
+        updatedAt: new Date(),
+      };
+
       if (existing.length > 0) {
         await this.db
           .update(schema.aiBotConfigs)
-          .set({
-            isEnabled: p.isEnabled,
-            provider: p.provider,
-            apiKey: p.apiKey,
-            model: p.model,
-            systemPrompt: p.systemPrompt,
-            knowledgeBase: p.knowledgeBase ?? null,
-            handoverKeywords: p.handoverKeywords ?? null,
-            handoverMessage: p.handoverMessage ?? null,
-            updatedAt: new Date(),
-          })
+          .set(dbValues)
           .where(eq(schema.aiBotConfigs.id, p.id));
       } else {
         await this.db.insert(schema.aiBotConfigs).values({
           id: p.id,
           userId: targetUserId,
-          isEnabled: p.isEnabled,
-          provider: p.provider,
-          apiKey: p.apiKey,
-          model: p.model,
-          systemPrompt: p.systemPrompt,
-          knowledgeBase: p.knowledgeBase ?? null,
-          handoverKeywords: p.handoverKeywords ?? null,
-          handoverMessage: p.handoverMessage ?? null,
-          updatedAt: new Date(),
+          ...dbValues,
+          createdAt: new Date(),
         });
       }
     } catch (e) {
@@ -460,6 +552,7 @@ export class AiBotService implements OnModuleInit {
     };
     this.connections.set(id, conn);
     this.saveConnectionsToDisk();
+    void this.saveConnectionToDb(conn);
     this.logger.log(`Created AI Connection "${conn.name}" (${conn.id})`, "AiBotService");
     return this.toConnectionResponse(conn);
   }
@@ -479,6 +572,7 @@ export class AiBotService implements OnModuleInit {
     };
     this.connections.set(id, updated);
     this.saveConnectionsToDisk();
+    void this.saveConnectionToDb(updated);
     this.logger.log(`Updated AI Connection "${updated.name}" (${updated.id})`, "AiBotService");
     return this.toConnectionResponse(updated);
   }
@@ -488,11 +582,13 @@ export class AiBotService implements OnModuleInit {
     if (!existing) throw new NotFoundException(`AI Connection ${id} not found`);
     this.connections.delete(id);
     this.saveConnectionsToDisk();
+    void this.deleteConnectionFromDb(id);
     // Unlink profiles using this connection
     for (const p of this.profiles.values()) {
       if (p.connectionId === id) {
         p.connectionId = undefined;
         this.saveProfileToDisk(p);
+        void this.saveProfileToDb(p);
       }
     }
     this.logger.log(`Deleted AI Connection ${id}`, "AiBotService");

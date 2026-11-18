@@ -6,6 +6,7 @@ import {
   jsonb,
   integer,
   bigint,
+  real,
   index,
 } from "drizzle-orm/pg-core";
 
@@ -307,12 +308,30 @@ export const sessionHealthLogs = pgTable("SessionHealthLog", {
   checkedAt: timestamp("checkedAt").defaultNow().notNull(),
 });
 
-// ── AI Bot Configuration ───────────────────────────────────────────────────────
+// ── AI Connections (Kredensial Akun AI) ────────────────────────────────────────
+
+export const aiConnections = pgTable("AiConnection", {
+  id: text("id").primaryKey(),
+  userId: text("userId").references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  provider: text("provider").notNull(), // gemini | openrouter | openai | deepseek | grok
+  apiKey: text("apiKey").notNull(),
+  defaultModel: text("defaultModel").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+// ── AI Bot Configuration (Profil Asisten AI) ─────────────────────────────────
 
 export const aiBotConfigs = pgTable("AiBotConfig", {
   id: text("id").primaryKey(),
   userId: text("userId").references(() => users.id, { onDelete: "cascade" }),
+  name: text("name"),
+  description: text("description"),
   isEnabled: boolean("isEnabled").default(false).notNull(),
+  connectionId: text("connectionId").references(() => aiConnections.id, {
+    onDelete: "set null",
+  }),
   provider: text("provider").default("gemini").notNull(),
   apiKey: text("apiKey").default("").notNull(),
   model: text("model").default("gemini-3.6-flash").notNull(),
@@ -320,5 +339,19 @@ export const aiBotConfigs = pgTable("AiBotConfig", {
   knowledgeBase: text("knowledgeBase"),
   handoverKeywords: jsonb("handoverKeywords"),
   handoverMessage: text("handoverMessage"),
+  handoverDurationMinutes: integer("handoverDurationMinutes").default(120),
+  targetSessionIds: jsonb("targetSessionIds"),
+  scheduleMode: text("scheduleMode").default("always"),
+  workHoursStart: text("workHoursStart").default("08:00"),
+  workHoursEnd: text("workHoursEnd").default("17:00"),
+  workDays: jsonb("workDays"),
+  temperature: real("temperature").default(0.7),
+  maxTokens: integer("maxTokens").default(500),
+  contextWindow: integer("contextWindow").default(8),
+  senderFilterMode: text("senderFilterMode").default("all"),
+  whitelistNumbers: jsonb("whitelistNumbers"),
+  blacklistNumbers: jsonb("blacklistNumbers"),
+  ignoreGroups: boolean("ignoreGroups").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
