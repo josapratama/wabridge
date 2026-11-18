@@ -42,7 +42,7 @@ const DEFAULT_CONFIG: AiBotConfig = {
   isEnabled: false,
   provider: "gemini",
   apiKey: "",
-  model: "gemini-2.0-flash",
+  model: "gemini-3.6-flash",
   systemPrompt:
     "Anda adalah asisten virtual WhatsApp yang ramah, profesional, dan membantu. Jawab pertanyaan pengguna dengan jelas, sopan, dan ringkas dalam Bahasa Indonesia.",
   knowledgeBase: "",
@@ -699,7 +699,7 @@ export class AiBotService implements OnModuleInit {
     systemPrompt: string,
     history: Array<{ role: "user" | "assistant"; content: string }> = [],
   ): Promise<string> {
-    const model = cfg.model || "gemini-2.0-flash";
+    const model = cfg.model || "gemini-3.6-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cfg.apiKey}`;
 
     const contents: any[] = [];
@@ -720,6 +720,14 @@ export class AiBotService implements OnModuleInit {
       });
     }
 
+    const generationConfig: Record<string, any> = {
+      maxOutputTokens: cfg.maxTokens ?? 500,
+    };
+    // Gemini 3.x models use internal dynamic thinking and ignore/reject custom temperature
+    if (cfg.temperature !== undefined && !model.includes("gemini-3")) {
+      generationConfig.temperature = cfg.temperature;
+    }
+
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -728,10 +736,7 @@ export class AiBotService implements OnModuleInit {
           parts: [{ text: systemPrompt }],
         },
         contents,
-        generationConfig: {
-          temperature: cfg.temperature ?? 0.7,
-          maxOutputTokens: cfg.maxTokens ?? 500,
-        },
+        generationConfig,
       }),
       signal: AbortSignal.timeout(15000),
     });

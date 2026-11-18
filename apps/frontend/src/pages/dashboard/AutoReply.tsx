@@ -26,8 +26,10 @@ import { useI18n } from "../../context/I18nContext";
 
 const PROVIDER_MODELS: Record<string, Array<{ id: string; name: string; desc: string }>> = {
   gemini: [
-    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash (Aktif - Cepat)", desc: "Generasi 2.0 GA tercepat & multimodal dari Google" },
-    { id: "gemini-2.0-flash-lite", name: "Gemini 2.0 Flash Lite (Aktif - Super Cepat)", desc: "Ultra ringan, latensi paling rendah & efisien" },
+    { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash (Aktif - Cepat & Cerdas)", desc: "Generasi 3 tercanggih untuk chat cerdas & penalaran tinggi dari Google" },
+    { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash-Lite (Aktif - Super Cepat)", desc: "Ultra ringan, latensi paling rendah & efisien biaya" },
+    { id: "gemini-3.8-flash", name: "Gemini 3.8 Flash (Aktif - Performa Tinggi)", desc: "Model Flash level atas untuk tugas kompleks & agentic" },
+    { id: "gemini-3.1-pro-preview", name: "Gemini 3.1 Pro (Aktif - Penalaran Mendalam)", desc: "Penalaran kompleks, dokumen panjang & instruksi ketat" },
   ],
   grok: [
     { id: "grok-2-latest", name: "Grok-2 (Aktif - Flagship)", desc: "Model flagship xAI terbaru dengan penalaran & pemahaman tinggi" },
@@ -80,7 +82,7 @@ export default function AutoReply() {
     provider: "gemini",
     apiKeyMasked: "",
     hasKey: false,
-    model: "gemini-2.0-flash",
+    model: "gemini-3.6-flash",
     systemPrompt:
       "Anda adalah asisten virtual WhatsApp yang ramah, profesional, dan membantu. Jawab pertanyaan pengguna dengan jelas, sopan, dan ringkas dalam Bahasa Indonesia.",
     knowledgeBase: "",
@@ -509,7 +511,7 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     onChange={(e) => {
                       const newProv = e.target.value as any;
                       const defaultMod =
-                        PROVIDER_MODELS[newProv]?.[0]?.id || "gemini-2.0-flash";
+                        PROVIDER_MODELS[newProv]?.[0]?.id || "gemini-3.6-flash";
                       setAiConfig((prev) => ({
                         ...prev,
                         provider: newProv,
