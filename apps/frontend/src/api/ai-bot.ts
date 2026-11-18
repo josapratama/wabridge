@@ -2,7 +2,7 @@ import { request } from "./base";
 
 export interface AiBotConfig {
   isEnabled: boolean;
-  provider: "gemini" | "openai" | "openrouter" | "deepseek";
+  provider: "gemini" | "openai" | "openrouter" | "deepseek" | "grok";
   apiKeyMasked: string;
   hasKey: boolean;
   model: string;
@@ -29,7 +29,7 @@ export const aiBotApi = {
   getConfig: () => request<AiBotConfig>("/ai-bot/config"),
   updateConfig: (body: {
     isEnabled?: boolean;
-    provider?: "gemini" | "openai" | "openrouter" | "deepseek";
+    provider?: "gemini" | "openai" | "openrouter" | "deepseek" | "grok";
     apiKey?: string;
     model?: string;
     systemPrompt?: string;

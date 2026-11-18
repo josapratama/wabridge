@@ -315,7 +315,7 @@ export const aiBotConfigs = pgTable("AiBotConfig", {
   isEnabled: boolean("isEnabled").default(false).notNull(),
   provider: text("provider").default("gemini").notNull(),
   apiKey: text("apiKey").default("").notNull(),
-  model: text("model").default("gemini-1.5-flash").notNull(),
+  model: text("model").default("gemini-2.0-flash").notNull(),
   systemPrompt: text("systemPrompt").notNull(),
   knowledgeBase: text("knowledgeBase"),
   handoverKeywords: jsonb("handoverKeywords"),

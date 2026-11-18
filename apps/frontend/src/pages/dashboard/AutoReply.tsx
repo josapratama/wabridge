@@ -26,10 +26,13 @@ import { useI18n } from "../../context/I18nContext";
 
 const PROVIDER_MODELS: Record<string, Array<{ id: string; name: string; desc: string }>> = {
   gemini: [
-    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash (Aktif & Cepat)", desc: "Model generasi 2.0 tercepat dan pintar dari Google" },
+    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash (Aktif - Cepat)", desc: "Generasi 2.0 GA tercepat & multimodal dari Google" },
     { id: "gemini-2.0-flash-lite", name: "Gemini 2.0 Flash Lite (Aktif - Super Cepat)", desc: "Ultra ringan, latensi paling rendah & efisien" },
-    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash (Aktif - Stable GA)", desc: "Model produksi stabil dari Google" },
-    { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro (Aktif - Penalaran Tinggi)", desc: "Penalaran kompleks dan dokumen panjang" },
+  ],
+  grok: [
+    { id: "grok-2-latest", name: "Grok-2 (Aktif - Flagship)", desc: "Model flagship xAI terbaru dengan penalaran & pemahaman tinggi" },
+    { id: "grok-2-vision-latest", name: "Grok-2 Vision (Aktif - Multimodal)", desc: "Mendukung analisis teks dan gambar/dokumen visual" },
+    { id: "grok-beta", name: "Grok Beta (Aktif)", desc: "Model general knowledge cepat dari xAI" },
   ],
   deepseek: [
     { id: "deepseek-chat", name: "DeepSeek-V3 (Chat - Aktif)", desc: "Sangat cerdas, bahasa natural & hemat biaya" },
@@ -37,12 +40,13 @@ const PROVIDER_MODELS: Record<string, Array<{ id: string; name: string; desc: st
   ],
   openai: [
     { id: "gpt-4o-mini", name: "GPT-4o Mini (Aktif & Rekomendasi)", desc: "Cepat, cerdas, efisien biaya operasional" },
-    { id: "gpt-4o", name: "GPT-4o Omni (Aktif - Flagship)", desc: "Model multimodal flagship tercerdas dari OpenAI" },
+    { id: "gpt-4o", name: "GPT-4o (Aktif - Flagship)", desc: "Model multimodal flagship tercerdas dari OpenAI" },
     { id: "o3-mini", name: "o3-mini (Aktif - Reasoning)", desc: "Model penalaran terbaru dengan efisiensi tinggi" },
   ],
   openrouter: [
     { id: "deepseek/deepseek-chat", name: "DeepSeek-V3 (OpenRouter - Aktif)", desc: "Akses DeepSeek-V3 via OpenRouter" },
     { id: "deepseek/deepseek-r1", name: "DeepSeek-R1 (OpenRouter - Aktif)", desc: "Penalaran logika tinggi via OpenRouter" },
+    { id: "x-ai/grok-2-1212", name: "xAI Grok-2 (OpenRouter - Aktif)", desc: "Akses Grok-2 via OpenRouter" },
     { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet (Aktif)", desc: "Bahasa sangat luwes dan natural" },
     { id: "openai/gpt-4o-mini", name: "GPT-4o Mini (OpenRouter - Aktif)", desc: "Akses GPT-4o Mini via OpenRouter" },
     { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B (Aktif)", desc: "Model open-weight terkuat" },
@@ -515,9 +519,10 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
                   >
                     <option value="gemini">{t("autoreply.prov_gemini", "Google Gemini (Gratis & Cepat)")}</option>
+                    <option value="grok">{t("autoreply.prov_grok", "xAI Grok (Grok-2 / Vision)")}</option>
                     <option value="deepseek">{t("autoreply.prov_deepseek", "DeepSeek Direct API (Hemat & Pintar)")}</option>
                     <option value="openai">{t("autoreply.prov_openai", "OpenAI (GPT-4o / o3-mini)")}</option>
-                    <option value="openrouter">{t("autoreply.prov_openrouter", "OpenRouter (Claude 3.5 / Llama 3.3)")}</option>
+                    <option value="openrouter">{t("autoreply.prov_openrouter", "OpenRouter (Claude 3.5 / Llama / Grok)")}</option>
                   </select>
                 </div>
 
@@ -582,6 +587,12 @@ Kirim format: Nama Pasien # No KTP # Poli Tujuan # Tanggal Kunjungan`,
                     placeholder={
                       aiConfig.hasKey
                         ? `Tersimpan: ${aiConfig.apiKeyMasked} (kosongkan jika tidak diubah)`
+                        : aiConfig.provider === "gemini"
+                        ? "Masukkan API Key Google Gemini (AIzaSy...)"
+                        : aiConfig.provider === "grok"
+                        ? "Masukkan API Key xAI Grok (xai-...)"
+                        : aiConfig.provider === "deepseek"
+                        ? "Masukkan API Key DeepSeek (sk-...)"
                         : `Masukkan API Key ${aiConfig.provider.toUpperCase()}...`
                     }
                     className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"

@@ -11,7 +11,7 @@ import * as path from "path";
 
 export interface AiBotConfig {
   isEnabled: boolean;
-  provider: "gemini" | "openai" | "openrouter" | "deepseek";
+  provider: "gemini" | "openai" | "openrouter" | "deepseek" | "grok";
   apiKey: string;
   model: string;
   systemPrompt: string;
@@ -770,6 +770,9 @@ export class AiBotService implements OnModuleInit {
     } else if (cfg.provider === "deepseek") {
       baseUrl = "https://api.deepseek.com/chat/completions";
       defaultModel = "deepseek-chat";
+    } else if (cfg.provider === "grok") {
+      baseUrl = "https://api.x.ai/v1/chat/completions";
+      defaultModel = "grok-2-latest";
     }
 
     const messages: Array<{ role: string; content: string }> = [
