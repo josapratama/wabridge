@@ -17,7 +17,7 @@ export interface AiBotProfile {
   name: string;
   description?: string;
   isEnabled: boolean;
-  connectionId?: string; // Links to registered AiConnection
+  connectionId?: string | null; // Links to registered AiConnection
   connectionName?: string;
   provider: "gemini" | "openai" | "openrouter" | "deepseek" | "grok";
   apiKey?: string;
@@ -148,6 +148,14 @@ export const aiBotApi = {
       {
         method: "POST",
         body: JSON.stringify({ base64, filename }),
+      },
+    ),
+  scrapeUrl: (url: string) =>
+    request<{ text: string; url: string; title?: string; length: number }>(
+      "/ai-bot/scrape-url",
+      {
+        method: "POST",
+        body: JSON.stringify({ url }),
       },
     ),
 };

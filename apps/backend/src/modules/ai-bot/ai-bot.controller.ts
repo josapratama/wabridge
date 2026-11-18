@@ -188,4 +188,9 @@ export class AiBotController {
   ) {
     return this.service.parseDocument(base64, filename);
   }
+
+  @Post("scrape-url")
+  async scrapeUrl(@Body("url") url: string) {
+    return this.service.scrapeUrl(url);
+  }
 }

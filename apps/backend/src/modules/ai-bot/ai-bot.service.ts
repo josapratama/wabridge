@@ -1,4 +1,4 @@
-import { Injectable, Inject, Optional, OnModuleInit, NotFoundException } from "@nestjs/common";
+import { Injectable, Inject, Optional, OnModuleInit, NotFoundException, BadRequestException } from "@nestjs/common";
 import { AppLogger } from "../../common/logger/app.logger";
 import { MessageRepository, SessionRepository } from "../../repositories/interfaces";
 import { DRIZZLE_CLIENT } from "../../common/database/database.module";
@@ -973,11 +973,23 @@ export class AiBotService implements OnModuleInit {
 
   // ── Multi-Session Resolution & Reply Generation ────────────────────────────
 
-  private async resolveProfileForSession(sessionId?: string): Promise<AiBotProfile | null> {
+  private async resolveProfileForSession(
+    sessionId?: string,
+    sessionUserId?: string,
+  ): Promise<AiBotProfile | null> {
+    // 0. Resolve owner user from sessionRepo if sessionUserId is default or missing
+    let targetUserId = sessionUserId && sessionUserId !== "default" ? sessionUserId : undefined;
+    if (!targetUserId && sessionId && this.sessionRepo) {
+      try {
+        const sess = await this.sessionRepo.findById(sessionId);
+        if (sess?.userId) targetUserId = sess.userId;
+      } catch {}
+    }
+
     if (!sessionId) {
-      // Return first enabled profile
+      // Return first enabled profile belonging to target user
       for (const p of this.profiles.values()) {
-        if (p.isEnabled) return p;
+        if ((!targetUserId || p.userId === targetUserId) && p.isEnabled) return p;
       }
       return null;
     }
@@ -990,20 +1002,34 @@ export class AiBotService implements OnModuleInit {
           (session?.metadata?.aiProfileId as string) || (session?.metadata?.aiBotConfigId as string);
         if (explicitId) {
           const profile = this.profiles.get(explicitId);
-          if (profile) return profile;
+          if (profile && (!targetUserId || profile.userId === targetUserId)) return profile;
         }
       } catch {}
     }
 
-    // 2. Check if any profile has targetSessionIds containing this sessionId
+    // 2. Check if any profile belonging to this user has targetSessionIds containing this sessionId
     for (const p of this.profiles.values()) {
+      if (targetUserId && p.userId && p.userId !== targetUserId) continue;
       if (p.targetSessionIds && p.targetSessionIds.includes(sessionId)) {
         return p;
       }
     }
 
-    // 3. Fallback: check if there is an active profile configured for all sessions (empty targetSessionIds)
-    for (const p of this.profiles.values()) {
+    // 2b. If the user already defined active profiles with specific targetSessionIds,
+    // and this session is NOT among them, it means the user intentionally excluded this session.
+    // We should NOT fall back to an all-session profile for an unchecked session.
+    const userProfiles = Array.from(this.profiles.values()).filter(
+      (p) => (!targetUserId || p.userId === targetUserId),
+    );
+    const hasSpecificProfiles = userProfiles.some(
+      (p) => p.isEnabled && p.targetSessionIds && p.targetSessionIds.length > 0,
+    );
+    if (hasSpecificProfiles) {
+      return null;
+    }
+
+    // 3. Fallback: check if there is an active profile configured for all sessions (empty targetSessionIds) FOR THIS USER ONLY
+    for (const p of userProfiles) {
       if (p.isEnabled && (!p.targetSessionIds || p.targetSessionIds.length === 0)) {
         return p;
       }
@@ -1017,7 +1043,7 @@ export class AiBotService implements OnModuleInit {
     sessionId?: string,
     userId: string = "default",
   ): Promise<boolean> {
-    const rawProfile = await this.resolveProfileForSession(sessionId);
+    const rawProfile = await this.resolveProfileForSession(sessionId, userId);
     if (!rawProfile || !rawProfile.isEnabled) {
       return false;
     }
@@ -1102,7 +1128,7 @@ export class AiBotService implements OnModuleInit {
     sessionId?: string,
     mediaUrl?: string,
   ): Promise<string | null> {
-    const rawProfile = await this.resolveProfileForSession(sessionId);
+    const rawProfile = await this.resolveProfileForSession(sessionId, userId);
     if (!rawProfile || !rawProfile.isEnabled) {
       return null;
     }
@@ -1276,15 +1302,23 @@ export class AiBotService implements OnModuleInit {
       ...base,
       ...(draft || {}),
       name: draft?.name || base.name || "Test Profile",
+      connectionId: draft ? (draft.connectionId ?? undefined) : base.connectionId,
       apiKey: draft?.apiKey !== undefined ? draft.apiKey : base.apiKey,
       id: profileId,
     };
     const profile = this.hydrateProfile(merged);
 
-    if (!profile.apiKey) {
+    if (!profile.apiKey || profile.apiKey.trim() === "") {
       return {
         reply:
           "⚠️ API Key belum diisi pada profil ini atau akun AI yang ditautkan. Pastikan akun AI yang dipilih memiliki API Key yang valid.",
+      };
+    }
+
+    if (profile.provider === "openrouter" && !profile.apiKey.startsWith("sk-or-")) {
+      return {
+        reply:
+          "⚠️ Format API Key OpenRouter tidak valid. API Key OpenRouter biasanya dimulai dengan 'sk-or-v1-...'. Pastikan Anda memasukkan kunci yang benar dari dashboard OpenRouter (https://openrouter.ai/keys) atau pilih Akun AI yang sudah terdaftar.",
       };
     }
 
@@ -1346,7 +1380,21 @@ export class AiBotService implements OnModuleInit {
           const buf = fs.readFileSync(fpath);
           const base64 = buf.toString("base64");
           const ext = path.extname(fname).toLowerCase();
-          const mime = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
+          let mime = "image/jpeg";
+          let isAudio = false;
+          if (ext === ".png") mime = "image/png";
+          else if (ext === ".webp") mime = "image/webp";
+          else if (ext === ".ogg" || ext === ".opus") { mime = "audio/ogg"; isAudio = true; }
+          else if (ext === ".mp3") { mime = "audio/mp3"; isAudio = true; }
+          else if (ext === ".wav") { mime = "audio/wav"; isAudio = true; }
+          else if (ext === ".m4a") { mime = "audio/m4a"; isAudio = true; }
+
+          if (isAudio && (!userMessage || userMessage.startsWith("[Voice Note") || userMessage === "")) {
+            userParts[0] = {
+              text: "Dengarkan pesan suara dari pengguna WhatsApp berikut dan berikan jawaban yang ramah, sopan, dan membantu dalam Bahasa Indonesia sesuai Knowledge Base:",
+            };
+          }
+
           userParts.push({
             inlineData: {
               mimeType: mime,
@@ -1406,6 +1454,9 @@ export class AiBotService implements OnModuleInit {
     history: Array<{ role: "user" | "assistant"; content: string }> = [],
     mediaUrl?: string,
   ): Promise<string> {
+    if (!cfg.apiKey || cfg.apiKey.trim() === "") {
+      throw new Error(`API Key untuk ${cfg.provider.toUpperCase()} belum diisi`);
+    }
     let baseUrl = "https://api.openai.com/v1/chat/completions";
     let defaultModel = "gpt-4o-mini";
     const headers: Record<string, string> = {
@@ -1516,5 +1567,68 @@ export class AiBotService implements OnModuleInit {
     }
 
     return { text: extractedText, filename, length: extractedText.length };
+  }
+
+  async scrapeUrl(
+    targetUrl: string,
+  ): Promise<{ text: string; url: string; title?: string; length: number }> {
+    let url = (targetUrl || "").trim();
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      url = "https://" + url;
+    }
+    const parsed = new URL(url);
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      throw new BadRequestException("Protokol URL tidak valid (harus http/https)");
+    }
+
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+      signal: AbortSignal.timeout(12000),
+    });
+
+    if (!res.ok) {
+      throw new BadRequestException(`Gagal membuka URL (${res.status}): ${res.statusText}`);
+    }
+
+    const html = await res.text();
+
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : undefined;
+
+    let clean = html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ")
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, " ")
+      .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, " ")
+      .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, " ")
+      .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'");
+
+    clean = clean
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .join("\n");
+    clean = clean.replace(/\n{3,}/g, "\n\n").trim();
+
+    if (clean.length > 40000) {
+      clean = clean.slice(0, 40000) + "\n\n[...Konten website dipotong hingga 40.000 karakter...]";
+    }
+
+    return {
+      text: clean,
+      url,
+      title,
+      length: clean.length,
+    };
   }
 }

@@ -34,6 +34,7 @@ import {
   UserCheck,
   UserX,
   Play,
+  Globe,
   Settings,
   Shield,
 } from "lucide-react";
@@ -195,6 +196,9 @@ export default function AiBotProfilesView({ sessions }: Props) {
   const [testInput, setTestInput] = useState("");
   const [testingAi, setTestingAi] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [scrapingUrl, setScrapingUrl] = useState(false);
+  const [showUrlModal, setShowUrlModal] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
 
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const kbFileInputRef = useRef<HTMLInputElement>(null);
@@ -659,6 +663,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
       const draftPayload = editingProfile
         ? {
             ...editingProfile,
+            connectionId: editingProfile.connectionId || null,
             apiKey: keyInput.trim() || undefined,
           }
         : undefined;
@@ -733,6 +738,38 @@ export default function AiBotProfilesView({ sessions }: Props) {
     reader.onerror = () => setUploadingDoc(false);
     reader.readAsDataURL(file);
     if (kbFileInputRef.current) kbFileInputRef.current.value = "";
+  };
+
+  const handleScrapeWebUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!urlInput.trim() || scrapingUrl) return;
+    setScrapingUrl(true);
+    try {
+      const res = await aiBotApi.scrapeUrl(urlInput.trim());
+      const data = res.data;
+      if (data?.text) {
+        setEditingProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                knowledgeBase: prev.knowledgeBase
+                  ? `${prev.knowledgeBase}\n\n--- KNOWLEDGE BASE WEB (${data.url}) ---\n${data.text}`
+                  : `--- KNOWLEDGE BASE WEB (${data.url}) ---\n${data.text}`,
+              }
+            : null,
+        );
+        showToast(
+          `Berhasil membaca informasi website! (${data.length} karakter)`,
+          "success",
+        );
+        setShowUrlModal(false);
+        setUrlInput("");
+      }
+    } catch (err: any) {
+      showToast(`Gagal membaca URL website: ${err?.message || "Kesalahan jaringan"}`, "error");
+    } finally {
+      setScrapingUrl(false);
+    }
   };
 
   const toggleSessionBinding = (sessionId: string) => {
@@ -1583,7 +1620,10 @@ export default function AiBotProfilesView({ sessions }: Props) {
                               ...editingProfile,
                               connectionId: undefined,
                               connectionName: undefined,
+                              hasKey: false,
+                              apiKeyMasked: "",
                             });
+                            setKeyInput("");
                           } else {
                             const conn = connections.find((c) => c.id === val);
                             if (conn) {
@@ -1593,6 +1633,8 @@ export default function AiBotProfilesView({ sessions }: Props) {
                                 connectionName: conn.name,
                                 provider: conn.provider,
                                 model: conn.defaultModel || PROVIDER_MODELS[conn.provider]?.[0]?.id || "gemini-3.6-flash",
+                                hasKey: conn.hasKey,
+                                apiKeyMasked: conn.apiKeyMasked,
                               });
                               setKeyInput("");
                             }
@@ -1689,11 +1731,29 @@ export default function AiBotProfilesView({ sessions }: Props) {
                                 const newProv = e.target.value as any;
                                 const defaultMod =
                                   PROVIDER_MODELS[newProv]?.[0]?.id || "gemini-3.6-flash";
-                                setEditingProfile({
-                                  ...editingProfile,
-                                  provider: newProv,
-                                  model: defaultMod,
-                                });
+                                const matchingConn = connections.find((c) => c.provider === newProv);
+                                if (matchingConn) {
+                                  setEditingProfile({
+                                    ...editingProfile,
+                                    provider: newProv,
+                                    model: matchingConn.defaultModel || defaultMod,
+                                    connectionId: matchingConn.id,
+                                    connectionName: matchingConn.name,
+                                    hasKey: matchingConn.hasKey,
+                                    apiKeyMasked: matchingConn.apiKeyMasked,
+                                  });
+                                } else {
+                                  setEditingProfile({
+                                    ...editingProfile,
+                                    provider: newProv,
+                                    model: defaultMod,
+                                    connectionId: undefined,
+                                    connectionName: undefined,
+                                    hasKey: false,
+                                    apiKeyMasked: "",
+                                  });
+                                }
+                                setKeyInput("");
                               }}
                             >
                               <option value="gemini">Google Gemini (Gratis & Cepat)</option>
@@ -2040,10 +2100,19 @@ export default function AiBotProfilesView({ sessions }: Props) {
                           type="button"
                           onClick={() => kbFileInputRef.current?.click()}
                           disabled={uploadingDoc}
-                          className="btn-secondary text-[11px] py-1 px-2.5"
+                          className="btn-secondary text-[11px] py-1 px-2.5 flex items-center gap-1.5"
                         >
                           <Upload className="w-3.5 h-3.5 text-purple-400" />
                           <span>{uploadingDoc ? "Membaca..." : "Upload Berkas (.txt/.pdf)"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowUrlModal(true)}
+                          disabled={scrapingUrl}
+                          className="btn-secondary text-[11px] py-1 px-2.5 flex items-center gap-1.5"
+                        >
+                          <Globe className="w-3.5 h-3.5 text-blue-400" />
+                          <span>{scrapingUrl ? "Mengambil..." : "🌐 Import dari URL Web"}</span>
                         </button>
                       </div>
                     </div>
@@ -2270,6 +2339,84 @@ export default function AiBotProfilesView({ sessions }: Props) {
           </div>
         </div>
       )}
+      {/* ── Import dari URL Website Modal ────────────────────────────────────── */}
+      {showUrlModal && (
+        <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Import Knowledge Base dari URL Web</h3>
+                  <p className="text-[10px] text-gray-400">Ambil teks otomatis dari situs/FAQ untuk dipelajari bot</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUrlModal(false);
+                  setUrlInput("");
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleScrapeWebUrl} className="space-y-3">
+              <div>
+                <label className="label">Alamat URL Halaman Web</label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://tokoanda.com/faq atau https://domain.com/tentang-kami"
+                  value={urlInput}
+                  onChange={(e) => setUrlInput(e.target.value)}
+                  className="input text-xs font-mono"
+                  autoFocus
+                />
+                <p className="text-[10px] text-gray-500 mt-1">
+                  Konten teks bersih (bebas HTML script/style) hingga 40.000 karakter akan otomatis ditambahkan ke Knowledge Base.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUrlModal(false);
+                    setUrlInput("");
+                  }}
+                  className="btn-secondary text-xs"
+                  disabled={scrapingUrl}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={scrapingUrl || !urlInput.trim()}
+                  className="btn-primary text-xs flex items-center gap-1.5"
+                >
+                  {scrapingUrl ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Mengunduh Teks Web...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Ambil & Pelajari Konten</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── Global Floating Toast Notification ─────────────────────────────────── */}
       {toast && (
         <div className="fixed top-5 right-5 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md animate-in slide-in-from-top-3 fade-in duration-200 max-w-md bg-gray-900/95 border-gray-750">
