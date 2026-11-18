@@ -322,6 +322,13 @@ export default function AiBotProfilesView({ sessions }: Props) {
       ...p,
       connectionId: initialConnId,
       connectionName: matchedConn?.name || p.connectionName,
+      scheduleMode: p.scheduleMode || "always",
+      workHoursStart: p.workHoursStart || "08:00",
+      workHoursEnd: p.workHoursEnd || "17:00",
+      workDays: p.workDays || [1, 2, 3, 4, 5],
+      temperature: p.temperature ?? 0.7,
+      maxTokens: p.maxTokens ?? 500,
+      contextWindow: p.contextWindow ?? 8,
     });
     setIsCreatingNew(false);
     setIsCustomProfileModel(!isKnownModel(p.provider, p.model));
@@ -674,7 +681,14 @@ export default function AiBotProfilesView({ sessions }: Props) {
           }
         : undefined;
 
-      const res = await aiBotApi.testProfile(targetId, msgToSend.trim(), draftPayload);
+      const chatHistory = simulatorChat
+        .filter((m) => m.role === "user" || m.role === "bot")
+        .map((m) => ({
+          role: (m.role === "bot" ? "assistant" : "user") as "user" | "assistant",
+          content: m.text,
+        }));
+
+      const res = await aiBotApi.testProfile(targetId, msgToSend.trim(), draftPayload, chatHistory);
       const replyText =
         res.data?.reply ||
         (res as any)?.reply ||

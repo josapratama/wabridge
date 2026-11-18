@@ -1318,6 +1318,7 @@ export class AiBotService implements OnModuleInit {
     message: string,
     userId: string = "default",
     draft?: Partial<AiBotProfile>,
+    history: Array<{ role: "user" | "assistant"; content: string }> = [],
   ): Promise<{ reply: string; error?: string }> {
     const rawProfile = this.profiles.get(profileId);
     const base: AiBotProfile = rawProfile || {
@@ -1360,9 +1361,9 @@ export class AiBotService implements OnModuleInit {
     try {
       let reply = "";
       if (profile.provider === "gemini") {
-        reply = await this.callGemini(profile, message, effectiveSystemPrompt, []);
+        reply = await this.callGemini(profile, message, effectiveSystemPrompt, history);
       } else {
-        reply = await this.callOpenAiCompatible(profile, message, effectiveSystemPrompt, []);
+        reply = await this.callOpenAiCompatible(profile, message, effectiveSystemPrompt, history);
       }
       return { reply };
     } catch (err: any) {
@@ -1395,10 +1396,18 @@ export class AiBotService implements OnModuleInit {
 
     const contents: any[] = [];
     for (const h of history) {
-      contents.push({
-        role: h.role === "assistant" ? "model" : "user",
-        parts: [{ text: h.content }],
-      });
+      if (!h.content || h.content.trim() === "") continue;
+      const role = h.role === "assistant" ? "model" : "user";
+      if (contents.length === 0 && role === "model") continue;
+      const last = contents[contents.length - 1];
+      if (last && last.role === role) {
+        last.parts[0].text += `\n${h.content}`;
+      } else {
+        contents.push({
+          role,
+          parts: [{ text: h.content }],
+        });
+      }
     }
 
     const userParts: any[] = [{ text: userMessage || "Apa isi gambar ini?" }];
@@ -1442,6 +1451,8 @@ export class AiBotService implements OnModuleInit {
         role: "user",
         parts: userParts,
       });
+    } else {
+      contents[contents.length - 1].parts.push(...userParts);
     }
 
     const generationConfig: Record<string, any> = {

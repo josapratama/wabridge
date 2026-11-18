@@ -110,7 +110,8 @@ export class AiBotController {
     const userId = req.user?.id || "default";
     const message = typeof body === "string" ? body : body?.message || "Halo";
     const draft = body?.draft;
-    return this.service.testProfile(id, message, userId, draft);
+    const history = Array.isArray(body?.history) ? body.history : [];
+    return this.service.testProfile(id, message, userId, draft, history);
   }
 
   // ── Legacy Single-Config Compatibility Endpoints ──────────────────────────
