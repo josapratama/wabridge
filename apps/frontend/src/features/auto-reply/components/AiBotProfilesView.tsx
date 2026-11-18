@@ -126,6 +126,11 @@ function formatPhoneNumberDisplay(num: string): string {
   return num;
 }
 
+function isKnownModel(provider?: string, modelId?: string): boolean {
+  if (!provider || !modelId) return false;
+  return (PROVIDER_MODELS[provider] || []).some((m) => m.id === modelId);
+}
+
 interface Props {
   sessions: Session[];
 }
@@ -140,6 +145,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
   // Editor modal/view state
   const [editingProfile, setEditingProfile] = useState<AiBotProfile | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [isCustomProfileModel, setIsCustomProfileModel] = useState(false);
   const [keyInput, setKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [phoneInput, setPhoneInput] = useState("");
@@ -151,6 +157,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
   const [isConnManagerOpen, setIsConnManagerOpen] = useState(false);
   const [editingConn, setEditingConn] = useState<Partial<AiConnection> | null>(null);
   const [isCreatingConn, setIsCreatingConn] = useState(false);
+  const [isCustomConnModel, setIsCustomConnModel] = useState(false);
   const [connKeyInput, setConnKeyInput] = useState("");
   const [showConnKey, setShowConnKey] = useState(false);
   const [savingConn, setSavingConn] = useState(false);
@@ -265,6 +272,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
     };
     setEditingProfile(newProf);
     setIsCreatingNew(true);
+    setIsCustomProfileModel(!isKnownModel(newProf.provider, newProf.model));
     setKeyInput("");
     setShowKey(false);
     setPhoneInput("");
@@ -281,6 +289,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
   const openEditProfile = (p: AiBotProfile) => {
     setEditingProfile({ ...p });
     setIsCreatingNew(false);
+    setIsCustomProfileModel(!isKnownModel(p.provider, p.model));
     setKeyInput("");
     setShowKey(false);
     setPhoneInput("");
@@ -297,6 +306,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
   const closeEditor = () => {
     setEditingProfile(null);
     setIsCreatingNew(false);
+    setIsCustomProfileModel(false);
     setKeyInput("");
     setPhoneInput("");
     setSaveSuccessMsg("");
@@ -312,6 +322,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
       apiKey: "",
     });
     setIsCreatingConn(true);
+    setIsCustomConnModel(false);
     setConnKeyInput("");
     setShowConnKey(false);
     setConnTestResult(null);
@@ -320,6 +331,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
   const openEditConnection = (conn: AiConnection) => {
     setEditingConn({ ...conn });
     setIsCreatingConn(false);
+    setIsCustomConnModel(!isKnownModel(conn.provider, conn.defaultModel));
     setConnKeyInput("");
     setShowConnKey(false);
     setConnTestResult(null);
@@ -1217,20 +1229,60 @@ export default function AiBotProfilesView({ sessions }: Props) {
                 </div>
 
                 <div>
-                  <label className="label">Model Default</label>
-                  <select
-                    className="input text-xs"
-                    value={editingConn.defaultModel}
-                    onChange={(e) =>
-                      setEditingConn({ ...editingConn, defaultModel: e.target.value })
-                    }
-                  >
-                    {(PROVIDER_MODELS[editingConn.provider || "gemini"] || []).map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between pb-1">
+                    <label className="label mb-0">Model Default</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomConnModel(!isCustomConnModel)}
+                      className="text-[10px] text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                    >
+                      {isCustomConnModel ? "← Pilih dari Daftar" : "+ Ketik ID Model Manual"}
+                    </button>
+                  </div>
+                  {isCustomConnModel ? (
+                    <div>
+                      <input
+                        type="text"
+                        required
+                        value={editingConn.defaultModel || ""}
+                        onChange={(e) =>
+                          setEditingConn({ ...editingConn, defaultModel: e.target.value.trim() })
+                        }
+                        placeholder={
+                          editingConn.provider === "openrouter"
+                            ? "Cth: anthropic/claude-3.7-sonnet"
+                            : "Cth: nama-model-kustom"
+                        }
+                        className="input text-xs font-mono"
+                      />
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        Ketik ID model persis seperti di dashboard provider (misal: <code>penyedia/model-id</code>).
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      className="input text-xs"
+                      value={
+                        isKnownModel(editingConn.provider, editingConn.defaultModel)
+                          ? editingConn.defaultModel
+                          : "__custom__"
+                      }
+                      onChange={(e) => {
+                        if (e.target.value === "__custom__") {
+                          setIsCustomConnModel(true);
+                        } else {
+                          setEditingConn({ ...editingConn, defaultModel: e.target.value });
+                        }
+                      }}
+                    >
+                      {(PROVIDER_MODELS[editingConn.provider || "gemini"] || []).map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                      <option value="__custom__">➕ Ketik ID Model Manual (Custom)...</option>
+                    </select>
+                  )}
                 </div>
               </div>
 
@@ -1524,20 +1576,56 @@ export default function AiBotProfilesView({ sessions }: Props) {
                         </div>
 
                         <div>
-                          <label className="label text-[11px]">Model AI untuk Profil Ini</label>
-                          <select
-                            className="input text-xs"
-                            value={editingProfile.model}
-                            onChange={(e) =>
-                              setEditingProfile({ ...editingProfile, model: e.target.value })
-                            }
-                          >
-                            {(PROVIDER_MODELS[editingProfile.provider] || []).map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.name}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="flex items-center justify-between pb-1">
+                            <label className="label text-[11px] mb-0">Model AI untuk Profil Ini</label>
+                            <button
+                              type="button"
+                              onClick={() => setIsCustomProfileModel(!isCustomProfileModel)}
+                              className="text-[10px] text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                            >
+                              {isCustomProfileModel ? "← Pilih dari Daftar" : "+ Ketik ID Model Manual"}
+                            </button>
+                          </div>
+                          {isCustomProfileModel ? (
+                            <div>
+                              <input
+                                type="text"
+                                required
+                                value={editingProfile.model || ""}
+                                onChange={(e) =>
+                                  setEditingProfile({ ...editingProfile, model: e.target.value.trim() })
+                                }
+                                placeholder="Cth: anthropic/claude-3.7-sonnet"
+                                className="input text-xs font-mono"
+                              />
+                              <p className="text-[10px] text-gray-400 mt-1">
+                                Masukkan ID model kustom yang didukung oleh akun AI ini.
+                              </p>
+                            </div>
+                          ) : (
+                            <select
+                              className="input text-xs"
+                              value={
+                                isKnownModel(editingProfile.provider, editingProfile.model)
+                                  ? editingProfile.model
+                                  : "__custom__"
+                              }
+                              onChange={(e) => {
+                                if (e.target.value === "__custom__") {
+                                  setIsCustomProfileModel(true);
+                                } else {
+                                  setEditingProfile({ ...editingProfile, model: e.target.value });
+                                }
+                              }}
+                            >
+                              {(PROVIDER_MODELS[editingProfile.provider] || []).map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name}
+                                </option>
+                              ))}
+                              <option value="__custom__">➕ Ketik ID Model Manual (Custom)...</option>
+                            </select>
+                          )}
                           <p className="text-[10px] text-gray-400 mt-1">
                             ✓ Kunci API otomatis diambil dari akun ini ({connections.find((c) => c.id === editingProfile.connectionId)?.apiKeyMasked}). Tidak perlu diketik ulang.
                           </p>
@@ -1571,20 +1659,51 @@ export default function AiBotProfilesView({ sessions }: Props) {
                           </div>
 
                           <div>
-                            <label className="label">Model AI</label>
-                            <select
-                              className="input text-xs"
-                              value={editingProfile.model}
-                              onChange={(e) =>
-                                setEditingProfile({ ...editingProfile, model: e.target.value })
-                              }
-                            >
-                              {(PROVIDER_MODELS[editingProfile.provider] || []).map((m) => (
-                                <option key={m.id} value={m.id}>
-                                  {m.name}
-                                </option>
-                              ))}
-                            </select>
+                            <div className="flex items-center justify-between pb-1">
+                              <label className="label mb-0">Model AI</label>
+                              <button
+                                type="button"
+                                onClick={() => setIsCustomProfileModel(!isCustomProfileModel)}
+                                className="text-[10px] text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                              >
+                                {isCustomProfileModel ? "← Pilih dari Daftar" : "+ Ketik ID Model Manual"}
+                              </button>
+                            </div>
+                            {isCustomProfileModel ? (
+                              <input
+                                type="text"
+                                required
+                                value={editingProfile.model || ""}
+                                onChange={(e) =>
+                                  setEditingProfile({ ...editingProfile, model: e.target.value.trim() })
+                                }
+                                placeholder="Cth: custom-model-id"
+                                className="input text-xs font-mono"
+                              />
+                            ) : (
+                              <select
+                                className="input text-xs"
+                                value={
+                                  isKnownModel(editingProfile.provider, editingProfile.model)
+                                    ? editingProfile.model
+                                    : "__custom__"
+                                }
+                                onChange={(e) => {
+                                  if (e.target.value === "__custom__") {
+                                    setIsCustomProfileModel(true);
+                                  } else {
+                                    setEditingProfile({ ...editingProfile, model: e.target.value });
+                                  }
+                                }}
+                              >
+                                {(PROVIDER_MODELS[editingProfile.provider] || []).map((m) => (
+                                  <option key={m.id} value={m.id}>
+                                    {m.name}
+                                  </option>
+                                ))}
+                                <option value="__custom__">➕ Ketik ID Model Manual (Custom)...</option>
+                              </select>
+                            )}
                           </div>
                         </div>
 
