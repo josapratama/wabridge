@@ -6,7 +6,13 @@ export interface Session {
   providerType: "meta-cloud" | "bsp" | "baileys";
   providerConfigId: string;
   status: "active" | "inactive";
-  metadata: Record<string, unknown>;
+  metadata: {
+    aiProfileId?: string | null;
+    aiBotConfigId?: string | null;
+    phoneNumber?: string;
+    phone?: string;
+    [key: string]: unknown;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -22,7 +28,7 @@ export interface WhatsAppGroup {
 export const sessionsApi = {
   list: () => request<Session[]>("/sessions"),
   get: (id: string) => request<Session>(`/sessions/${id}`),
-  create: (body: { name: string; providerConfigId: string }) =>
+  create: (body: { name: string; providerConfigId: string; aiProfileId?: string }) =>
     request<Session>("/sessions", {
       method: "POST",
       body: JSON.stringify(body),
@@ -31,6 +37,11 @@ export const sessionsApi = {
     request<Session>(`/sessions/${id}/activate`, { method: "PATCH" }),
   deactivate: (id: string) =>
     request<Session>(`/sessions/${id}/deactivate`, { method: "PATCH" }),
+  setAiProfile: (id: string, aiProfileId: string | null) =>
+    request<Session>(`/sessions/${id}/ai-profile`, {
+      method: "PATCH",
+      body: JSON.stringify({ aiProfileId }),
+    }),
   getGroups: (id: string) =>
     request<WhatsAppGroup[]>(`/sessions/${id}/groups`),
 };

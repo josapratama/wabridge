@@ -1,15 +1,19 @@
-import { Injectable, Inject, Optional, OnModuleInit } from "@nestjs/common";
+import { Injectable, Inject, Optional, OnModuleInit, NotFoundException } from "@nestjs/common";
 import { AppLogger } from "../../common/logger/app.logger";
-import { MessageRepository } from "../../repositories/interfaces";
+import { MessageRepository, SessionRepository } from "../../repositories/interfaces";
 import { DRIZZLE_CLIENT } from "../../common/database/database.module";
 import * as schema from "../../common/database/drizzle/schema";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
 import * as path from "path";
 
-export interface AiBotConfig {
+export interface AiBotProfile {
+  id: string;
+  userId?: string;
+  name: string;
+  description?: string;
   isEnabled: boolean;
   provider: "gemini" | "openai" | "openrouter" | "deepseek" | "grok";
   apiKey: string;
@@ -31,14 +35,22 @@ export interface AiBotConfig {
   whitelistNumbers?: string[]; // e.g. ["628123456789"]
   blacklistNumbers?: string[]; // e.g. ["628111222333"]
   ignoreGroups?: boolean; // default: true (AI only answers private DMs)
+  createdAt: string;
+  updatedAt: string;
 }
 
-export type AiBotConfigResponse = Omit<AiBotConfig, "apiKey"> & {
+export type AiBotConfig = AiBotProfile;
+
+export type AiBotProfileResponse = Omit<AiBotProfile, "apiKey"> & {
   apiKeyMasked: string;
   hasKey: boolean;
+  sessionCount?: number;
 };
 
-const DEFAULT_CONFIG: AiBotConfig = {
+export type AiBotConfigResponse = AiBotProfileResponse;
+
+const DEFAULT_PROFILE_TEMPLATE: Omit<AiBotProfile, "id" | "name" | "createdAt" | "updatedAt"> = {
+  description: "Asisten otomatis WhatsApp",
   isEnabled: false,
   provider: "gemini",
   apiKey: "",
@@ -66,11 +78,13 @@ const DEFAULT_CONFIG: AiBotConfig = {
 
 @Injectable()
 export class AiBotService implements OnModuleInit {
-  private configsDir = path.join(process.cwd(), "data", "ai_bot_configs");
+  private profilesDir = path.join(process.cwd(), "data", "ai_bot_profiles");
+  private legacyConfigsDir = path.join(process.cwd(), "data", "ai_bot_configs");
   private legacyConfigPath = path.join(process.cwd(), "ai_bot_config.json");
-  private userConfigs = new Map<string, AiBotConfig>();
+  private profiles = new Map<string, AiBotProfile>();
   // userId -> Map(fromJid -> pausedUntil)
   private pausedJids = new Map<string, Map<string, number>>();
+  private statsByUserId = new Map<string, { repliesSentToday: number; lastResetDate: string }>();
 
   constructor(
     private readonly logger: AppLogger,
@@ -78,446 +92,479 @@ export class AiBotService implements OnModuleInit {
     @Inject(MessageRepository)
     private readonly messageRepo?: MessageRepository,
     @Optional()
+    @Inject(SessionRepository)
+    private readonly sessionRepo?: SessionRepository,
+    @Optional()
     @Inject(DRIZZLE_CLIENT)
     private readonly db?: NodePgDatabase<typeof schema>,
   ) {
     this.ensureDir();
   }
 
-  async onModuleInit() {
-    this.ensureDir();
-    if (!this.db) return;
-
-    // 1. Sync from DB table if rows exist
+  private ensureDir() {
     try {
-      const rows = await this.db.select().from(schema.aiBotConfigs);
-      for (const row of rows) {
-        const uId = row.userId || "default";
-        const diskCfg = this.loadUserConfig(uId);
-        const merged: AiBotConfig = {
-          ...diskCfg,
-          isEnabled: row.isEnabled,
-          provider: (row.provider as any) || diskCfg.provider,
-          apiKey: row.apiKey || diskCfg.apiKey,
-          model: row.model || diskCfg.model,
-          systemPrompt: row.systemPrompt || diskCfg.systemPrompt,
-          knowledgeBase: row.knowledgeBase ?? diskCfg.knowledgeBase,
-          handoverKeywords:
-            (row.handoverKeywords as string[]) ?? diskCfg.handoverKeywords,
-          handoverMessage:
-            row.handoverMessage ?? diskCfg.handoverMessage,
-        };
-        this.userConfigs.set(uId, merged);
-        this.saveUserConfig(uId);
+      if (!fs.existsSync(this.profilesDir)) {
+        fs.mkdirSync(this.profilesDir, { recursive: true });
       }
-    } catch (err) {
-      this.logger.warn(`Could not preload AiBotConfig from DB: ${err}`, "AiBotService");
-    }
-
-    // 2. Sync any configs already saved on disk to database table AiBotConfig
-    try {
-      if (fs.existsSync(this.configsDir)) {
-        const files = fs.readdirSync(this.configsDir);
-        for (const file of files) {
-          if (file.endsWith(".json")) {
-            const uId = file.replace(/\.json$/, "");
-            const cfg = this.loadUserConfig(uId);
-            await this.saveUserConfigToDb(uId, cfg);
-          }
-        }
-      }
-      if (fs.existsSync(this.legacyConfigPath)) {
-        const cfg = this.loadUserConfig("default");
-        await this.saveUserConfigToDb("default", cfg);
-      }
-    } catch (err) {
-      this.logger.warn(`Could not sync initial disk configs to DB: ${err}`, "AiBotService");
+    } catch (e) {
+      this.logger.warn(`Could not create ai_bot_profiles dir: ${e}`, "AiBotService");
     }
   }
 
-  private async saveUserConfigToDb(userId: string, cfg: AiBotConfig): Promise<void> {
+  async onModuleInit() {
+    this.ensureDir();
+    await this.loadAllProfiles();
+  }
+
+  private async loadAllProfiles() {
+    // 1. Load profiles from disk
+    try {
+      if (fs.existsSync(this.profilesDir)) {
+        const files = fs.readdirSync(this.profilesDir);
+        for (const file of files) {
+          if (file.endsWith(".json")) {
+            const raw = fs.readFileSync(path.join(this.profilesDir, file), "utf-8");
+            const parsed = JSON.parse(raw) as AiBotProfile;
+            if (parsed.id) {
+              this.profiles.set(parsed.id, parsed);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`Error reading profiles from disk: ${err}`, "AiBotService");
+    }
+
+    // 2. Preload/sync from DB table AiBotConfig
+    if (this.db) {
+      try {
+        const rows = await this.db.select().from(schema.aiBotConfigs);
+        for (const row of rows) {
+          const existing = this.profiles.get(row.id);
+          const now = new Date().toISOString();
+          const p: AiBotProfile = {
+            id: row.id,
+            userId: row.userId || undefined,
+            name: existing?.name || (row as any).name || "Default Assistant",
+            description: existing?.description || (row as any).description || "Asisten WhatsApp",
+            isEnabled: row.isEnabled,
+            provider: (row.provider as any) || existing?.provider || "gemini",
+            apiKey: row.apiKey || existing?.apiKey || "",
+            model: row.model || existing?.model || "gemini-3.6-flash",
+            systemPrompt: row.systemPrompt || existing?.systemPrompt || DEFAULT_PROFILE_TEMPLATE.systemPrompt,
+            knowledgeBase: row.knowledgeBase ?? existing?.knowledgeBase ?? "",
+            handoverKeywords:
+              (row.handoverKeywords as string[]) ??
+              existing?.handoverKeywords ??
+              DEFAULT_PROFILE_TEMPLATE.handoverKeywords,
+            handoverMessage:
+              row.handoverMessage ??
+              existing?.handoverMessage ??
+              DEFAULT_PROFILE_TEMPLATE.handoverMessage,
+            handoverDurationMinutes:
+              existing?.handoverDurationMinutes ?? DEFAULT_PROFILE_TEMPLATE.handoverDurationMinutes,
+            targetSessionIds: existing?.targetSessionIds ?? [],
+            scheduleMode: existing?.scheduleMode ?? "always",
+            workHoursStart: existing?.workHoursStart ?? "08:00",
+            workHoursEnd: existing?.workHoursEnd ?? "17:00",
+            workDays: existing?.workDays ?? [1, 2, 3, 4, 5],
+            temperature: existing?.temperature ?? 0.7,
+            maxTokens: existing?.maxTokens ?? 500,
+            contextWindow: existing?.contextWindow ?? 8,
+            senderFilterMode: existing?.senderFilterMode ?? "all",
+            whitelistNumbers: existing?.whitelistNumbers ?? [],
+            blacklistNumbers: existing?.blacklistNumbers ?? [],
+            ignoreGroups: existing?.ignoreGroups ?? true,
+            createdAt: existing?.createdAt || now,
+            updatedAt: row.updatedAt?.toISOString() || now,
+          };
+          this.profiles.set(p.id, p);
+          this.saveProfileToDisk(p);
+        }
+      } catch (err) {
+        this.logger.warn(`Could not preload AiBotConfig from DB: ${err}`, "AiBotService");
+      }
+    }
+
+    // 3. If no profile exists yet, migrate legacy config or create initial default
+    if (this.profiles.size === 0) {
+      const now = new Date().toISOString();
+      let migrated: Partial<AiBotProfile> = {};
+
+      if (fs.existsSync(this.legacyConfigPath)) {
+        try {
+          migrated = JSON.parse(fs.readFileSync(this.legacyConfigPath, "utf-8"));
+        } catch {}
+      } else if (fs.existsSync(this.legacyConfigsDir)) {
+        try {
+          const files = fs.readdirSync(this.legacyConfigsDir);
+          if (files.length > 0 && files[0].endsWith(".json")) {
+            migrated = JSON.parse(
+              fs.readFileSync(path.join(this.legacyConfigsDir, files[0]), "utf-8"),
+            );
+          }
+        } catch {}
+      }
+
+      const defaultProfile: AiBotProfile = {
+        id: "default-assistant",
+        name: "Default Assistant",
+        description: "Asisten WhatsApp Utama",
+        ...DEFAULT_PROFILE_TEMPLATE,
+        ...migrated,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      this.profiles.set(defaultProfile.id, defaultProfile);
+      this.saveProfileToDisk(defaultProfile);
+      void this.saveProfileToDb(defaultProfile);
+    }
+  }
+
+  private saveProfileToDisk(p: AiBotProfile): void {
+    this.ensureDir();
+    const filePath = path.join(this.profilesDir, `${p.id}.json`);
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(p, null, 2), "utf-8");
+    } catch (e) {
+      this.logger.error(`Could not save profile ${p.id} to disk: ${e}`, undefined, "AiBotService");
+    }
+  }
+
+  private async saveProfileToDb(p: AiBotProfile): Promise<void> {
     if (!this.db) return;
     try {
-      let targetUserId: string | null = null;
-      if (userId && userId !== "default") {
-        const userExists = await this.db
-          .select({ id: schema.users.id })
-          .from(schema.users)
-          .where(eq(schema.users.id, userId))
-          .limit(1);
-        if (userExists.length > 0) {
-          targetUserId = userExists[0].id;
-        }
-      }
-
-      // If no targetUserId found but users table has users, attach to first admin/user
+      let targetUserId = p.userId || null;
       if (!targetUserId) {
-        const anyUser = await this.db
-          .select({ id: schema.users.id })
-          .from(schema.users)
-          .limit(1);
-        if (anyUser.length > 0) {
-          targetUserId = anyUser[0].id;
-        }
+        const anyUser = await this.db.select({ id: schema.users.id }).from(schema.users).limit(1);
+        if (anyUser.length > 0) targetUserId = anyUser[0].id;
       }
 
-      const existing = targetUserId
-        ? await this.db
-            .select()
-            .from(schema.aiBotConfigs)
-            .where(eq(schema.aiBotConfigs.userId, targetUserId))
-            .limit(1)
-        : await this.db
-            .select()
-            .from(schema.aiBotConfigs)
-            .limit(1);
+      const existing = await this.db
+        .select()
+        .from(schema.aiBotConfigs)
+        .where(eq(schema.aiBotConfigs.id, p.id))
+        .limit(1);
 
       if (existing.length > 0) {
         await this.db
           .update(schema.aiBotConfigs)
           .set({
-            isEnabled: cfg.isEnabled,
-            provider: cfg.provider,
-            apiKey: cfg.apiKey,
-            model: cfg.model,
-            systemPrompt: cfg.systemPrompt,
-            knowledgeBase: cfg.knowledgeBase ?? null,
-            handoverKeywords: cfg.handoverKeywords ?? [],
-            handoverMessage: cfg.handoverMessage ?? null,
+            isEnabled: p.isEnabled,
+            provider: p.provider,
+            apiKey: p.apiKey,
+            model: p.model,
+            systemPrompt: p.systemPrompt,
+            knowledgeBase: p.knowledgeBase ?? null,
+            handoverKeywords: p.handoverKeywords ?? null,
+            handoverMessage: p.handoverMessage ?? null,
             updatedAt: new Date(),
           })
-          .where(eq(schema.aiBotConfigs.id, existing[0].id));
+          .where(eq(schema.aiBotConfigs.id, p.id));
       } else {
         await this.db.insert(schema.aiBotConfigs).values({
-          id: uuidv4(),
+          id: p.id,
           userId: targetUserId,
-          isEnabled: cfg.isEnabled,
-          provider: cfg.provider,
-          apiKey: cfg.apiKey,
-          model: cfg.model,
-          systemPrompt: cfg.systemPrompt,
-          knowledgeBase: cfg.knowledgeBase ?? null,
-          handoverKeywords: cfg.handoverKeywords ?? [],
-          handoverMessage: cfg.handoverMessage ?? null,
+          isEnabled: p.isEnabled,
+          provider: p.provider,
+          apiKey: p.apiKey,
+          model: p.model,
+          systemPrompt: p.systemPrompt,
+          knowledgeBase: p.knowledgeBase ?? null,
+          handoverKeywords: p.handoverKeywords ?? null,
+          handoverMessage: p.handoverMessage ?? null,
           updatedAt: new Date(),
         });
       }
-      this.logger.log(`Synced AI bot config to database table AiBotConfig for user ${userId}`, "AiBotService");
     } catch (e) {
-      this.logger.warn(`Could not sync AI bot config to database: ${e}`, "AiBotService");
+      this.logger.warn(`Could not sync profile ${p.id} to database: ${e}`, "AiBotService");
     }
   }
 
-  private ensureDir() {
-    try {
-      if (!fs.existsSync(this.configsDir)) {
-        fs.mkdirSync(this.configsDir, { recursive: true });
-      }
-    } catch (e) {
-      this.logger.warn(`Could not create configs dir: ${e}`, "AiBotService");
-    }
-  }
-
-  private getUserConfigPath(userId: string = "default"): string {
-    const safeUserId = userId.replace(/[^a-zA-Z0-9_-]/g, "_");
-    return path.join(this.configsDir, `${safeUserId}.json`);
-  }
-
-  private loadUserConfig(userId: string = "default"): AiBotConfig {
-    if (this.userConfigs.has(userId)) {
-      return this.userConfigs.get(userId)!;
-    }
-
-    const filePath = this.getUserConfigPath(userId);
-    let cfg: AiBotConfig = { ...DEFAULT_CONFIG };
-
-    try {
-      if (fs.existsSync(filePath)) {
-        const raw = fs.readFileSync(filePath, "utf-8");
-        cfg = { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
-      } else if (userId === "default" && fs.existsSync(this.legacyConfigPath)) {
-        const raw = fs.readFileSync(this.legacyConfigPath, "utf-8");
-        cfg = { ...DEFAULT_CONFIG, ...JSON.parse(raw) };
-      }
-    } catch (e) {
-      this.logger.warn(
-        `Could not load AI bot config for user ${userId}`,
-        "AiBotService",
-      );
-    }
-
-    this.userConfigs.set(userId, cfg);
-    return cfg;
-  }
-
-  private saveUserConfig(userId: string = "default"): void {
-    const cfg = this.userConfigs.get(userId);
-    if (!cfg) return;
-
-    this.ensureDir();
-    const filePath = this.getUserConfigPath(userId);
-
-    try {
-      fs.writeFileSync(filePath, JSON.stringify(cfg, null, 2), "utf-8");
-    } catch (e) {
-      this.logger.error(
-        `Could not save AI bot config for user ${userId}`,
-        undefined,
-        "AiBotService",
-      );
-    }
-  }
-
-  getConfig(userId: string = "default"): AiBotConfigResponse {
-    const cfg = this.loadUserConfig(userId);
-    const hasKey = !!cfg.apiKey && cfg.apiKey.trim().length > 0;
-    const apiKeyMasked = hasKey
-      ? `${cfg.apiKey.slice(0, 4)}...${cfg.apiKey.slice(-4)}`
-      : "";
-
+  private toResponse(p: AiBotProfile, sessionCount: number = 0): AiBotProfileResponse {
+    const hasKey = !!p.apiKey && p.apiKey.trim().length > 0;
+    const apiKeyMasked = hasKey ? `${p.apiKey.slice(0, 4)}...${p.apiKey.slice(-4)}` : "";
+    const { apiKey, ...safe } = p;
     return {
-      isEnabled: cfg.isEnabled,
-      provider: cfg.provider,
-      model: cfg.model,
-      systemPrompt: cfg.systemPrompt,
-      knowledgeBase: cfg.knowledgeBase ?? "",
-      handoverKeywords: cfg.handoverKeywords ?? [],
-      handoverMessage: cfg.handoverMessage ?? "",
-      handoverDurationMinutes: cfg.handoverDurationMinutes ?? 120,
-      targetSessionIds: cfg.targetSessionIds ?? [],
-      scheduleMode: cfg.scheduleMode ?? "always",
-      workHoursStart: cfg.workHoursStart ?? "08:00",
-      workHoursEnd: cfg.workHoursEnd ?? "17:00",
-      workDays: cfg.workDays ?? [1, 2, 3, 4, 5],
-      temperature: cfg.temperature ?? 0.7,
-      maxTokens: cfg.maxTokens ?? 500,
-      contextWindow: cfg.contextWindow ?? 8,
-      senderFilterMode: cfg.senderFilterMode ?? "all",
-      whitelistNumbers: cfg.whitelistNumbers ?? [],
-      blacklistNumbers: cfg.blacklistNumbers ?? [],
-      ignoreGroups: cfg.ignoreGroups ?? true,
+      ...safe,
       apiKeyMasked,
       hasKey,
+      sessionCount,
     };
   }
 
-  async updateConfig(
-    userId: string = "default",
-    update: Partial<AiBotConfig>,
-  ): Promise<void> {
-    const cfg = this.loadUserConfig(userId);
+  // ── Profile CRUD ───────────────────────────────────────────────────────────
 
-    if (update.isEnabled !== undefined) cfg.isEnabled = update.isEnabled;
-    if (update.provider !== undefined) cfg.provider = update.provider;
-    if (update.model !== undefined) cfg.model = update.model;
-    if (update.systemPrompt !== undefined) cfg.systemPrompt = update.systemPrompt;
-    if (update.knowledgeBase !== undefined) cfg.knowledgeBase = update.knowledgeBase;
-    if (update.handoverKeywords !== undefined) cfg.handoverKeywords = update.handoverKeywords;
-    if (update.handoverMessage !== undefined) cfg.handoverMessage = update.handoverMessage;
-    if (update.handoverDurationMinutes !== undefined) cfg.handoverDurationMinutes = update.handoverDurationMinutes;
-    if (update.targetSessionIds !== undefined) cfg.targetSessionIds = update.targetSessionIds;
-    if (update.scheduleMode !== undefined) cfg.scheduleMode = update.scheduleMode;
-    if (update.workHoursStart !== undefined) cfg.workHoursStart = update.workHoursStart;
-    if (update.workHoursEnd !== undefined) cfg.workHoursEnd = update.workHoursEnd;
-    if (update.workDays !== undefined) cfg.workDays = update.workDays;
-    if (update.temperature !== undefined) cfg.temperature = update.temperature;
-    if (update.maxTokens !== undefined) cfg.maxTokens = update.maxTokens;
-    if (update.contextWindow !== undefined) cfg.contextWindow = update.contextWindow;
-    if (update.senderFilterMode !== undefined) cfg.senderFilterMode = update.senderFilterMode;
-    if (update.whitelistNumbers !== undefined) cfg.whitelistNumbers = update.whitelistNumbers;
-    if (update.blacklistNumbers !== undefined) cfg.blacklistNumbers = update.blacklistNumbers;
-    if (update.ignoreGroups !== undefined) cfg.ignoreGroups = update.ignoreGroups;
-
-    if (update.apiKey && update.apiKey.trim() !== "") {
-      cfg.apiKey = update.apiKey.trim();
-    }
-
-    this.userConfigs.set(userId, cfg);
-    this.saveUserConfig(userId);
-    await this.saveUserConfigToDb(userId, cfg);
-  }
-
-  async draftReply(
-    jid: string,
-    lastUserMessage?: string,
-    userId: string = "default",
-  ): Promise<string> {
-    const cfg = this.loadUserConfig(userId);
-    if (!cfg.apiKey) {
-      throw new Error("API Key belum dikonfigurasi pada menu AI Assistant.");
-    }
-
-    let history: Array<{ role: "user" | "assistant"; content: string }> = [];
-    if (this.messageRepo && jid) {
+  async listProfiles(userId?: string): Promise<AiBotProfileResponse[]> {
+    // Count connected sessions per profile
+    const sessionCountMap = new Map<string, number>();
+    if (this.sessionRepo) {
       try {
-        const recent = await this.messageRepo.findRecentByJid(
-          jid,
-          cfg.contextWindow || 8,
-        );
-        history = recent
-          .filter((m) => m.content && !m.content.startsWith("["))
-          .map((m) => ({
-            role: (m.direction === "inbound" ? "user" : "assistant") as
-              | "user"
-              | "assistant",
-            content: m.content,
-          }));
-      } catch {
-        // ignore history lookup failure
-      }
-    }
-
-    let userMsg = lastUserMessage;
-    if (!userMsg && history.length > 0) {
-      const lastInbound = [...history].reverse().find((h) => h.role === "user");
-      userMsg = lastInbound?.content;
-    }
-    if (!userMsg) userMsg = "Halo kak";
-
-    let draftPrompt =
-      "Anda adalah asisten AI yang bertugas membantu agen Customer Service manusia menyusun draf balasan pesan WhatsApp yang ramah, sopan, akurat, dan ringkas dalam Bahasa Indonesia.\n" +
-      (cfg.systemPrompt || "");
-
-    if (cfg.knowledgeBase && cfg.knowledgeBase.trim() !== "") {
-      draftPrompt += `\n\nKNOWLEDGE BASE & FAQ:\n${cfg.knowledgeBase}\n\nJawablah berdasarkan pengetahuan di atas jika relevan.`;
-    }
-
-    if (cfg.provider === "gemini") {
-      return await this.callGemini(cfg, userMsg, draftPrompt, history);
-    } else {
-      return await this.callOpenAiCompatible(cfg, userMsg, draftPrompt, history);
-    }
-  }
-
-  pauseForJid(
-    userId: string = "default",
-    jid: string,
-    durationMinutes: number = 120,
-  ): { pausedUntil: number } {
-    let userPausedMap = this.pausedJids.get(userId);
-    if (!userPausedMap) {
-      userPausedMap = new Map<string, number>();
-      this.pausedJids.set(userId, userPausedMap);
-    }
-    const pausedUntil = Date.now() + durationMinutes * 60 * 1000;
-    userPausedMap.set(jid, pausedUntil);
-    this.logger.log(
-      `AI manually paused for ${jid} (User: ${userId}) until ${new Date(pausedUntil).toISOString()}`,
-      "AiBotService",
-    );
-    return { pausedUntil };
-  }
-
-  resumeForJid(userId: string = "default", jid: string): { resumed: boolean } {
-    const userPausedMap = this.pausedJids.get(userId);
-    if (userPausedMap) {
-      userPausedMap.delete(jid);
-    }
-    this.logger.log(`AI resumed for ${jid} (User: ${userId})`, "AiBotService");
-    return { resumed: true };
-  }
-
-  getJidStatus(
-    userId: string = "default",
-    jid: string,
-  ): { isPaused: boolean; pausedUntil: number | null } {
-    const userPausedMap = this.pausedJids.get(userId);
-    const pausedUntil = userPausedMap?.get(jid);
-    if (pausedUntil && Date.now() < pausedUntil) {
-      return { isPaused: true, pausedUntil };
-    }
-    return { isPaused: false, pausedUntil: null };
-  }
-
-  async getStats(userId: string = "default") {
-    const cfg = this.loadUserConfig(userId);
-    let stats = { totalReplies: 0, lastReplyAt: null as string | null };
-
-    // 1. Query real PostgreSQL messages table for outbound bot replies
-    if (this.db) {
-      try {
-        const botMessages = await this.db
-          .select({
-            id: schema.messages.id,
-            createdAt: schema.messages.createdAt,
-          })
-          .from(schema.messages)
-          .where(
-            and(
-              eq(schema.messages.direction, "outbound"),
-              eq(schema.messages.from, "bot"),
-            ),
-          )
-          .orderBy(desc(schema.messages.createdAt));
-
-        if (botMessages.length > 0) {
-          stats.totalReplies = botMessages.length;
-          stats.lastReplyAt = botMessages[0].createdAt.toISOString();
+        const sessions = await this.sessionRepo.findAll();
+        for (const s of sessions) {
+          const profileId = (s.metadata?.aiProfileId as string) || (s.metadata?.aiBotConfigId as string);
+          if (profileId) {
+            sessionCountMap.set(profileId, (sessionCountMap.get(profileId) || 0) + 1);
+          }
         }
       } catch {}
     }
 
-    // 2. Fallback to file/memory stats if DB has none or for custom user tracking
-    try {
-      const statsPath = path.join(
-        this.configsDir,
-        `${userId.replace(/[^a-zA-Z0-9_-]/g, "_")}_stats.json`,
-      );
-      if (fs.existsSync(statsPath)) {
-        const fileStats = JSON.parse(fs.readFileSync(statsPath, "utf8"));
-        stats.totalReplies = Math.max(stats.totalReplies, fileStats.totalReplies || 0);
-        if (!stats.lastReplyAt && fileStats.lastReplyAt) {
-          stats.lastReplyAt = fileStats.lastReplyAt;
-        }
-      }
-    } catch {}
+    const result: AiBotProfileResponse[] = [];
+    for (const p of this.profiles.values()) {
+      if (userId && p.userId && p.userId !== userId) continue;
+      const explicitCount = sessionCountMap.get(p.id) || 0;
+      const targetCount = (p.targetSessionIds || []).length;
+      result.push(this.toResponse(p, Math.max(explicitCount, targetCount)));
+    }
 
-    return {
-      ...stats,
-      isEnabled: cfg.isEnabled,
-      provider: cfg.provider,
-      model: cfg.model,
+    // Sort by name or creation
+    return result.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  getProfile(profileId: string, userId?: string): AiBotProfileResponse {
+    const p = this.profiles.get(profileId);
+    if (!p) throw new NotFoundException(`AI Profile ${profileId} not found`);
+    return this.toResponse(p);
+  }
+
+  async createProfile(userId: string, data: Partial<AiBotProfile>): Promise<AiBotProfileResponse> {
+    const now = new Date().toISOString();
+    const id = uuidv4();
+    const p: AiBotProfile = {
+      ...DEFAULT_PROFILE_TEMPLATE,
+      ...data,
+      id,
+      userId,
+      name: data.name?.trim() || "Profil AI Baru",
+      description: data.description?.trim() || "",
+      isEnabled: data.isEnabled ?? false,
+      createdAt: now,
+      updatedAt: now,
     };
+
+    this.profiles.set(id, p);
+    this.saveProfileToDisk(p);
+    await this.saveProfileToDb(p);
+    this.logger.log(`Created AI Profile "${p.name}" (${p.id})`, "AiBotService");
+    return this.toResponse(p, 0);
   }
 
-  recordReplyStat(userId: string = "default") {
+  async updateProfile(
+    profileId: string,
+    userId: string,
+    update: Partial<AiBotProfile>,
+  ): Promise<AiBotProfileResponse> {
+    let p = this.profiles.get(profileId);
+    if (!p) throw new NotFoundException(`AI Profile ${profileId} not found`);
+
+    const now = new Date().toISOString();
+    // Keep existing apiKey if not provided or empty
+    const apiKey =
+      update.apiKey !== undefined && update.apiKey.trim() !== "" ? update.apiKey : p.apiKey;
+
+    p = {
+      ...p,
+      ...update,
+      apiKey,
+      id: profileId,
+      updatedAt: now,
+    };
+
+    this.profiles.set(profileId, p);
+    this.saveProfileToDisk(p);
+    await this.saveProfileToDb(p);
+    this.logger.log(`Updated AI Profile "${p.name}" (${p.id})`, "AiBotService");
+    return this.toResponse(p);
+  }
+
+  async deleteProfile(profileId: string, userId?: string): Promise<{ success: boolean }> {
+    const p = this.profiles.get(profileId);
+    if (!p) throw new NotFoundException(`AI Profile ${profileId} not found`);
+
+    this.profiles.delete(profileId);
+
+    // Delete disk file
+    const filePath = path.join(this.profilesDir, `${profileId}.json`);
     try {
-      const statsPath = path.join(
-        this.configsDir,
-        `${userId.replace(/[^a-zA-Z0-9_-]/g, "_")}_stats.json`,
-      );
-      let stats = { totalReplies: 0, lastReplyAt: null as string | null };
-      if (fs.existsSync(statsPath)) {
-        stats = JSON.parse(fs.readFileSync(statsPath, "utf8"));
-      }
-      stats.totalReplies += 1;
-      stats.lastReplyAt = new Date().toISOString();
-      fs.writeFileSync(statsPath, JSON.stringify(stats, null, 2), "utf8");
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     } catch {}
+
+    // Delete DB record
+    if (this.db) {
+      try {
+        await this.db.delete(schema.aiBotConfigs).where(eq(schema.aiBotConfigs.id, profileId));
+      } catch {}
+    }
+
+    // Clean up session associations
+    if (this.sessionRepo) {
+      try {
+        const sessions = await this.sessionRepo.findAll();
+        for (const s of sessions) {
+          if (s.metadata?.aiProfileId === profileId || s.metadata?.aiBotConfigId === profileId) {
+            const metadata = { ...s.metadata, aiProfileId: null, aiBotConfigId: null };
+            await this.sessionRepo.update(s.id, { metadata });
+          }
+        }
+      } catch {}
+    }
+
+    this.logger.log(`Deleted AI Profile ${profileId}`, "AiBotService");
+    return { success: true };
   }
 
-  private isWithinWorkHours(
-    startStr?: string,
-    endStr?: string,
-    workDays?: number[],
-  ): boolean {
+  async duplicateProfile(profileId: string, userId: string): Promise<AiBotProfileResponse> {
+    const orig = this.profiles.get(profileId);
+    if (!orig) throw new NotFoundException(`AI Profile ${profileId} not found`);
+
+    const copyData: Partial<AiBotProfile> = {
+      ...orig,
+      name: `${orig.name} (Salinan)`,
+      targetSessionIds: [], // Start unbound
+      isEnabled: false, // Start paused
+    };
+
+    return this.createProfile(userId, copyData);
+  }
+
+  async toggleProfile(profileId: string, userId: string): Promise<AiBotProfileResponse> {
+    const p = this.profiles.get(profileId);
+    if (!p) throw new NotFoundException(`AI Profile ${profileId} not found`);
+    return this.updateProfile(profileId, userId, { isEnabled: !p.isEnabled });
+  }
+
+  // ── Backward Compatible / Legacy Single-Config Endpoints ───────────────────
+
+  getConfig(userId: string = "default"): AiBotConfigResponse {
+    // Return first profile or default
+    const first = Array.from(this.profiles.values())[0];
+    if (first) return this.toResponse(first);
+    return this.toResponse({
+      id: "default-assistant",
+      name: "Default Assistant",
+      ...DEFAULT_PROFILE_TEMPLATE,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  async updateConfig(userId: string = "default", update: Partial<AiBotConfig>): Promise<void> {
+    const first = Array.from(this.profiles.values())[0];
+    if (first) {
+      await this.updateProfile(first.id, userId, update);
+    } else {
+      await this.createProfile(userId, { name: "Default Assistant", ...update });
+    }
+  }
+
+  // ── Handover & JID Pause Helpers ───────────────────────────────────────────
+
+  pauseForJid(
+    userId: string,
+    jid: string,
+    durationMinutes: number = 120,
+  ): { paused: boolean; pausedUntil: number } {
+    let userPaused = this.pausedJids.get(userId);
+    if (!userPaused) {
+      userPaused = new Map<string, number>();
+      this.pausedJids.set(userId, userPaused);
+    }
+    const pausedUntil = Date.now() + durationMinutes * 60 * 1000;
+    userPaused.set(jid, pausedUntil);
+    this.logger.log(`AI manually paused for ${jid} until ${new Date(pausedUntil).toISOString()}`);
+    return { paused: true, pausedUntil };
+  }
+
+  resumeForJid(userId: string, jid: string): { resumed: boolean } {
+    const userPaused = this.pausedJids.get(userId);
+    if (userPaused) {
+      userPaused.delete(jid);
+    }
+    this.logger.log(`AI manually resumed for ${jid}`);
+    return { resumed: true };
+  }
+
+  isPaused(userId: string, jid: string): boolean {
+    const userPaused = this.pausedJids.get(userId);
+    if (!userPaused) return false;
+    const pausedUntil = userPaused.get(jid);
+    if (!pausedUntil) return false;
+    return Date.now() < pausedUntil;
+  }
+
+  private recordReplyStat(userId: string) {
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = this.statsByUserId.get(userId);
+    if (!existing || existing.lastResetDate !== today) {
+      this.statsByUserId.set(userId, { repliesSentToday: 1, lastResetDate: today });
+    } else {
+      existing.repliesSentToday += 1;
+    }
+  }
+
+  getStats(userId: string = "default"): { repliesSentToday: number } {
+    const today = new Date().toISOString().slice(0, 10);
+    const existing = this.statsByUserId.get(userId);
+    if (!existing || existing.lastResetDate !== today) return { repliesSentToday: 0 };
+    return { repliesSentToday: existing.repliesSentToday };
+  }
+
+  private isWithinWorkHours(startStr?: string, endStr?: string, workDays?: number[]): boolean {
     if (!startStr || !endStr) return true;
     const now = new Date();
-    // JavaScript getDay(): 0=Sun, 1=Mon, ..., 6=Sat. Normalize to 1=Mon..7=Sun
     const currentDay = now.getDay() === 0 ? 7 : now.getDay();
-
-    if (workDays && workDays.length > 0 && !workDays.includes(currentDay)) {
-      return false; // Not a working day -> after hours!
-    }
+    if (workDays && workDays.length > 0 && !workDays.includes(currentDay)) return false;
 
     const [startH, startM] = startStr.split(":").map(Number);
     const [endH, endM] = endStr.split(":").map(Number);
-
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const startMinutes = startH * 60 + (startM || 0);
     const endMinutes = endH * 60 + (endM || 0);
 
     return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
+  }
+
+  // ── Multi-Session Resolution & Reply Generation ────────────────────────────
+
+  private async resolveProfileForSession(sessionId?: string): Promise<AiBotProfile | null> {
+    if (!sessionId) {
+      // Return first enabled profile
+      for (const p of this.profiles.values()) {
+        if (p.isEnabled) return p;
+      }
+      return null;
+    }
+
+    // 1. Check if session has explicit metadata.aiProfileId
+    if (this.sessionRepo) {
+      try {
+        const session = await this.sessionRepo.findById(sessionId);
+        const explicitId =
+          (session?.metadata?.aiProfileId as string) || (session?.metadata?.aiBotConfigId as string);
+        if (explicitId) {
+          const profile = this.profiles.get(explicitId);
+          if (profile) return profile;
+        }
+      } catch {}
+    }
+
+    // 2. Check if any profile has targetSessionIds containing this sessionId
+    for (const p of this.profiles.values()) {
+      if (p.targetSessionIds && p.targetSessionIds.includes(sessionId)) {
+        return p;
+      }
+    }
+
+    // 3. Fallback: check if there is an active profile configured for all sessions (empty targetSessionIds)
+    for (const p of this.profiles.values()) {
+      if (p.isEnabled && (!p.targetSessionIds || p.targetSessionIds.length === 0)) {
+        return p;
+      }
+    }
+
+    return null;
   }
 
   async generateReply(
@@ -526,34 +573,23 @@ export class AiBotService implements OnModuleInit {
     userId: string = "default",
     sessionId?: string,
   ): Promise<string | null> {
-    const cfg = this.loadUserConfig(userId);
-
-    if (!cfg.isEnabled || !cfg.apiKey) {
+    const profile = await this.resolveProfileForSession(sessionId);
+    if (!profile || !profile.isEnabled || !profile.apiKey) {
       return null;
     }
 
-    // 0. Group chat filter: ignore group messages if ignoreGroups is true (default)
+    // 0. Group chat filter: ignore group messages if ignoreGroups is true
     const isGroup = fromJid?.includes("@g.us");
-    if (isGroup && (cfg.ignoreGroups ?? true)) {
+    if (isGroup && (profile.ignoreGroups ?? true)) {
       return null;
     }
 
-    // 1. Session Binding check: if configured, only reply on targeted sessions
-    if (
-      sessionId &&
-      cfg.targetSessionIds &&
-      cfg.targetSessionIds.length > 0 &&
-      !cfg.targetSessionIds.includes(sessionId)
-    ) {
-      return null;
-    }
-
-    // 2. Sender Phone Number Filter (Whitelist / Blacklist)
+    // 1. Sender Phone Number Filter (Whitelist / Blacklist)
     if (fromJid) {
       const senderPhone = fromJid.split("@")[0].replace(/\D/g, "");
       if (senderPhone) {
-        if (cfg.senderFilterMode === "whitelist") {
-          const allowed = cfg.whitelistNumbers || [];
+        if (profile.senderFilterMode === "whitelist") {
+          const allowed = profile.whitelistNumbers || [];
           if (allowed.length > 0) {
             const matches = allowed.some((num) => {
               const clean = num.replace(/\D/g, "");
@@ -564,12 +600,10 @@ export class AiBotService implements OnModuleInit {
                 clean.endsWith(senderPhone)
               );
             });
-            if (!matches) {
-              return null; // Sesi ini hanya menjawab nomor whitelist!
-            }
+            if (!matches) return null;
           }
-        } else if (cfg.senderFilterMode === "blacklist") {
-          const blocked = cfg.blacklistNumbers || [];
+        } else if (profile.senderFilterMode === "blacklist") {
+          const blocked = profile.blacklistNumbers || [];
           if (blocked.length > 0) {
             const matches = blocked.some((num) => {
               const clean = num.replace(/\D/g, "");
@@ -580,25 +614,20 @@ export class AiBotService implements OnModuleInit {
                 clean.endsWith(senderPhone)
               );
             });
-            if (matches) {
-              return null; // Nomor ini ada di daftar blacklist -> abaikan!
-            }
+            if (matches) return null;
           }
         }
       }
     }
 
-    // 3. Schedule Mode check: if "after_hours", only reply when OUTSIDE work hours
-    if (cfg.scheduleMode === "after_hours") {
+    // 2. Schedule Mode check: if "after_hours", only reply outside work hours
+    if (profile.scheduleMode === "after_hours") {
       const isWorkHours = this.isWithinWorkHours(
-        cfg.workHoursStart,
-        cfg.workHoursEnd,
-        cfg.workDays,
+        profile.workHoursStart,
+        profile.workHoursEnd,
+        profile.workDays,
       );
-      if (isWorkHours) {
-        // During working hours, human CS is active, so AI does not auto-reply
-        return null;
-      }
+      if (isWorkHours) return null;
     }
 
     // 3. Human Handover check for this contact
@@ -616,20 +645,20 @@ export class AiBotService implements OnModuleInit {
 
       // Check keywords for handover
       const lower = userMessage.toLowerCase();
-      const keywords = cfg.handoverKeywords || [];
+      const keywords = profile.handoverKeywords || [];
       const isHandover = keywords.some(
         (kw) => kw && lower.includes(kw.toLowerCase().trim()),
       );
 
       if (isHandover) {
-        const pauseMinutes = cfg.handoverDurationMinutes || 120;
+        const pauseMinutes = profile.handoverDurationMinutes || 120;
         userPausedMap.set(fromJid, Date.now() + pauseMinutes * 60 * 1000);
         this.logger.log(
-          `Human handover triggered for ${fromJid} (User: ${userId}). AI paused for ${pauseMinutes}m.`,
+          `Human handover triggered for ${fromJid} (Profile: "${profile.name}"). AI paused for ${pauseMinutes}m.`,
           "AiBotService",
         );
         return (
-          cfg.handoverMessage ||
+          profile.handoverMessage ||
           "Baik kak, pesan Anda telah dialihkan ke Tim Customer Service (Manusia). Mohon tunggu sebentar ya kak."
         );
       }
@@ -637,13 +666,13 @@ export class AiBotService implements OnModuleInit {
 
     try {
       this.logger.log(
-        `Generating AI reply for User ${userId} via ${cfg.provider} (${cfg.model})`,
+        `Generating AI reply via profile "${profile.name}" (${profile.provider}/${profile.model})`,
         "AiBotService",
       );
 
-      let effectiveSystemPrompt = cfg.systemPrompt;
-      if (cfg.knowledgeBase && cfg.knowledgeBase.trim() !== "") {
-        effectiveSystemPrompt += `\n\nKNOWLEDGE BASE & INFORMASI BISNIS/FAQ:\n${cfg.knowledgeBase}\n\nJawablah berdasarkan pengetahuan di atas jika relevan.`;
+      let effectiveSystemPrompt = profile.systemPrompt;
+      if (profile.knowledgeBase && profile.knowledgeBase.trim() !== "") {
+        effectiveSystemPrompt += `\n\nKNOWLEDGE BASE & INFORMASI BISNIS/FAQ:\n${profile.knowledgeBase}\n\nJawablah berdasarkan pengetahuan di atas jika relevan.`;
       }
 
       // Fetch recent conversation history for multi-turn context
@@ -652,27 +681,23 @@ export class AiBotService implements OnModuleInit {
         try {
           const recent = await this.messageRepo.findRecentByJid(
             fromJid,
-            cfg.contextWindow || 8,
+            profile.contextWindow || 8,
           );
           history = recent
             .filter((m) => m.content && !m.content.startsWith("["))
             .map((m) => ({
-              role: (m.direction === "inbound" ? "user" : "assistant") as
-                | "user"
-                | "assistant",
+              role: (m.direction === "inbound" ? "user" : "assistant") as "user" | "assistant",
               content: m.content,
             }));
-        } catch {
-          // ignore history lookup failure
-        }
+        } catch {}
       }
 
       let reply: string | null = null;
-      if (cfg.provider === "gemini") {
-        reply = await this.callGemini(cfg, userMessage, effectiveSystemPrompt, history);
+      if (profile.provider === "gemini") {
+        reply = await this.callGemini(profile, userMessage, effectiveSystemPrompt, history);
       } else {
         reply = await this.callOpenAiCompatible(
-          cfg,
+          profile,
           userMessage,
           effectiveSystemPrompt,
           history,
@@ -685,7 +710,7 @@ export class AiBotService implements OnModuleInit {
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       this.logger.error(
-        `AI generation error (User: ${userId}): ${errMsg}`,
+        `AI generation error (Profile: "${profile.name}"): ${errMsg}`,
         undefined,
         "AiBotService",
       );
@@ -693,8 +718,43 @@ export class AiBotService implements OnModuleInit {
     }
   }
 
+  // ── Simulator Test per Profile ─────────────────────────────────────────────
+
+  async testProfile(
+    profileId: string,
+    message: string,
+    userId: string = "default",
+  ): Promise<{ reply: string }> {
+    const profile = this.profiles.get(profileId);
+    if (!profile) throw new NotFoundException(`AI Profile ${profileId} not found`);
+    if (!profile.apiKey) throw new Error("API Key belum diisi pada profil ini.");
+
+    let effectiveSystemPrompt = profile.systemPrompt;
+    if (profile.knowledgeBase && profile.knowledgeBase.trim() !== "") {
+      effectiveSystemPrompt += `\n\nKNOWLEDGE BASE & INFORMASI BISNIS/FAQ:\n${profile.knowledgeBase}`;
+    }
+
+    let reply = "";
+    if (profile.provider === "gemini") {
+      reply = await this.callGemini(profile, message, effectiveSystemPrompt, []);
+    } else {
+      reply = await this.callOpenAiCompatible(profile, message, effectiveSystemPrompt, []);
+    }
+
+    return { reply };
+  }
+
+  async draftReply(jid: string, message?: string, userId: string = "default"): Promise<string> {
+    const first = Array.from(this.profiles.values())[0];
+    if (!first || !first.apiKey) return "AI Bot belum terkonfigurasi.";
+    const userMsg = message || "Bantu buatkan draf balasan untuk pelanggan ini.";
+    return (await this.testProfile(first.id, userMsg, userId)).reply;
+  }
+
+  // ── LLM HTTP Callers ───────────────────────────────────────────────────────
+
   private async callGemini(
-    cfg: AiBotConfig,
+    cfg: AiBotProfile,
     userMessage: string,
     systemPrompt: string,
     history: Array<{ role: "user" | "assistant"; content: string }> = [],
@@ -709,11 +769,7 @@ export class AiBotService implements OnModuleInit {
         parts: [{ text: h.content }],
       });
     }
-    // Ensure current message is at the end
-    if (
-      contents.length === 0 ||
-      contents[contents.length - 1].parts[0]?.text !== userMessage
-    ) {
+    if (contents.length === 0 || contents[contents.length - 1].parts[0]?.text !== userMessage) {
       contents.push({
         role: "user",
         parts: [{ text: userMessage }],
@@ -723,7 +779,6 @@ export class AiBotService implements OnModuleInit {
     const generationConfig: Record<string, any> = {
       maxOutputTokens: cfg.maxTokens ?? 500,
     };
-    // Gemini 3.x models use internal dynamic thinking and ignore/reject custom temperature
     if (cfg.temperature !== undefined && !model.includes("gemini-3")) {
       generationConfig.temperature = cfg.temperature;
     }
@@ -732,9 +787,7 @@ export class AiBotService implements OnModuleInit {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: systemPrompt }],
-        },
+        system_instruction: { parts: [{ text: systemPrompt }] },
         contents,
         generationConfig,
       }),
@@ -748,14 +801,11 @@ export class AiBotService implements OnModuleInit {
 
     const data = (await res.json()) as any;
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return (
-      text?.trim() ||
-      "Maaf, saya tidak dapat memahami permintaan Anda saat ini."
-    );
+    return text?.trim() || "Maaf, saya tidak dapat memahami permintaan Anda saat ini.";
   }
 
   private async callOpenAiCompatible(
-    cfg: AiBotConfig,
+    cfg: AiBotProfile,
     userMessage: string,
     systemPrompt: string,
     history: Array<{ role: "user" | "assistant"; content: string }> = [],
@@ -786,10 +836,7 @@ export class AiBotService implements OnModuleInit {
     for (const h of history) {
       messages.push({ role: h.role, content: h.content });
     }
-    if (
-      messages.length === 1 ||
-      messages[messages.length - 1].content !== userMessage
-    ) {
+    if (messages.length === 1 || messages[messages.length - 1].content !== userMessage) {
       messages.push({ role: "user", content: userMessage });
     }
 
@@ -824,7 +871,6 @@ export class AiBotService implements OnModuleInit {
     const lowerName = (filename || "").toLowerCase();
 
     let extractedText = "";
-
     if (lowerName.endsWith(".pdf")) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -833,32 +879,19 @@ export class AiBotService implements OnModuleInit {
         extractedText = parsed.text || "";
       } catch (err: any) {
         this.logger.error(`Failed to parse PDF ${filename}: ${err?.message}`);
-        throw new Error(
-          `Gagal membaca file PDF: ${err?.message || "Format tidak valid"}`,
-        );
+        throw new Error(`Gagal membaca file PDF: ${err?.message || "Format tidak valid"}`);
       }
     } else {
-      // txt, md, json, csv
       extractedText = buffer.toString("utf-8");
     }
 
-    // Clean up excessive blank lines or carriage returns
-    extractedText = extractedText
-      .replace(/\r\n/g, "\n")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-
-    // Cap at reasonable max length to avoid prompt overflow (50,000 chars)
+    extractedText = extractedText.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
     if (extractedText.length > 50000) {
       extractedText =
         extractedText.slice(0, 50000) +
         "\n\n[...Konten dokumen dipotong hingga 50.000 karakter...]";
     }
 
-    return {
-      text: extractedText,
-      filename,
-      length: extractedText.length,
-    };
+    return { text: extractedText, filename, length: extractedText.length };
   }
 }

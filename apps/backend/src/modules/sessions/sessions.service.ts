@@ -81,7 +81,9 @@ export class SessionsService implements OnApplicationBootstrap {
       providerType: config.providerType,
       providerConfigId: dto.providerConfigId,
       status: "inactive", // start inactive — user must explicitly activate
-      metadata: {},
+      metadata: {
+        ...(dto.aiProfileId ? { aiProfileId: dto.aiProfileId } : {}),
+      },
       createdAt: now,
       updatedAt: now,
     };
@@ -150,6 +152,21 @@ export class SessionsService implements OnApplicationBootstrap {
     }
 
     const updated = await this.sessionRepo.update(id, { status: "inactive" });
+    if (!updated) throw new NotFoundException(`Session ${id} not found`);
+    return updated;
+  }
+
+  async setAiProfile(
+    id: string,
+    userId: string,
+    aiProfileId: string | null,
+  ): Promise<Session> {
+    const session = await this.findById(id, userId);
+    const metadata = {
+      ...(session.metadata || {}),
+      aiProfileId: aiProfileId || null,
+    };
+    const updated = await this.sessionRepo.update(id, { metadata });
     if (!updated) throw new NotFoundException(`Session ${id} not found`);
     return updated;
   }

@@ -1,11 +1,83 @@
-import { Controller, Get, Post, Body, Req, UseGuards } from "@nestjs/common";
-import { AiBotService, AiBotConfig } from "./ai-bot.service";
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Patch,
+  Param,
+  Body,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
+import { AiBotService, AiBotProfile } from "./ai-bot.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @Controller("ai-bot")
 @UseGuards(JwtAuthGuard)
 export class AiBotController {
   constructor(private readonly service: AiBotService) {}
+
+  // ── Multi-Profile Endpoints ───────────────────────────────────────────────
+
+  @Get("profiles")
+  async listProfiles(@Req() req: any) {
+    const userId = req.user?.id || "default";
+    return this.service.listProfiles(userId);
+  }
+
+  @Post("profiles")
+  async createProfile(@Req() req: any, @Body() body: Partial<AiBotProfile>) {
+    const userId = req.user?.id || "default";
+    return this.service.createProfile(userId, body);
+  }
+
+  @Get("profiles/:id")
+  async getProfile(@Param("id") id: string, @Req() req: any) {
+    const userId = req.user?.id || "default";
+    return this.service.getProfile(id, userId);
+  }
+
+  @Put("profiles/:id")
+  async updateProfile(
+    @Param("id") id: string,
+    @Req() req: any,
+    @Body() body: Partial<AiBotProfile>,
+  ) {
+    const userId = req.user?.id || "default";
+    return this.service.updateProfile(id, userId, body);
+  }
+
+  @Delete("profiles/:id")
+  async deleteProfile(@Param("id") id: string, @Req() req: any) {
+    const userId = req.user?.id || "default";
+    return this.service.deleteProfile(id, userId);
+  }
+
+  @Post("profiles/:id/duplicate")
+  async duplicateProfile(@Param("id") id: string, @Req() req: any) {
+    const userId = req.user?.id || "default";
+    return this.service.duplicateProfile(id, userId);
+  }
+
+  @Patch("profiles/:id/toggle")
+  async toggleProfile(@Param("id") id: string, @Req() req: any) {
+    const userId = req.user?.id || "default";
+    return this.service.toggleProfile(id, userId);
+  }
+
+  @Post("profiles/:id/test")
+  async testProfile(
+    @Param("id") id: string,
+    @Req() req: any,
+    @Body("message") message: string,
+  ) {
+    const userId = req.user?.id || "default";
+    return this.service.testProfile(id, message, userId);
+  }
+
+  // ── Legacy Single-Config Compatibility Endpoints ──────────────────────────
 
   @Get("config")
   getConfig(@Req() req: any) {
@@ -14,7 +86,7 @@ export class AiBotController {
   }
 
   @Post("config")
-  async updateConfig(@Req() req: any, @Body() body: Partial<AiBotConfig>) {
+  async updateConfig(@Req() req: any, @Body() body: Partial<AiBotProfile>) {
     const userId = req.user?.id || "default";
     await this.service.updateConfig(userId, body);
     return { success: true, message: "AI Bot configuration updated" };
@@ -61,15 +133,14 @@ export class AiBotController {
   }
 
   @Get("status")
-  getJidStatus(@Req() req: any, @Req() request: any) {
+  getJidStatus(@Req() req: any, @Query("jid") jid: string) {
     const userId = req.user?.id || "default";
-    const jid = request.query?.jid;
-    if (!jid) return { isPaused: false, pausedUntil: null };
-    return this.service.getJidStatus(userId, jid);
+    const isPaused = this.service.isPaused(userId, jid);
+    return { isPaused, pausedUntil: null };
   }
 
   @Get("stats")
-  async getStats(@Req() req: any) {
+  getStats(@Req() req: any) {
     const userId = req.user?.id || "default";
     return this.service.getStats(userId);
   }

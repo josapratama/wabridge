@@ -1,4 +1,4 @@
-import { IsString, IsUUID, MinLength } from "class-validator";
+import { IsOptional, IsString, IsUUID, MinLength } from "class-validator";
 
 export class CreateSessionDto {
   @IsString()
@@ -8,4 +8,8 @@ export class CreateSessionDto {
   @IsString()
   @IsUUID()
   providerConfigId!: string;
+
+  @IsOptional()
+  @IsString()
+  aiProfileId?: string;
 }

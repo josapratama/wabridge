@@ -34,6 +34,15 @@ export class SessionsController {
     return this.service.deactivate(id, req.user.id);
   }
 
+  @Patch(":id/ai-profile")
+  setAiProfile(
+    @Param("id") id: string,
+    @Request() req: any,
+    @Body("aiProfileId") aiProfileId: string | null,
+  ) {
+    return this.service.setAiProfile(id, req.user.id, aiProfileId);
+  }
+
   @Get(":id/groups")
   getGroups(@Param("id") id: string, @Request() req: any) {
     return this.service.getGroups(id, req.user.id);
