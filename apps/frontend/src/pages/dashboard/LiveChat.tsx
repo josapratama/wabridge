@@ -84,7 +84,7 @@ function playNotificationChime() {
 
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.36);
-  } catch {}
+  } catch { }
 }
 
 export default function LiveChat() {
@@ -128,7 +128,7 @@ export default function LiveChat() {
       if (next && "Notification" in window && Notification.permission === "default") {
         void Notification.requestPermission();
       }
-    } catch {}
+    } catch { }
   };
 
   const checkNewInbounds = (msgs: Message[]) => {
@@ -145,7 +145,7 @@ export default function LiveChat() {
               body: latest.content || "[Media]",
               icon: "/wa-icon.svg",
             });
-          } catch {}
+          } catch { }
         }
       }
     }
@@ -178,7 +178,7 @@ export default function LiveChat() {
         : [...prev, jid];
       try {
         localStorage.setItem("wabridge_resolved_chats", JSON.stringify(updated));
-      } catch {}
+      } catch { }
       return updated;
     });
   };
@@ -207,45 +207,45 @@ export default function LiveChat() {
     }
   };
 
-interface QuickReplyItem {
-  id: string;
-  cmd: string;
-  title: string;
-  text: string;
-}
+  interface QuickReplyItem {
+    id: string;
+    cmd: string;
+    title: string;
+    text: string;
+  }
 
-const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
-  {
-    id: "qr-1",
-    cmd: "salam",
-    title: "👋 Salam Pembuka",
-    text: "Halo kak! Terima kasih telah menghubungi kami. Ada yang bisa kami bantu hari ini?",
-  },
-  {
-    id: "qr-2",
-    cmd: "rekening",
-    title: "💳 Info Rekening Transfer",
-    text: "Pembayaran dapat ditransfer ke:\n🏦 BCA: 1234567890 a/n WaBridge Indonesia\nSilakan konfirmasi bukti transfer jika sudah membayar ya kak.",
-  },
-  {
-    id: "qr-3",
-    cmd: "order",
-    title: "📦 Format Pemesanan",
-    text: "Silakan melengkapi format order berikut ya kak:\n- Nama:\n- No. HP:\n- Alamat Lengkap:\n- Produk & Jumlah:",
-  },
-  {
-    id: "qr-4",
-    cmd: "jam",
-    title: "⏱️ Jam Operasional CS",
-    text: "Jam operasional kami adalah Senin - Sabtu pukul 08.00 - 17.00 WIB. Pertanyaan di luar jam kerja akan kami balas secepatnya.",
-  },
-  {
-    id: "qr-5",
-    cmd: "thanks",
-    title: "🙏 Ucapan Terima Kasih",
-    text: "Terima kasih banyak kak atas pesanannya! Semoga harimu menyenangkan. Jangan ragu hubungi kami lagi jika ada pertanyaan.",
-  },
-];
+  const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
+    {
+      id: "qr-1",
+      cmd: "salam",
+      title: "👋 Salam Pembuka",
+      text: "Halo kak! Terima kasih telah menghubungi kami. Ada yang bisa kami bantu hari ini?",
+    },
+    {
+      id: "qr-2",
+      cmd: "rekening",
+      title: "💳 Info Rekening Transfer",
+      text: "Pembayaran dapat ditransfer ke:\n🏦 BCA: 1234567890 a/n WaBridge Indonesia\nSilakan konfirmasi bukti transfer jika sudah membayar ya kak.",
+    },
+    {
+      id: "qr-3",
+      cmd: "order",
+      title: "📦 Format Pemesanan",
+      text: "Silakan melengkapi format order berikut ya kak:\n- Nama:\n- No. HP:\n- Alamat Lengkap:\n- Produk & Jumlah:",
+    },
+    {
+      id: "qr-4",
+      cmd: "jam",
+      title: "⏱️ Jam Operasional CS",
+      text: "Jam operasional kami adalah Senin - Sabtu pukul 08.00 - 17.00 WIB. Pertanyaan di luar jam kerja akan kami balas secepatnya.",
+    },
+    {
+      id: "qr-5",
+      cmd: "thanks",
+      title: "🙏 Ucapan Terima Kasih",
+      text: "Terima kasih banyak kak atas pesanannya! Semoga harimu menyenangkan. Jangan ragu hubungi kami lagi jika ada pertanyaan.",
+    },
+  ];
 
   const resolveMediaUrl = (url?: string) => {
     if (!url) return "";
@@ -362,15 +362,26 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
   useEffect(() => {
     void loadData();
     const interval = setInterval(() => {
-      void messagesApi.list().then((res) => {
-        if (res.data) {
-          setMessages(res.data);
-          checkNewInbounds(res.data);
-        }
-      });
-      void healthApi.check().then((res) => {
-        if (res.data) setHealth(res.data);
-      });
+      void messagesApi
+        .list()
+        .then((res) => {
+          if (res.data) {
+            setMessages(res.data);
+            checkNewInbounds(res.data);
+          }
+        })
+        .catch(() => {
+          // Silently ignore transient network drops during background polling
+        });
+
+      void healthApi
+        .check()
+        .then((res) => {
+          if (res.data) setHealth(res.data);
+        })
+        .catch(() => {
+          // Silently ignore transient network drops during background polling
+        });
     }, 6000);
     return () => clearInterval(interval);
   }, []);
@@ -496,7 +507,7 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
     setQuickReplies(items);
     try {
       localStorage.setItem("wabridge_custom_quick_replies", JSON.stringify(items));
-    } catch {}
+    } catch { }
   };
 
   const handleAddQuickReply = (e: React.FormEvent) => {
@@ -616,7 +627,7 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
           setAiPaused(res.data.isPaused);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       isMounted = false;
     };
@@ -650,10 +661,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
 
   const matchedContact = activeConv
     ? contacts.find(
-        (c) =>
-          c.phone.replace(/\D/g, "") ===
-          activeConv.phone.replace(/\D/g, ""),
-      )
+      (c) =>
+        c.phone.replace(/\D/g, "") ===
+        activeConv.phone.replace(/\D/g, ""),
+    )
     : null;
 
   const openContactModal = () => {
@@ -820,9 +831,12 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
           "Failed to send message: provider is not connected";
         setSendError(errorMsg);
         // Refresh to fetch the failed message recorded in DB
-        void messagesApi.list().then((mRes) => {
-          if (mRes.data) setMessages(mRes.data);
-        });
+        void messagesApi
+          .list()
+          .then((mRes) => {
+            if (mRes.data) setMessages(mRes.data);
+          })
+          .catch(() => {});
       }
     } catch (err: any) {
       console.error("Failed to send live chat message", err);
@@ -906,9 +920,8 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Left Side: Conversation List */}
         <div
-          className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-gray-800 bg-gray-900/60 ${
-            selectedJid ? "hidden md:flex" : "flex"
-          }`}
+          className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-gray-800 bg-gray-900/60 ${selectedJid ? "hidden md:flex" : "flex"
+            }`}
         >
           {/* Top Search & Filter Tabs */}
           <div className="p-3 border-b border-gray-800 space-y-2.5">
@@ -922,11 +935,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                 <button
                   type="button"
                   onClick={toggleSound}
-                  className={`p-1 rounded-md transition-colors ${
-                    soundEnabled
-                      ? "text-brand-400 hover:text-brand-300 hover:bg-gray-800"
-                      : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"
-                  }`}
+                  className={`p-1 rounded-md transition-colors ${soundEnabled
+                    ? "text-brand-400 hover:text-brand-300 hover:bg-gray-800"
+                    : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+                    }`}
                   title={
                     soundEnabled
                       ? t("livechat.notif_sound_on", "Notifikasi Suara Aktif")
@@ -961,11 +973,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                 <button
                   key={tab.id}
                   onClick={() => setChatFilter(tab.id as any)}
-                  className={`flex-1 py-1 text-center font-medium rounded-md transition-colors ${
-                    chatFilter === tab.id
-                      ? "bg-brand-600 text-white shadow-sm"
-                      : "text-gray-400 hover:text-gray-200"
-                  }`}
+                  className={`flex-1 py-1 text-center font-medium rounded-md transition-colors ${chatFilter === tab.id
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-gray-400 hover:text-gray-200"
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -989,11 +1000,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                 <button
                   type="button"
                   onClick={() => setSelectedTagFilter("all")}
-                  className={`px-2 py-0.5 rounded-md shrink-0 font-medium transition-colors ${
-                    selectedTagFilter === "all"
-                      ? "bg-purple-600 text-white"
-                      : "bg-gray-800 text-gray-400 hover:text-gray-200"
-                  }`}
+                  className={`px-2 py-0.5 rounded-md shrink-0 font-medium transition-colors ${selectedTagFilter === "all"
+                    ? "bg-purple-600 text-white"
+                    : "bg-gray-800 text-gray-400 hover:text-gray-200"
+                    }`}
                 >
                   {t("livechat.filter_all_tags", "Semua Tag")}
                 </button>
@@ -1004,11 +1014,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                     onClick={() =>
                       setSelectedTagFilter(selectedTagFilter === tag ? "all" : tag)
                     }
-                    className={`px-2 py-0.5 rounded-md shrink-0 font-medium transition-colors ${
-                      selectedTagFilter === tag
-                        ? "bg-purple-600 text-white"
-                        : "bg-purple-950/50 text-purple-300 border border-purple-800/40 hover:bg-purple-900/60"
-                    }`}
+                    className={`px-2 py-0.5 rounded-md shrink-0 font-medium transition-colors ${selectedTagFilter === tag
+                      ? "bg-purple-600 text-white"
+                      : "bg-purple-950/50 text-purple-300 border border-purple-800/40 hover:bg-purple-900/60"
+                      }`}
                   >
                     #{tag}
                   </button>
@@ -1054,11 +1063,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                   <div
                     key={c.jid}
                     onClick={() => selectConversation(c)}
-                    className={`flex items-center gap-3 p-3.5 cursor-pointer transition-colors ${
-                      isSelected
-                        ? "bg-brand-600/15 border-l-4 border-brand-500"
-                        : "hover:bg-gray-800/50"
-                    }`}
+                    className={`flex items-center gap-3 p-3.5 cursor-pointer transition-colors ${isSelected
+                      ? "bg-brand-600/15 border-l-4 border-brand-500"
+                      : "hover:bg-gray-800/50"
+                      }`}
                   >
                     <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-700 to-brand-500 flex items-center justify-center text-white font-semibold text-sm shrink-0 shadow">
                       {c.isGroup ? (
@@ -1102,9 +1110,8 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
 
         {/* Right Side: Active Chat View */}
         <div
-          className={`flex-1 flex flex-col bg-gray-950 ${
-            !selectedJid ? "hidden md:flex" : "flex"
-          }`}
+          className={`flex-1 flex flex-col bg-gray-950 ${!selectedJid ? "hidden md:flex" : "flex"
+            }`}
         >
           {activeConv ? (
             <>
@@ -1119,9 +1126,8 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                   </button>
                   <div
                     onClick={!activeConv.isGroup ? openContactModal : undefined}
-                    className={`w-9 h-9 rounded-full bg-brand-600/30 border border-brand-500/40 flex items-center justify-center text-brand-300 font-semibold text-sm shrink-0 ${
-                      !activeConv.isGroup ? "cursor-pointer hover:border-brand-400" : ""
-                    }`}
+                    className={`w-9 h-9 rounded-full bg-brand-600/30 border border-brand-500/40 flex items-center justify-center text-brand-300 font-semibold text-sm shrink-0 ${!activeConv.isGroup ? "cursor-pointer hover:border-brand-400" : ""
+                      }`}
                     title={!activeConv.isGroup ? t("livechat.edit_contact_btn", "Edit Kontak") : undefined}
                   >
                     {activeConv.isGroup ? (
@@ -1134,9 +1140,8 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <h2
                         onClick={!activeConv.isGroup ? openContactModal : undefined}
-                        className={`text-sm font-bold text-white leading-tight truncate ${
-                          !activeConv.isGroup ? "cursor-pointer hover:underline" : ""
-                        }`}
+                        className={`text-sm font-bold text-white leading-tight truncate ${!activeConv.isGroup ? "cursor-pointer hover:underline" : ""
+                          }`}
                       >
                         {activeConv.name}
                       </h2>
@@ -1189,11 +1194,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                     <button
                       onClick={handleToggleAiPause}
                       disabled={togglingAi}
-                      className={`text-xs px-2 sm:px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${
-                        aiPaused
-                          ? "bg-amber-950/40 border-amber-800/60 text-amber-300 hover:bg-amber-900/50"
-                          : "bg-purple-950/40 border-purple-800/60 text-purple-300 hover:bg-purple-900/50"
-                      }`}
+                      className={`text-xs px-2 sm:px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${aiPaused
+                        ? "bg-amber-950/40 border-amber-800/60 text-amber-300 hover:bg-amber-900/50"
+                        : "bg-purple-950/40 border-purple-800/60 text-purple-300 hover:bg-purple-900/50"
+                        }`}
                       title={
                         aiPaused
                           ? t("livechat.resume_ai_title", "AI dijeda untuk kontak ini. Klik untuk mengaktifkan AI kembali")
@@ -1226,11 +1230,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                       setShowInChatSearch(!showInChatSearch);
                       if (showInChatSearch) setInChatSearchQuery("");
                     }}
-                    className={`text-xs px-2 sm:px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${
-                      showInChatSearch
-                        ? "bg-brand-950/70 border-brand-700/70 text-brand-300"
-                        : "border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-750"
-                    }`}
+                    className={`text-xs px-2 sm:px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${showInChatSearch
+                      ? "bg-brand-950/70 border-brand-700/70 text-brand-300"
+                      : "border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-750"
+                      }`}
                     title="Cari kata kunci dalam riwayat obrolan ini"
                   >
                     <Search className="w-3.5 h-3.5 text-gray-400" />
@@ -1250,11 +1253,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                   {/* Mark as Resolved Toggle */}
                   <button
                     onClick={() => toggleResolved(activeConv.jid)}
-                    className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${
-                      resolvedJids.includes(activeConv.jid)
-                        ? "bg-emerald-950/40 border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/50"
-                        : "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-750"
-                    }`}
+                    className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${resolvedJids.includes(activeConv.jid)
+                      ? "bg-emerald-950/40 border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/50"
+                      : "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-750"
+                      }`}
                     title={resolvedJids.includes(activeConv.jid) ? "Tandai Belum Selesai" : "Tandai Percakapan Selesai"}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1266,16 +1268,14 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                   {/* Provider Connection Status indicator */}
                   <div className="flex items-center gap-1.5">
                     <span
-                      className={`w-2 h-2 rounded-full ${
-                        isSessionReady
-                          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-                          : "bg-amber-500 animate-pulse"
-                      }`}
+                      className={`w-2 h-2 rounded-full ${isSessionReady
+                        ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                        : "bg-amber-500 animate-pulse"
+                        }`}
                     />
                     <span
-                      className={`text-[11px] font-medium hidden sm:inline ${
-                        isSessionReady ? "text-emerald-400" : "text-amber-400"
-                      }`}
+                      className={`text-[11px] font-medium hidden sm:inline ${isSessionReady ? "text-emerald-400" : "text-amber-400"
+                        }`}
                     >
                       {isSessionReady ? t("livechat.connected") : t("livechat.disconnected")}
                     </span>
@@ -1385,28 +1385,24 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                       key={m.id}
                       onMouseEnter={() => setHoveredMessageId(m.id)}
                       onMouseLeave={() => setHoveredMessageId(null)}
-                      className={`group relative flex flex-col ${
-                        isOutbound ? "items-end" : "items-start"
-                      }`}
+                      className={`group relative flex flex-col ${isOutbound ? "items-end" : "items-start"
+                        }`}
                     >
                       <div
-                        className={`max-w-[75%] rounded-2xl p-3 shadow-md text-xs relative ${
-                          isSearchMatch
-                            ? "ring-2 ring-amber-400 shadow-amber-500/20"
-                            : ""
-                        } ${
-                          isOutbound
+                        className={`max-w-[75%] rounded-2xl p-3 shadow-md text-xs relative ${isSearchMatch
+                          ? "ring-2 ring-amber-400 shadow-amber-500/20"
+                          : ""
+                          } ${isOutbound
                             ? m.status === "failed"
                               ? "bg-red-950/70 border border-red-800/80 text-red-100 rounded-br-none"
                               : "bg-brand-600 text-white rounded-br-none"
                             : "bg-gray-800 text-gray-100 rounded-bl-none border border-gray-700/60"
-                        }`}
+                          }`}
                       >
                         {/* Hover Quick Actions (Reply, React, Unsend) */}
                         <div
-                          className={`absolute -top-3 ${
-                            isOutbound ? "right-2" : "left-2"
-                          } hidden group-hover:flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-full px-2 py-0.5 shadow-lg z-20 transition-all`}
+                          className={`absolute -top-3 ${isOutbound ? "right-2" : "left-2"
+                            } hidden group-hover:flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-full px-2 py-0.5 shadow-lg z-20 transition-all`}
                         >
                           <button
                             type="button"
@@ -1502,13 +1498,12 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
 
                         {/* Timestamp & Status */}
                         <div
-                          className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${
-                            isOutbound
-                              ? m.status === "failed"
-                                ? "text-red-300"
-                                : "text-brand-200"
-                              : "text-gray-400"
-                          }`}
+                          className={`flex items-center justify-end gap-1 mt-1 text-[10px] ${isOutbound
+                            ? m.status === "failed"
+                              ? "text-red-300"
+                              : "text-brand-200"
+                            : "text-gray-400"
+                            }`}
                         >
                           <span>
                             {new Date(m.createdAt).toLocaleTimeString([], {
@@ -1737,10 +1732,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                           qr.title.toLowerCase().includes(inputText.slice(1).toLowerCase()) ||
                           qr.text.toLowerCase().includes(inputText.slice(1).toLowerCase())
                       ).length === 0 && (
-                        <p className="text-xs text-gray-500 p-2 text-center">
-                          Tidak ada template dengan perintah "{inputText}"
-                        </p>
-                      )}
+                          <p className="text-xs text-gray-500 p-2 text-center">
+                            Tidak ada template dengan perintah "{inputText}"
+                          </p>
+                        )}
                     </div>
                   </div>
                 )}
@@ -1766,11 +1761,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                 <button
                   type="button"
                   onClick={() => setShowQuickReplies(!showQuickReplies)}
-                  className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
-                    showQuickReplies
-                      ? "bg-amber-950/60 text-amber-300 border border-amber-600/40"
-                      : "text-gray-400 hover:text-white hover:bg-gray-800"
-                  }`}
+                  className={`p-1.5 sm:p-2 rounded-lg transition-colors ${showQuickReplies
+                    ? "bg-amber-950/60 text-amber-300 border border-amber-600/40"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800"
+                    }`}
                   title={t("livechat.quick_replies")}
                 >
                   <Zap className="w-4 h-4 text-amber-400" />
@@ -1788,11 +1782,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                 <button
                   type="button"
                   onClick={recording ? stopVoiceRecording : startVoiceRecording}
-                  className={`p-1.5 sm:p-2 rounded-lg transition-all ${
-                    recording
-                      ? "bg-red-600 text-white animate-pulse"
-                      : "text-gray-400 hover:text-white hover:bg-gray-800"
-                  }`}
+                  className={`p-1.5 sm:p-2 rounded-lg transition-all ${recording
+                    ? "bg-red-600 text-white animate-pulse"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800"
+                    }`}
                   title={t("livechat.voice_note")}
                 >
                   {recording ? (
@@ -1807,11 +1800,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                   type="button"
                   onClick={() => void handleAiDraftReply()}
                   disabled={aiDrafting || !selectedJid}
-                  className={`p-1.5 sm:p-2 rounded-lg transition-colors flex items-center gap-1 ${
-                    aiDrafting
-                      ? "bg-purple-950/80 text-purple-300 border border-purple-600/50"
-                      : "text-purple-400 hover:text-purple-200 hover:bg-purple-950/40"
-                  }`}
+                  className={`p-1.5 sm:p-2 rounded-lg transition-colors flex items-center gap-1 ${aiDrafting
+                    ? "bg-purple-950/80 text-purple-300 border border-purple-600/50"
+                    : "text-purple-400 hover:text-purple-200 hover:bg-purple-950/40"
+                    }`}
                   title={t("livechat.ai_copilot_btn", "✨ Bantu buat draf balasan dengan AI Copilot")}
                 >
                   <Sparkles
@@ -2001,11 +1993,10 @@ const DEFAULT_QUICK_REPLIES: QuickReplyItem[] = [
                               setContactTagsInput([...currentTags, tag].join(", "));
                             }
                           }}
-                          className={`text-[10px] font-medium px-2 py-0.5 rounded-md border transition-colors ${
-                            isSelected
-                              ? "bg-purple-600 text-white border-purple-500 shadow-sm"
-                              : "bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-750"
-                          }`}
+                          className={`text-[10px] font-medium px-2 py-0.5 rounded-md border transition-colors ${isSelected
+                            ? "bg-purple-600 text-white border-purple-500 shadow-sm"
+                            : "bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-750"
+                            }`}
                         >
                           {isSelected ? `✓ ${tag}` : `+ ${tag}`}
                         </button>

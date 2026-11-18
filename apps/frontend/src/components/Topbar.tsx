@@ -72,7 +72,7 @@ export default function Topbar({
       const res = await healthApi.check();
       if (res.data) setHealth(res.data);
     } catch (e) {
-      console.error("Failed to load health in Topbar", e);
+      console.warn("Failed to load health in Topbar (transient network glitch, will retry):", e);
     } finally {
       setHealthLoading(false);
     }
