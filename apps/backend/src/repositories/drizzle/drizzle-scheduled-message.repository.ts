@@ -83,6 +83,7 @@ export class DrizzleScheduledMessageRepository
     if (partial.scheduledAt !== undefined)
       updateValues.scheduledAt = new Date(partial.scheduledAt);
     if (partial.content !== undefined) updateValues.content = partial.content;
+    if (partial.type !== undefined) updateValues.type = partial.type;
     if (partial.mediaUrl !== undefined) updateValues.mediaUrl = partial.mediaUrl;
 
     const results = await this.db
