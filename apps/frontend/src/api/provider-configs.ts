@@ -18,6 +18,7 @@ export interface ProviderConfig {
 
 export interface QrCodeResponse {
   qrCode?: string;
+  isConnected?: boolean;
 }
 export interface PairingCodeResponse {
   pairingCode?: string;

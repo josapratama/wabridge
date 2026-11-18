@@ -19,6 +19,8 @@ interface Props {
   qrCode: string | null;
   pairingCode: string | null;
   loading: boolean;
+  pairingLoading?: boolean;
+  isConnected?: boolean;
 }
 
 export default function BaileysConnectionModal({
@@ -30,6 +32,8 @@ export default function BaileysConnectionModal({
   qrCode,
   pairingCode,
   loading,
+  pairingLoading = false,
+  isConnected = false,
 }: Props) {
   const { t } = useI18n();
   const [mode, setMode] = useState<"qr" | "pairing">("qr");
@@ -159,7 +163,19 @@ export default function BaileysConnectionModal({
             <div className="space-y-4">
               {/* QR display area */}
               <div className="rounded-xl border border-gray-800 bg-gray-950 overflow-hidden">
-                {qrCode ? (
+                {isConnected ? (
+                  <div className="flex flex-col items-center justify-center py-8 px-4 gap-2.5 text-center">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                      <Check className="w-6 h-6" />
+                    </div>
+                    <p className="text-sm font-semibold text-emerald-300">
+                      {t("sessions.already_connected", "WhatsApp Sudah Terhubung!")}
+                    </p>
+                    <p className="text-xs text-gray-400 max-w-xs">
+                      {t("sessions.already_connected_desc", "Perangkat Anda sudah terautentikasi dan sesi aktif. Anda tidak perlu scan barcode lagi.")}
+                    </p>
+                  </div>
+                ) : qrCode ? (
                   <div className="p-4 bg-white flex items-center justify-center">
                     <img
                       src={qrCode}
@@ -285,15 +301,15 @@ export default function BaileysConnectionModal({
 
                   <button
                     onClick={() => void handleRequestPairingCode()}
-                    disabled={!phoneNumber || loading}
+                    disabled={!phoneNumber || pairingLoading}
                     className="btn-primary w-full justify-center py-2.5 shadow-lg shadow-brand-500/20"
                   >
-                    {loading ? (
+                    {pairingLoading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Check className="w-4 h-4" />
                     )}
-                    {loading ? t("actions.saving", "Generating…") : t("sessions.get_pairing_code", "Get Pairing Code")}
+                    {pairingLoading ? t("actions.saving", "Generating…") : t("sessions.get_pairing_code", "Get Pairing Code")}
                   </button>
                 </>
               ) : (

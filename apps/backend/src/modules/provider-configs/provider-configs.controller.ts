@@ -91,8 +91,11 @@ export class ProviderConfigsController {
       const baileysProvider = this.providerRoutingService.getProvider(
         PROVIDER_TYPES.BAILEYS,
       ) as BaileysWhatsAppProvider;
+      const isConnected = baileysProvider.isConnected(config.id);
+      if (isConnected) {
+        return { isConnected: true, qrCode: undefined };
+      }
       if (
-        !baileysProvider.isConnected(config.id) &&
         !baileysProvider.getQrCodeData(config.id) &&
         !baileysProvider.isConnectingState(config.id)
       ) {
@@ -103,9 +106,9 @@ export class ProviderConfigsController {
         });
       }
       const qrCode = baileysProvider.getQrCodeData(config.id);
-      return { qrCode: qrCode ?? undefined };
+      return { qrCode: qrCode ?? undefined, isConnected: false };
     }
-    return { qrCode: undefined };
+    return { qrCode: undefined, isConnected: false };
   }
 
   @Post(":id/pairing-code")

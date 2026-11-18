@@ -6,6 +6,7 @@ export type QrModalState = {
   configId: string;
   qrCode: string | null;
   pairingCode: string | null;
+  isConnected?: boolean;
 };
 
 const CLOSED_QR: QrModalState = {
@@ -13,6 +14,7 @@ const CLOSED_QR: QrModalState = {
   configId: "",
   qrCode: null,
   pairingCode: null,
+  isConnected: false,
 };
 
 export function useProviderConfigs() {
@@ -20,6 +22,7 @@ export function useProviderConfigs() {
   const [loading, setLoading] = useState(true);
   const [qrModal, setQrModal] = useState<QrModalState>(CLOSED_QR);
   const [qrLoading, setQrLoading] = useState(false);
+  const [pairingLoading, setPairingLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -76,15 +79,27 @@ export function useProviderConfigs() {
     const targetId = configId || qrModal.configId;
     if (!targetId) return;
     setQrLoading(true);
-    setQrModal((prev) => ({ ...prev, qrCode: null }));
+    setQrModal((prev) => ({ ...prev, qrCode: null, isConnected: false }));
 
+    let attempts = 0;
+    const maxAttempts = 20;
     const poll = async () => {
+      attempts++;
       const res = await providerConfigsApi.getQrCode(targetId);
-      if (res.data?.qrCode) {
-        setQrModal((prev) => ({ ...prev, qrCode: res.data?.qrCode ?? null }));
+      if (res.data?.isConnected) {
+        setQrModal((prev) => ({ ...prev, isConnected: true, qrCode: null }));
         setQrLoading(false);
-      } else {
+        return;
+      }
+      if (res.data?.qrCode) {
+        setQrModal((prev) => ({ ...prev, qrCode: res.data?.qrCode ?? null, isConnected: false }));
+        setQrLoading(false);
+        return;
+      }
+      if (attempts < maxAttempts) {
         setTimeout(() => void poll(), 1500);
+      } else {
+        setQrLoading(false);
       }
     };
     await poll();
@@ -92,7 +107,7 @@ export function useProviderConfigs() {
 
   const requestPairingCode = async (phoneNumber: string) => {
     if (!phoneNumber) return;
-    setQrLoading(true);
+    setPairingLoading(true);
     try {
       const res = await providerConfigsApi.requestPairingCode(
         qrModal.configId,
@@ -105,7 +120,7 @@ export function useProviderConfigs() {
         }));
       }
     } finally {
-      setQrLoading(false);
+      setPairingLoading(false);
     }
   };
 
@@ -117,6 +132,7 @@ export function useProviderConfigs() {
     toggle,
     qrModal,
     qrLoading,
+    pairingLoading,
     openQrModal,
     closeQrModal,
     generateQrCode,

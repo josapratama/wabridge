@@ -50,17 +50,20 @@ export default function Sessions() {
     configId: string;
     qrCode: string | null;
     pairingCode: string | null;
-  }>({ show: false, configId: "", qrCode: null, pairingCode: null });
+    isConnected?: boolean;
+  }>({ show: false, configId: "", qrCode: null, pairingCode: null, isConnected: false });
   const [qrLoading, setQrLoading] = useState(false);
+  const [pairingLoading, setPairingLoading] = useState(false);
 
   const openQrModal = (configId: string) => {
-    setQrModal({ show: true, configId, qrCode: null, pairingCode: null });
+    setQrModal({ show: true, configId, qrCode: null, pairingCode: null, isConnected: false });
     void generateQrCode(configId);
   };
 
   const closeQrModal = () => {
-    setQrModal({ show: false, configId: "", qrCode: null, pairingCode: null });
+    setQrModal({ show: false, configId: "", qrCode: null, pairingCode: null, isConnected: false });
     setQrLoading(false);
+    setPairingLoading(false);
     void load();
   };
 
@@ -68,15 +71,27 @@ export default function Sessions() {
     const cId = configId || qrModal.configId;
     if (!cId) return;
     setQrLoading(true);
-    setQrModal((prev) => ({ ...prev, qrCode: null }));
+    setQrModal((prev) => ({ ...prev, qrCode: null, isConnected: false }));
 
+    let attempts = 0;
+    const maxAttempts = 20;
     const poll = async () => {
+      attempts++;
       const res = await providerConfigsApi.getQrCode(cId);
-      if (res.data?.qrCode) {
-        setQrModal((prev) => ({ ...prev, qrCode: res.data?.qrCode ?? null }));
+      if (res.data?.isConnected) {
+        setQrModal((prev) => ({ ...prev, isConnected: true, qrCode: null }));
         setQrLoading(false);
+        return;
+      }
+      if (res.data?.qrCode) {
+        setQrModal((prev) => ({ ...prev, qrCode: res.data?.qrCode ?? null, isConnected: false }));
+        setQrLoading(false);
+        return;
+      }
+      if (attempts < maxAttempts) {
+        setTimeout(() => void poll(), 1500);
       } else {
-        setTimeout(() => void poll(), 2000);
+        setQrLoading(false);
       }
     };
     await poll();
@@ -84,7 +99,7 @@ export default function Sessions() {
 
   const requestPairingCode = async (phoneNumber: string) => {
     if (!phoneNumber || !qrModal.configId) return;
-    setQrLoading(true);
+    setPairingLoading(true);
     try {
       const res = await providerConfigsApi.requestPairingCode(
         qrModal.configId,
@@ -97,7 +112,7 @@ export default function Sessions() {
         }));
       }
     } finally {
-      setQrLoading(false);
+      setPairingLoading(false);
     }
   };
 
@@ -151,6 +166,8 @@ export default function Sessions() {
         qrCode={qrModal.qrCode}
         pairingCode={qrModal.pairingCode}
         loading={qrLoading}
+        pairingLoading={pairingLoading}
+        isConnected={qrModal.isConnected}
       />
 
       {/* Action Bar */}

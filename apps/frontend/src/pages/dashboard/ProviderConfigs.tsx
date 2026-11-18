@@ -18,6 +18,7 @@ export default function ProviderConfigs() {
     toggle,
     qrModal,
     qrLoading,
+    pairingLoading,
     openQrModal,
     closeQrModal,
     generateQrCode,
@@ -63,6 +64,8 @@ export default function ProviderConfigs() {
         qrCode={qrModal.qrCode}
         pairingCode={qrModal.pairingCode}
         loading={qrLoading}
+        pairingLoading={pairingLoading}
+        isConnected={qrModal.isConnected}
       />
 
       {/* Create form */}
