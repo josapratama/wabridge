@@ -1133,13 +1133,13 @@ export default function LiveChat() {
 
         {/* Right Side: Active Chat View */}
         <div
-          className={`flex-1 flex flex-col bg-gray-950 ${!selectedJid ? "hidden md:flex" : "flex"
+          className={`flex-1 flex flex-col bg-gray-950 min-w-0 overflow-hidden w-full ${!selectedJid ? "hidden md:flex" : "flex"
             }`}
         >
           {activeConv ? (
             <>
               {/* Chat Header */}
-              <div className="h-16 border-b border-gray-800/80 bg-gray-900/80 backdrop-blur-md px-2.5 sm:px-4 flex items-center justify-between shrink-0 gap-2 relative z-20">
+              <div className="h-16 border-b border-gray-800/80 bg-gray-900/80 backdrop-blur-md px-2 sm:px-4 flex items-center justify-between shrink-0 gap-1.5 sm:gap-2 relative z-20 w-full min-w-0">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <button
                     onClick={() => setSelectedJid(null)}
@@ -1433,7 +1433,7 @@ export default function LiveChat() {
               )}
 
               {/* Chat Messages Area */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 bg-gray-950 bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:20px_20px]">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4 space-y-3.5 bg-gray-950 bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:20px_20px] w-full min-w-0">
                 {activeConv.messages.map((m) => {
                   const isOutbound = m.direction === "outbound";
                   const isSearchMatch =
@@ -1447,11 +1447,11 @@ export default function LiveChat() {
                       key={m.id}
                       onMouseEnter={() => setHoveredMessageId(m.id)}
                       onMouseLeave={() => setHoveredMessageId(null)}
-                      className={`group relative flex flex-col pt-1.5 ${isOutbound ? "items-end" : "items-start"
+                      className={`group relative flex flex-col pt-1.5 w-full min-w-0 ${isOutbound ? "items-end" : "items-start"
                         }`}
                     >
                       <div
-                        className={`max-w-[85%] sm:max-w-[70%] rounded-2xl p-3 shadow-md text-xs relative leading-relaxed ${isSearchMatch
+                        className={`max-w-[85%] sm:max-w-[70%] rounded-2xl p-3 shadow-md text-xs relative leading-relaxed break-words [overflow-wrap:anywhere] ${isSearchMatch
                           ? "ring-2 ring-amber-400 shadow-amber-500/20"
                           : ""
                           } ${isOutbound
@@ -1574,7 +1574,7 @@ export default function LiveChat() {
 
                             {/* Text Content with Fallback */}
                             {m.content ? (
-                              <p className="whitespace-pre-wrap leading-relaxed break-words">
+                              <p className="whitespace-pre-wrap leading-relaxed break-words [overflow-wrap:anywhere]">
                                 {m.content}
                               </p>
                             ) : !m.mediaUrl ? (
@@ -1772,7 +1772,7 @@ export default function LiveChat() {
               )}
 
               {/* Input Bar */}
-              <div className="p-2.5 sm:p-3 border-t border-gray-800/80 bg-gray-900/80 backdrop-blur-md flex items-center gap-1.5 sm:gap-2 relative shrink-0">
+              <div className="p-2 sm:p-3 border-t border-gray-800/80 bg-gray-900/80 backdrop-blur-md flex items-center gap-1.5 sm:gap-2 relative shrink-0 w-full min-w-0">
                 {/* Slash Command Popover */}
                 {inputText.startsWith("/") && (
                   <div className="absolute bottom-full mb-2 left-4 right-4 bg-gray-900 border border-brand-500/50 rounded-xl shadow-2xl p-2.5 z-30 animate-in fade-in slide-in-from-bottom-2 backdrop-blur-md">
