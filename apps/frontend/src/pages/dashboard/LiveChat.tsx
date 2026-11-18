@@ -49,6 +49,7 @@ import {
   Calendar,
   CornerUpLeft,
   Smile,
+  ArrowLeft,
 } from "lucide-react";
 
 interface Conversation {
@@ -1135,39 +1136,48 @@ export default function LiveChat() {
           {activeConv ? (
             <>
               {/* Chat Header */}
-              <div className="h-16 border-b border-gray-800 bg-gray-900/40 px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2">
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="h-16 border-b border-gray-800/80 bg-gray-900/80 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2 overflow-hidden">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                   <button
                     onClick={() => setSelectedJid(null)}
-                    className="md:hidden text-gray-400 hover:text-white p-1"
+                    className="md:hidden text-gray-400 hover:text-white p-1.5 -ml-1 rounded-lg hover:bg-gray-800 transition-colors shrink-0"
+                    title={t("actions.back", "Back")}
                   >
-                    ← {t("actions.back", "Back")}
+                    <ArrowLeft className="w-4 h-4" />
                   </button>
-                  <div
-                    onClick={!activeConv.isGroup ? openContactModal : undefined}
-                    className={`w-9 h-9 rounded-full bg-brand-600/30 border border-brand-500/40 flex items-center justify-center text-brand-300 font-semibold text-sm shrink-0 ${!activeConv.isGroup ? "cursor-pointer hover:border-brand-400" : ""
-                      }`}
-                    title={!activeConv.isGroup ? t("livechat.edit_contact_btn", "Edit Kontak") : undefined}
-                  >
-                    {activeConv.isGroup ? (
-                      <Users className="w-4 h-4" />
-                    ) : (
-                      activeConv.name.slice(0, 1).toUpperCase()
-                    )}
+                  <div className="relative shrink-0">
+                    <div
+                      onClick={!activeConv.isGroup ? openContactModal : undefined}
+                      className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-brand-700 to-brand-500 border border-brand-400/30 flex items-center justify-center text-white font-bold text-sm shadow-sm ${!activeConv.isGroup ? "cursor-pointer hover:ring-2 hover:ring-brand-400/50" : ""
+                        }`}
+                      title={!activeConv.isGroup ? t("livechat.edit_contact_btn", "Edit Kontak") : undefined}
+                    >
+                      {activeConv.isGroup ? (
+                        <Users className="w-4 h-4" />
+                      ) : (
+                        activeConv.name.slice(0, 1).toUpperCase()
+                      )}
+                    </div>
+                    <span
+                      className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-gray-900 ${isSessionReady ? "bg-emerald-500" : "bg-amber-500"
+                        }`}
+                      title={isSessionReady ? "Terhubung" : "Terputus"}
+                    />
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
                       <h2
                         onClick={!activeConv.isGroup ? openContactModal : undefined}
-                        className={`text-sm font-bold text-white leading-tight truncate ${!activeConv.isGroup ? "cursor-pointer hover:underline" : ""
+                        className={`text-xs sm:text-sm font-bold text-white leading-tight truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[240px] md:max-w-[280px] lg:max-w-[340px] ${!activeConv.isGroup ? "cursor-pointer hover:underline hover:text-brand-300" : ""
                           }`}
+                        title={activeConv.name}
                       >
                         {activeConv.name}
                       </h2>
                       {!activeConv.isGroup && (
                         <button
                           onClick={openContactModal}
-                          className="text-[10px] text-gray-400 hover:text-brand-300 p-0.5 rounded transition-colors inline-flex items-center gap-1"
+                          className="text-gray-400 hover:text-brand-300 p-0.5 rounded transition-colors shrink-0"
                           title={
                             matchedContact
                               ? t("livechat.edit_contact_btn", "Edit Kontak")
@@ -1182,40 +1192,32 @@ export default function LiveChat() {
                         </button>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                      <p className="text-[11px] text-gray-400 font-mono">
-                        {activeConv.isGroup ? activeConv.jid : `+${activeConv.phone}`}
-                      </p>
+                    <div className="flex items-center gap-1.5 mt-0.5 text-[10px] sm:text-[11px] text-gray-400 truncate">
+                      <span className="font-mono truncate">{activeConv.isGroup ? activeConv.jid : `+${activeConv.phone}`}</span>
                       {matchedContact?.tags && matchedContact.tags.length > 0 && (
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {matchedContact.tags.slice(0, 2).map((tag, idx) => (
-                            <span
-                              key={idx}
-                              className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60 leading-none"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                          {matchedContact.tags.length > 2 && (
-                            <span className="text-[9px] text-gray-400">
-                              +{matchedContact.tags.length - 2}
-                            </span>
+                        <span className="hidden sm:inline-flex items-center gap-1 shrink-0">
+                          <span className="w-1 h-1 rounded-full bg-gray-600" />
+                          <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-purple-950/60 text-purple-300 border border-purple-800/60 leading-none">
+                            {matchedContact.tags[0]}
+                          </span>
+                          {matchedContact.tags.length > 1 && (
+                            <span className="text-[9px] text-gray-400">+{matchedContact.tags.length - 1}</span>
                           )}
-                        </div>
+                        </span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                   {/* AI Takeover Button */}
                   {!activeConv.isGroup && (
                     <button
                       onClick={handleToggleAiPause}
                       disabled={togglingAi}
-                      className={`text-xs px-2 sm:px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${aiPaused
-                        ? "bg-amber-950/40 border-amber-800/60 text-amber-300 hover:bg-amber-900/50"
-                        : "bg-purple-950/40 border-purple-800/60 text-purple-300 hover:bg-purple-900/50"
+                      className={`text-xs px-2 sm:px-2.5 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 ${aiPaused
+                        ? "bg-amber-950/50 border-amber-700/60 text-amber-300 hover:bg-amber-900/60"
+                        : "bg-purple-950/50 border-purple-700/60 text-purple-300 hover:bg-purple-900/60"
                         }`}
                       title={
                         aiPaused
@@ -1226,18 +1228,18 @@ export default function LiveChat() {
                       {aiPaused ? (
                         <>
                           <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span className="hidden sm:inline">
+                          <span className="hidden md:inline">
                             {t("livechat.ai_paused_badge", "CS Manusia (AI Dijeda)")}
                           </span>
-                          <span className="sm:hidden font-semibold">CS</span>
+                          <span className="md:hidden font-semibold">CS</span>
                         </>
                       ) : (
                         <>
                           <Bot className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                          <span className="hidden sm:inline">
+                          <span className="hidden md:inline">
                             {t("livechat.ai_active_badge", "AI Aktif")}
                           </span>
-                          <span className="sm:hidden font-semibold">AI</span>
+                          <span className="md:hidden font-semibold">AI</span>
                         </>
                       )}
                     </button>
@@ -1249,75 +1251,58 @@ export default function LiveChat() {
                       setShowInChatSearch(!showInChatSearch);
                       if (showInChatSearch) setInChatSearchQuery("");
                     }}
-                    className={`text-xs px-2 sm:px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${showInChatSearch
+                    className={`p-1.5 sm:px-2 sm:py-1.5 rounded-lg border text-xs font-medium transition-colors flex items-center gap-1.5 ${showInChatSearch
                       ? "bg-brand-950/70 border-brand-700/70 text-brand-300"
-                      : "border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-750"
+                      : "border-gray-800 bg-gray-800/80 text-gray-300 hover:bg-gray-750"
                       }`}
                     title="Cari kata kunci dalam riwayat obrolan ini"
                   >
                     <Search className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="hidden xl:inline">Cari Pesan</span>
+                    <span className="hidden 2xl:inline">Cari Pesan</span>
                   </button>
 
                   {/* Export Chat History */}
                   <button
                     onClick={handleExportChat}
-                    className="text-xs px-2 sm:px-2.5 py-1 rounded-lg border border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-750 font-medium transition-colors flex items-center gap-1.5"
+                    className="p-1.5 sm:px-2 sm:py-1.5 rounded-lg border border-gray-800 bg-gray-800/80 text-gray-300 hover:bg-gray-750 text-xs font-medium transition-colors hidden sm:flex items-center gap-1.5"
                     title={t("livechat.export_chat_title", "Unduh riwayat percakapan ke file teks (.txt)")}
                   >
                     <Download className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="hidden xl:inline">{t("livechat.export_chat", "Export Chat")}</span>
+                    <span className="hidden 2xl:inline">{t("livechat.export_chat", "Export Chat")}</span>
                   </button>
 
                   {/* Mark as Resolved Toggle */}
                   <button
                     onClick={() => toggleResolved(activeConv.jid)}
-                    className={`text-xs px-2.5 py-1 rounded-lg border font-medium transition-colors flex items-center gap-1.5 ${resolvedJids.includes(activeConv.jid)
-                      ? "bg-emerald-950/40 border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/50"
-                      : "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-750"
+                    className={`p-1.5 sm:px-2 sm:py-1.5 rounded-lg border text-xs font-medium transition-colors flex items-center gap-1.5 ${resolvedJids.includes(activeConv.jid)
+                      ? "bg-emerald-950/50 border-emerald-700/60 text-emerald-300 hover:bg-emerald-900/50"
+                      : "bg-gray-800/80 border-gray-800 text-gray-300 hover:bg-gray-750"
                       }`}
                     title={resolvedJids.includes(activeConv.jid) ? "Tandai Belum Selesai" : "Tandai Percakapan Selesai"}
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="hidden xl:inline">
                       {resolvedJids.includes(activeConv.jid) ? "Selesai" : "Tandai Selesai"}
                     </span>
                   </button>
 
-                  {/* Provider Connection Status indicator */}
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`w-2 h-2 rounded-full ${isSessionReady
-                        ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
-                        : "bg-amber-500 animate-pulse"
-                        }`}
-                    />
-                    <span
-                      className={`text-[11px] font-medium hidden sm:inline ${isSessionReady ? "text-emerald-400" : "text-amber-400"
-                        }`}
-                    >
-                      {isSessionReady ? t("livechat.connected") : t("livechat.disconnected")}
-                    </span>
-                  </div>
-
                   {!isSessionReady && currentSession?.providerType === "baileys" && (
                     <button
                       onClick={() => openQrModal(currentSession.providerConfigId)}
-                      className="btn-secondary text-[11px] py-1 px-2.5 flex items-center gap-1 border-amber-800/60 text-amber-300 hover:bg-amber-950/40"
+                      className="btn-secondary text-[11px] py-1 px-2 sm:px-2.5 flex items-center gap-1 border-amber-800/60 text-amber-300 hover:bg-amber-950/40"
                       title={t("livechat.reconnect_qr")}
                     >
-                      <QrCode className="w-3.5 h-3.5" /> {t("livechat.reconnect_qr")}
+                      <QrCode className="w-3.5 h-3.5" /> <span className="hidden sm:inline">{t("livechat.reconnect_qr")}</span>
                     </button>
                   )}
 
-                  <div className="flex items-center gap-1.5">
-                    <label className="text-xs text-gray-400 hidden lg:inline">
-                      {t("livechat.reply_via")}
-                    </label>
+                  {/* Session Selector Pill */}
+                  <div className="flex items-center gap-1">
                     <select
                       value={selectedSessionId}
                       onChange={(e) => setSelectedSessionId(e.target.value)}
-                      className="bg-gray-800 border border-gray-700 rounded-lg px-2.5 py-1 text-xs text-gray-200 focus:outline-none focus:border-brand-500"
+                      className="bg-gray-800/90 border border-gray-700/80 rounded-lg px-2 sm:px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500 max-w-[100px] xs:max-w-[125px] sm:max-w-[150px] md:max-w-[175px] truncate cursor-pointer shadow-sm"
+                      title={t("livechat.reply_via", "Balas melalui sesi")}
                     >
                       {sessions.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -1390,7 +1375,7 @@ export default function LiveChat() {
               )}
 
               {/* Chat Messages Area */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3.5 bg-gray-950 bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:20px_20px]">
                 {activeConv.messages.map((m) => {
                   const isOutbound = m.direction === "outbound";
                   const isSearchMatch =
@@ -1404,24 +1389,24 @@ export default function LiveChat() {
                       key={m.id}
                       onMouseEnter={() => setHoveredMessageId(m.id)}
                       onMouseLeave={() => setHoveredMessageId(null)}
-                      className={`group relative flex flex-col ${isOutbound ? "items-end" : "items-start"
+                      className={`group relative flex flex-col pt-1.5 ${isOutbound ? "items-end" : "items-start"
                         }`}
                     >
                       <div
-                        className={`max-w-[75%] rounded-2xl p-3 shadow-md text-xs relative ${isSearchMatch
+                        className={`max-w-[85%] sm:max-w-[70%] rounded-2xl p-3 shadow-md text-xs relative leading-relaxed ${isSearchMatch
                           ? "ring-2 ring-amber-400 shadow-amber-500/20"
                           : ""
                           } ${isOutbound
                             ? m.status === "failed"
-                              ? "bg-red-950/70 border border-red-800/80 text-red-100 rounded-br-none"
-                              : "bg-brand-600 text-white rounded-br-none"
-                            : "bg-gray-800 text-gray-100 rounded-bl-none border border-gray-700/60"
+                              ? "bg-red-950/70 border border-red-800/80 text-red-100 rounded-tr-xs"
+                              : "bg-emerald-600 hover:bg-emerald-600/95 text-white rounded-tr-xs shadow-emerald-950/40"
+                            : "bg-gray-800/90 text-gray-100 rounded-tl-xs border border-gray-700/60 shadow-gray-950/40"
                           }`}
                       >
-                        {/* Hover Quick Actions (Reply, React, Unsend) */}
+                        {/* Hover Quick Actions (Reply, React, Unsend) - safely positioned above bubble */}
                         <div
-                          className={`absolute -top-3 ${isOutbound ? "right-2" : "left-2"
-                            } hidden group-hover:flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-full px-2 py-0.5 shadow-lg z-20 transition-all`}
+                          className={`absolute -top-8 ${isOutbound ? "right-1" : "left-1"
+                            } opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-150 flex items-center gap-1 bg-gray-900/95 backdrop-blur-sm border border-gray-700/80 rounded-full px-2 py-0.5 shadow-xl z-20`}
                         >
                           <button
                             type="button"
@@ -1706,7 +1691,7 @@ export default function LiveChat() {
               )}
 
               {/* Input Bar */}
-              <div className="p-3 border-t border-gray-800 bg-gray-900/60 flex items-center gap-2 relative">
+              <div className="p-2.5 sm:p-3 border-t border-gray-800/80 bg-gray-900/80 backdrop-blur-md flex items-center gap-1.5 sm:gap-2 relative shrink-0">
                 {/* Slash Command Popover */}
                 {inputText.startsWith("/") && (
                   <div className="absolute bottom-full mb-2 left-4 right-4 bg-gray-900 border border-brand-500/50 rounded-xl shadow-2xl p-2.5 z-30 animate-in fade-in slide-in-from-bottom-2 backdrop-blur-md">
@@ -1872,7 +1857,7 @@ export default function LiveChat() {
                   }}
                   rows={1}
                   placeholder={t("livechat.input_placeholder")}
-                  className="flex-1 bg-gray-800/80 border border-gray-700/60 rounded-xl px-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 resize-none max-h-28"
+                  className="flex-1 min-w-0 bg-gray-800/80 border border-gray-700/60 rounded-xl px-3 sm:px-4 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 resize-none max-h-28 transition-all"
                 />
 
                 <button
@@ -1880,7 +1865,7 @@ export default function LiveChat() {
                   disabled={
                     sending || (!inputText.trim() && !attachment) || !selectedSessionId
                   }
-                  className="btn-primary px-3 py-2 shrink-0"
+                  className="btn-primary p-2 sm:px-3 sm:py-2 rounded-xl shrink-0 shadow-lg shadow-brand-500/20 active:scale-95 transition-all"
                   title={t("livechat.send")}
                 >
                   <Send
