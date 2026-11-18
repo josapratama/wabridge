@@ -94,6 +94,37 @@ const DEFAULT_PROFILE_TEMPLATE: Omit<AiBotProfile, "id" | "name" | "createdAt" |
   ignoreGroups: true,
 };
 
+export function normalizePhone(raw: string): string {
+  let digits = (raw || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("0")) {
+    digits = "62" + digits.slice(1);
+  } else if (digits.startsWith("8")) {
+    digits = "62" + digits;
+  }
+  return digits;
+}
+
+export function isPhoneMatch(p1: string, p2: string): boolean {
+  const d1 = (p1 || "").replace(/\D/g, "");
+  const d2 = (p2 || "").replace(/\D/g, "");
+  if (!d1 || !d2) return false;
+  if (d1 === d2) return true;
+
+  const n1 = normalizePhone(d1);
+  const n2 = normalizePhone(d2);
+  if (n1 === n2) return true;
+
+  const len = Math.min(n1.length, n2.length, 9);
+  if (len >= 8) {
+    if (n1.slice(-len) === n2.slice(-len)) {
+      return true;
+    }
+  }
+
+  return n1.endsWith(n2) || n2.endsWith(n1);
+}
+
 @Injectable()
 export class AiBotService implements OnModuleInit {
   private profilesDir = path.join(process.cwd(), "data", "ai_bot_profiles");
@@ -837,6 +868,37 @@ export class AiBotService implements OnModuleInit {
     return { paused: true, pausedUntil };
   }
 
+  private lidToPhoneCache = new Map<string, string>();
+
+  registerLidMapping(lidJid: string, phoneJidOrNumber: string) {
+    if (!lidJid || !phoneJidOrNumber) return;
+    const cleanLid = lidJid.includes("@") ? lidJid : `${lidJid}@lid`;
+    const cleanPhone = phoneJidOrNumber.includes("@") ? phoneJidOrNumber : `${phoneJidOrNumber}@s.whatsapp.net`;
+    this.lidToPhoneCache.set(cleanLid, cleanPhone);
+  }
+
+  async resolveLidToPhone(lidJid: string): Promise<string | null> {
+    const cleanLid = lidJid.includes("@") ? lidJid : `${lidJid}@lid`;
+    if (this.lidToPhoneCache.has(cleanLid)) {
+      return this.lidToPhoneCache.get(cleanLid) || null;
+    }
+    if (this.messageRepo) {
+      try {
+        const recent = await this.messageRepo.findRecentByJid(cleanLid, 10);
+        for (const msg of recent) {
+          const key = (msg.rawPayload as any)?.key;
+          const alt = key?.remoteJidAlt || key?.participantAlt;
+          if (alt && String(alt).includes("@s.whatsapp.net")) {
+            const phoneJid = String(alt);
+            this.lidToPhoneCache.set(cleanLid, phoneJid);
+            return phoneJid;
+          }
+        }
+      } catch {}
+    }
+    return null;
+  }
+
   resumeForJid(userId: string, jid: string): { resumed: boolean } {
     const userPaused = this.pausedJids.get(userId);
     if (userPaused) {
@@ -927,6 +989,89 @@ export class AiBotService implements OnModuleInit {
     return null;
   }
 
+  async canReply(
+    fromJid?: string,
+    sessionId?: string,
+    userId: string = "default",
+  ): Promise<boolean> {
+    const rawProfile = await this.resolveProfileForSession(sessionId);
+    if (!rawProfile || !rawProfile.isEnabled) {
+      return false;
+    }
+    const profile = this.hydrateProfile(rawProfile);
+    if (!profile.apiKey) {
+      return false;
+    }
+
+    // 0. Group chat filter: ignore group messages if ignoreGroups is true
+    const isGroup = fromJid?.includes("@g.us");
+    if (isGroup && (profile.ignoreGroups ?? true)) {
+      return false;
+    }
+
+    // 1. Sender Phone Number Filter (Whitelist / Blacklist)
+    if (fromJid) {
+      let senderPhone = fromJid.split("@")[0].replace(/\D/g, "");
+      if (fromJid.endsWith("@lid")) {
+        const alt = await this.resolveLidToPhone(fromJid);
+        if (alt) {
+          senderPhone = alt.split("@")[0].replace(/\D/g, "");
+        }
+      }
+
+      if (senderPhone) {
+        if (profile.senderFilterMode === "whitelist") {
+          const allowed = profile.whitelistNumbers || [];
+          if (allowed.length > 0) {
+            const matches = allowed.some((num) => isPhoneMatch(senderPhone, num));
+            if (!matches) {
+              this.logger.log(
+                `[AI Bot] Sender ${senderPhone} (${fromJid}) not in whitelist. Skipping reply.`,
+                "AiBotService",
+              );
+              return false;
+            }
+          }
+        } else if (profile.senderFilterMode === "blacklist") {
+          const blocked = profile.blacklistNumbers || [];
+          if (blocked.length > 0) {
+            const matches = blocked.some((num) => isPhoneMatch(senderPhone, num));
+            if (matches) {
+              this.logger.log(
+                `[AI Bot] Sender ${senderPhone} (${fromJid}) is blacklisted in profile "${profile.name}". Skipping reply.`,
+                "AiBotService",
+              );
+              return false;
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Schedule Mode check: if "after_hours", only reply outside work hours
+    if (profile.scheduleMode === "after_hours") {
+      const isWorkHours = this.isWithinWorkHours(
+        profile.workHoursStart,
+        profile.workHoursEnd,
+        profile.workDays,
+      );
+      if (isWorkHours) return false;
+    }
+
+    // 3. Human Handover check for this contact
+    if (fromJid) {
+      const userPaused = this.pausedJids.get(userId);
+      if (userPaused) {
+        const pausedUntil = userPaused.get(fromJid);
+        if (pausedUntil && Date.now() < pausedUntil) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
   async generateReply(
     userMessage: string,
     fromJid?: string,
@@ -950,35 +1095,38 @@ export class AiBotService implements OnModuleInit {
 
     // 1. Sender Phone Number Filter (Whitelist / Blacklist)
     if (fromJid) {
-      const senderPhone = fromJid.split("@")[0].replace(/\D/g, "");
+      let senderPhone = fromJid.split("@")[0].replace(/\D/g, "");
+      if (fromJid.endsWith("@lid")) {
+        const alt = await this.resolveLidToPhone(fromJid);
+        if (alt) {
+          senderPhone = alt.split("@")[0].replace(/\D/g, "");
+        }
+      }
+
       if (senderPhone) {
         if (profile.senderFilterMode === "whitelist") {
           const allowed = profile.whitelistNumbers || [];
           if (allowed.length > 0) {
-            const matches = allowed.some((num) => {
-              const clean = num.replace(/\D/g, "");
-              if (!clean) return false;
-              return (
-                senderPhone === clean ||
-                senderPhone.endsWith(clean) ||
-                clean.endsWith(senderPhone)
+            const matches = allowed.some((num) => isPhoneMatch(senderPhone, num));
+            if (!matches) {
+              this.logger.log(
+                `[AI Bot] Sender ${senderPhone} (${fromJid}) not in whitelist. Skipping reply.`,
+                "AiBotService",
               );
-            });
-            if (!matches) return null;
+              return null;
+            }
           }
         } else if (profile.senderFilterMode === "blacklist") {
           const blocked = profile.blacklistNumbers || [];
           if (blocked.length > 0) {
-            const matches = blocked.some((num) => {
-              const clean = num.replace(/\D/g, "");
-              if (!clean) return false;
-              return (
-                senderPhone === clean ||
-                senderPhone.endsWith(clean) ||
-                clean.endsWith(senderPhone)
+            const matches = blocked.some((num) => isPhoneMatch(senderPhone, num));
+            if (matches) {
+              this.logger.log(
+                `[AI Bot] Sender ${senderPhone} (${fromJid}) is blacklisted in profile "${profile.name}". Skipping reply.`,
+                "AiBotService",
               );
-            });
-            if (matches) return null;
+              return null;
+            }
           }
         }
       }

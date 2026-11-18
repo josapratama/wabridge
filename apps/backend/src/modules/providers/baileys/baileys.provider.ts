@@ -54,6 +54,7 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
   private sessions = new Map<string, BaileysSessionInstance>();
   private sessionToConfig = new Map<string, string>();
   private lastReplyTimeByJid = new Map<string, number>();
+  private lidToPhoneMap = new Map<string, string>();
   private logger_pino = pino({ level: "info" });
 
   constructor(
@@ -555,17 +556,62 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
               const lastTime = this.lastReplyTimeByJid.get(from) || 0;
               // 4 second anti-loop cooldown
               if (now - lastTime > 4000) {
-                // Extract real phone number mapping if message arrives via LID (@lid)
-                const senderPn =
-                  (msg.key as any)?.senderPn ||
-                  (msg.key as any)?.participantPn ||
-                  (msg.key as any)?.remoteJidPn ||
-                  (msg as any)?.senderPn;
+                const keyAny = msg.key as any;
+                const remoteJidAlt = keyAny?.remoteJidAlt;
+                const participantAlt = keyAny?.participantAlt;
 
-                let senderPhone = from.split("@")[0].replace(/\D/g, "");
-                if (from.endsWith("@lid") && senderPn) {
-                  senderPhone = String(senderPn).split("@")[0].replace(/\D/g, "") || senderPhone;
+                if (from.endsWith("@lid") && remoteJidAlt) {
+                  const altStr = String(remoteJidAlt);
+                  this.lidToPhoneMap.set(from, altStr);
+                  if (this.aiBotService) {
+                    this.aiBotService.registerLidMapping(from, altStr);
+                  }
                 }
+                if (keyAny?.participant?.endsWith("@lid") && participantAlt) {
+                  const altStr = String(participantAlt);
+                  this.lidToPhoneMap.set(keyAny.participant, altStr);
+                  if (this.aiBotService) {
+                    this.aiBotService.registerLidMapping(keyAny.participant, altStr);
+                  }
+                }
+
+                // Extract real phone number mapping if message arrives via LID (@lid)
+                let resolvedPhoneJid: string | undefined = undefined;
+                if (from.endsWith("@lid")) {
+                  const alt =
+                    remoteJidAlt ||
+                    participantAlt ||
+                    keyAny?.senderPn ||
+                    keyAny?.remoteJidPn ||
+                    (msg as any)?.senderPn ||
+                    this.lidToPhoneMap.get(from);
+
+                  if (alt) {
+                    resolvedPhoneJid = String(alt).includes("@") ? String(alt) : `${alt}@s.whatsapp.net`;
+                  } else if (this.messageRepo) {
+                    try {
+                      const recent = await this.messageRepo.findRecentByJid(from, 5);
+                      for (const m of recent) {
+                        const k = (m.rawPayload as any)?.key;
+                        const dbAlt = k?.remoteJidAlt || k?.participantAlt;
+                        if (dbAlt) {
+                          resolvedPhoneJid = String(dbAlt).includes("@") ? String(dbAlt) : `${dbAlt}@s.whatsapp.net`;
+                          this.lidToPhoneMap.set(from, resolvedPhoneJid);
+                          if (this.aiBotService) {
+                            this.aiBotService.registerLidMapping(from, resolvedPhoneJid);
+                          }
+                          break;
+                        }
+                      }
+                    } catch {}
+                  }
+                } else if (from.endsWith("@s.whatsapp.net")) {
+                  resolvedPhoneJid = from;
+                }
+
+                const senderPhone = resolvedPhoneJid
+                  ? resolvedPhoneJid.split("@")[0].replace(/\D/g, "")
+                  : from.split("@")[0].replace(/\D/g, "");
                 const senderName = msg.pushName || undefined;
 
                 let replyContent = await this.autoReplyService.match(
@@ -576,22 +622,43 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                 );
 
                 if (!replyContent && this.aiBotService) {
-                  const promptJid = from.includes("@") ? from : `${from}@s.whatsapp.net`;
-                  // Get currently active socket instance
-                  const currentInst = this.sessions.get(configId);
-                  const activeSock = currentInst?.sock || sock;
-                  if (activeSock) {
-                    try {
-                      await activeSock.sendPresenceUpdate("composing", promptJid);
-                    } catch {}
-                  }
-
-                  replyContent = await this.aiBotService.generateReply(
-                    content,
-                    senderPhone ? `${senderPhone}@s.whatsapp.net` : from,
-                    sessionUserId,
+                  const aiTargetJid = resolvedPhoneJid || from;
+                  const canAiReply = await this.aiBotService.canReply(
+                    aiTargetJid,
                     effectiveSessionId,
+                    sessionUserId,
                   );
+
+                  if (canAiReply) {
+                    const promptJid = from.includes("@") ? from : `${from}@s.whatsapp.net`;
+                    const currentInst = this.sessions.get(configId);
+                    const activeSock = currentInst?.sock || sock;
+                    if (activeSock) {
+                      try {
+                        await activeSock.sendPresenceUpdate("composing", promptJid);
+                      } catch {}
+                    }
+
+                    try {
+                      replyContent = await this.aiBotService.generateReply(
+                        content,
+                        aiTargetJid,
+                        sessionUserId,
+                        effectiveSessionId,
+                      );
+                    } finally {
+                      if (activeSock) {
+                        try {
+                          await activeSock.sendPresenceUpdate("paused", promptJid);
+                        } catch {}
+                      }
+                    }
+                  } else {
+                    this.logger.log(
+                      `[BaileysWhatsAppProvider] AI auto-reply skipped for ${aiTargetJid} (filter/handover/schedule condition not met)`,
+                      "BaileysWhatsAppProvider",
+                    );
+                  }
                 }
 
                 if (replyContent) {
@@ -603,9 +670,6 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
 
                   // Determine best delivery JID (handle modern WhatsApp @lid vs @s.whatsapp.net)
                   let targetJid = from.includes("@") ? from : `${from}@s.whatsapp.net`;
-                  if (from.endsWith("@lid") && senderPn) {
-                    targetJid = senderPn.includes("@") ? senderPn : `${senderPn}@s.whatsapp.net`;
-                  }
 
                   try {
                     // Fetch latest active socket (in case socket reconnected while AI was thinking)
