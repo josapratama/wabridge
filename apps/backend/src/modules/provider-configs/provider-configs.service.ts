@@ -1,7 +1,11 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { v4 as uuidv4 } from "uuid";
 import type { ProviderConfig } from "../../common/types";
-import { ProviderConfigRepository } from "../../repositories/interfaces";
+import {
+  ProviderConfigRepository,
+  SessionRepository,
+} from "../../repositories/interfaces";
+import { ProviderRoutingService } from "../provider-routing/provider-routing.service";
 import { CreateProviderConfigDto } from "./dto/create-provider-config.dto";
 import { UpdateProviderConfigDto } from "./dto/update-provider-config.dto";
 
@@ -10,6 +14,11 @@ export class ProviderConfigsService {
   constructor(
     @Inject(ProviderConfigRepository)
     private readonly repo: ProviderConfigRepository,
+    @Optional()
+    @Inject(SessionRepository)
+    private readonly sessionRepo?: SessionRepository,
+    @Optional()
+    private readonly routingService?: ProviderRoutingService,
   ) {}
 
   async create(userId: string, dto: CreateProviderConfigDto): Promise<ProviderConfig> {
@@ -68,7 +77,22 @@ export class ProviderConfigsService {
   }
 
   async deactivate(id: string, userId?: string): Promise<ProviderConfig> {
-    await this.findById(id, userId);
+    const config = await this.findById(id, userId);
+
+    // Disconnect all sessions tied to this provider config
+    if (this.sessionRepo && this.routingService) {
+      try {
+        const sessions = await this.sessionRepo.findByProviderConfigId(id);
+        const provider = this.routingService.getProvider(config.providerType);
+        for (const s of sessions) {
+          if (provider?.disconnectAccount) {
+            await provider.disconnectAccount(s.id, id);
+          }
+          await this.sessionRepo.update(s.id, { status: "inactive" });
+        }
+      } catch {}
+    }
+
     const updated = await this.repo.update(id, { isActive: false });
     if (!updated) throw new NotFoundException(`ProviderConfig ${id} not found`);
     return updated;

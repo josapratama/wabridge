@@ -134,7 +134,21 @@ export class SessionsService implements OnApplicationBootstrap {
   }
 
   async deactivate(id: string, userId?: string): Promise<Session> {
-    await this.findById(id, userId);
+    const session = await this.findById(id, userId);
+
+    // Disconnect socket from WhatsApp provider
+    try {
+      const provider = this.routingService.getProvider(session.providerType);
+      if (provider.disconnectAccount) {
+        await provider.disconnectAccount(id, session.providerConfigId);
+      }
+    } catch (err) {
+      this.logger.warn(
+        `Failed to disconnect socket for session ${id}: ${err}`,
+        "SessionsService",
+      );
+    }
+
     const updated = await this.sessionRepo.update(id, { status: "inactive" });
     if (!updated) throw new NotFoundException(`Session ${id} not found`);
     return updated;

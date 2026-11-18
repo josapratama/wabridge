@@ -20,6 +20,7 @@ import { EventsService } from "../../events/events.service";
 import {
   MessageRepository,
   SessionRepository,
+  ProviderConfigRepository,
 } from "../../../repositories/interfaces";
 import { AutoReplyService } from "../../auto-reply/auto-reply.service";
 import { WebhookOutboundService } from "../../webhook-outbound/webhook-outbound.service";
@@ -67,6 +68,9 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
     @Optional()
     @Inject(SessionRepository)
     private readonly sessionRepo?: SessionRepository,
+    @Optional()
+    @Inject(ProviderConfigRepository)
+    private readonly configRepo?: ProviderConfigRepository,
   ) {}
 
   private getOrCreateSession(configId: string): BaileysSessionInstance {
@@ -485,6 +489,36 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
             // Auto-reply & AI Bot: ONLY for 1-on-1 chats, ignore groups to prevent spam!
             const isGroup = from.endsWith("@g.us");
             if (!isGroup && content && !content.startsWith("[")) {
+              // Verify session and provider config are currently ACTIVE before responding
+              let isSessionActive = true;
+              let sessionUserId: string | undefined;
+              if (effectiveSessionId && this.sessionRepo) {
+                try {
+                  const sess = await this.sessionRepo.findById(effectiveSessionId);
+                  if (!sess || sess.status !== "active") {
+                    isSessionActive = false;
+                  } else {
+                    sessionUserId = sess.userId;
+                    if (this.configRepo && sess.providerConfigId) {
+                      const pCfg = await this.configRepo.findById(sess.providerConfigId);
+                      if (pCfg && !pCfg.isActive) {
+                        isSessionActive = false;
+                      }
+                    }
+                  }
+                } catch {
+                  // continue
+                }
+              }
+
+              if (!isSessionActive) {
+                this.logger.log(
+                  `Skipping Auto-reply & AI Bot for session ${effectiveSessionId}: session or provider config is disabled/inactive`,
+                  "BaileysWhatsAppProvider",
+                );
+                return;
+              }
+
               const now = Date.now();
               const lastTime = this.lastReplyTimeByJid.get(from) || 0;
               // 4 second anti-loop cooldown
@@ -498,13 +532,6 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                   senderPhone,
                 );
                 if (!replyContent && this.aiBotService) {
-                  let sessionUserId: string | undefined;
-                  try {
-                    const sess = await this.sessionRepo?.findById(effectiveSessionId);
-                    sessionUserId = sess?.userId;
-                  } catch {
-                    // ignore lookup error
-                  }
                   const promptJid = from.includes("@")
                     ? from
                     : `${from}@s.whatsapp.net`;
@@ -996,6 +1023,46 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
     } catch (err) {
       this.logger.warn(
         `Failed to mark messages as read: ${err}`,
+        "BaileysWhatsAppProvider",
+      );
+      return false;
+    }
+  }
+
+  async disconnectAccount(
+    sessionId?: string,
+    configId?: string,
+  ): Promise<boolean> {
+    const inst = this.findSession(configId, sessionId);
+    if (!inst) return false;
+
+    this.logger.log(
+      `Disconnecting Baileys WhatsApp socket for configId=${inst.configId} sessionId=${sessionId || "unknown"}`,
+      "BaileysWhatsAppProvider",
+    );
+
+    try {
+      if (inst.sock) {
+        try {
+          inst.sock.ev.removeAllListeners("messages.upsert");
+          inst.sock.ev.removeAllListeners("messages.update");
+          inst.sock.ev.removeAllListeners("connection.update");
+          inst.sock.end(new Error("Account deactivated by user"));
+        } catch {}
+      }
+      inst.connectionReady = false;
+      inst.isConnecting = false;
+      inst.qrCodeData = null;
+      inst.pairingCode = null;
+
+      this.sessions.delete(inst.configId);
+      if (sessionId) {
+        this.sessionToConfig.delete(sessionId);
+      }
+      return true;
+    } catch (err) {
+      this.logger.warn(
+        `Error disconnecting Baileys socket: ${err}`,
         "BaileysWhatsAppProvider",
       );
       return false;

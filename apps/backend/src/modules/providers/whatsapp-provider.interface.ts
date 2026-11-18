@@ -21,4 +21,5 @@ export interface WhatsAppProvider {
   sendReaction?(sessionId: string, to: string, messageId: string, emoji: string): Promise<boolean>;
   deleteMessage?(sessionId: string, to: string, messageId: string): Promise<boolean>;
   markAsRead?(sessionId: string, to: string, messageIds: string[]): Promise<boolean>;
+  disconnectAccount?(sessionId?: string, configId?: string): Promise<boolean>;
 }

@@ -732,14 +732,14 @@ export default function LiveChat() {
           setMessages((prev) =>
             prev.map((m) =>
               m.sessionId === c.sessionId &&
-              m.direction === "inbound" &&
-              (m.from === c.jid || m.from.includes(c.phone))
+                m.direction === "inbound" &&
+                (m.from === c.jid || m.from.includes(c.phone))
                 ? { ...m, status: "read" }
                 : m,
             ),
           );
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   };
 
