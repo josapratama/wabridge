@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Contact } from "../../api/client";
 import EmptyState from "../../components/EmptyState";
+import TablePagination from "../../components/TablePagination";
 import { Users, Plus, RefreshCw, Download, Trash2, Upload, FileText, X, CheckCircle2 } from "lucide-react";
 import {
   useContacts,
@@ -54,9 +55,19 @@ export default function Contacts() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterTag, setFilterTag] = useState("");
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const filtered = filterTag
     ? contacts.filter((c) => c.tags.includes(filterTag))
     : contacts;
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+  const paginatedContacts = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, currentPage, itemsPerPage]);
 
   const exportFilteredCsv = (listToExport: Contact[], filenameSuffix = "all") => {
     const header = ["Nama", "Nomor HP", "Label/Tag", "Catatan", "Tanggal Dibuat"];
@@ -233,7 +244,10 @@ export default function Contacts() {
       <ContactTagFilter
         tags={allTags}
         active={filterTag}
-        onChange={setFilterTag}
+        onChange={(t) => {
+          setFilterTag(t);
+          setCurrentPage(1);
+        }}
       />
 
       {/* Form modal */}
@@ -286,11 +300,25 @@ export default function Contacts() {
             }
           />
         ) : (
-          <ContactTable
-            contacts={filtered}
-            onEdit={openEdit}
-            onDelete={setDeleteId}
-          />
+          <>
+            <ContactTable
+              contacts={paginatedContacts}
+              onEdit={openEdit}
+              onDelete={setDeleteId}
+            />
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(num) => {
+                setItemsPerPage(num);
+                setCurrentPage(1);
+              }}
+              itemsPerPageOptions={[5, 10, 25, 50]}
+            />
+          </>
         )}
       </div>
 
