@@ -259,6 +259,10 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
             );
             this.clearSession(config.id);
 
+            if (this.configRepo) {
+              void this.configRepo.update(config.id, { isActive: false });
+            }
+
             if (this.sessionRepo) {
               let sId = input.sessionId || inst.sessionId;
               if (!sId) {
@@ -304,6 +308,10 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
             "BaileysWhatsAppProvider",
           );
 
+          if (this.configRepo) {
+            void this.configRepo.update(config.id, { isActive: true });
+          }
+
           if (this.sessionRepo) {
             let sId = input.sessionId || inst.sessionId;
             if (!sId) {
@@ -311,11 +319,12 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                 await this.sessionRepo.findByProviderConfigId(config.id);
               if (sessions.length > 0) sId = sessions[0].id;
             }
+            const rawId = sock.user?.id || "";
+            const phone = rawId.split(":")[0].replace(/\D/g, "");
+
             if (sId) {
               inst.sessionId = sId;
               this.sessionToConfig.set(sId, config.id);
-              const rawId = sock.user?.id || "";
-              const phone = rawId.split(":")[0].replace(/\D/g, "");
               void this.sessionRepo.update(sId, {
                 status: "active",
                 metadata: {
@@ -324,6 +333,28 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                   userName: sock.user?.name,
                   lastConnectedAt: new Date().toISOString(),
                 },
+              });
+            } else if (config.userId) {
+              // Auto-create session if user scanned QR directly from Provider Configs
+              const nowIso = new Date().toISOString();
+              void this.sessionRepo.save({
+                id: uuidv4(),
+                userId: config.userId,
+                name: config.name || `WA ${phone}`,
+                providerType: PROVIDER_TYPES.BAILEYS,
+                providerConfigId: config.id,
+                status: "active",
+                metadata: {
+                  phoneNumber: phone,
+                  jid: rawId,
+                  userName: sock.user?.name,
+                  lastConnectedAt: nowIso,
+                },
+                createdAt: nowIso,
+                updatedAt: nowIso,
+              }).then((newSess) => {
+                inst.sessionId = newSess.id;
+                this.sessionToConfig.set(newSess.id, config.id);
               });
             }
           }
