@@ -169,13 +169,14 @@ export class AiBotService implements OnModuleInit {
           const now = new Date().toISOString();
           const p: AiBotProfile = {
             id: row.id,
-            userId: row.userId || undefined,
+            userId: row.userId || existing?.userId || undefined,
             name: existing?.name || (row as any).name || "Default Assistant",
             description: existing?.description || (row as any).description || "Asisten WhatsApp",
             isEnabled: row.isEnabled,
-            provider: (row.provider as any) || existing?.provider || "gemini",
-            apiKey: row.apiKey || existing?.apiKey || "",
-            model: row.model || existing?.model || "gemini-3.6-flash",
+            connectionId: existing?.connectionId,
+            provider: existing?.provider || (row.provider as any) || "gemini",
+            apiKey: existing?.apiKey !== undefined ? existing.apiKey : (row.apiKey || ""),
+            model: existing?.model || row.model || "gemini-3.6-flash",
             systemPrompt: row.systemPrompt || existing?.systemPrompt || DEFAULT_PROFILE_TEMPLATE.systemPrompt,
             knowledgeBase: row.knowledgeBase ?? existing?.knowledgeBase ?? "",
             handoverKeywords:
@@ -366,11 +367,13 @@ export class AiBotService implements OnModuleInit {
           copy.model = conn.defaultModel;
         }
       }
-    } else if (!copy.apiKey || copy.apiKey.trim() === "") {
-      // Find fallback connection by matching provider
+    } else {
+      // Auto-fallback: Find registered connection matching the profile's provider
       for (const conn of this.connections.values()) {
         if (conn.provider === copy.provider && conn.apiKey) {
+          copy.connectionId = conn.id;
           copy.apiKey = conn.apiKey;
+          if (!copy.model) copy.model = conn.defaultModel;
           break;
         }
       }
@@ -379,15 +382,28 @@ export class AiBotService implements OnModuleInit {
   }
 
   private toResponse(p: AiBotProfile, sessionCount: number = 0): AiBotProfileResponse {
+    let effectiveConnId = p.connectionId;
     let connName: string | undefined = undefined;
-    let effectiveApiKey = p.apiKey;
-    if (p.connectionId) {
-      const conn = this.connections.get(p.connectionId);
-      if (conn) {
-        connName = conn.name;
-        if (!effectiveApiKey || effectiveApiKey.trim() === "") {
-          effectiveApiKey = conn.apiKey;
+
+    // Auto-link to matching connection if not set
+    if (!effectiveConnId) {
+      for (const conn of this.connections.values()) {
+        if (conn.provider === p.provider && conn.apiKey) {
+          effectiveConnId = conn.id;
+          connName = conn.name;
+          break;
         }
+      }
+    } else {
+      const conn = this.connections.get(effectiveConnId);
+      if (conn) connName = conn.name;
+    }
+
+    let effectiveApiKey = p.apiKey;
+    if (effectiveConnId) {
+      const conn = this.connections.get(effectiveConnId);
+      if (conn) {
+        effectiveApiKey = conn.apiKey;
       }
     }
     const hasKey = !!effectiveApiKey && effectiveApiKey.trim().length > 0;
@@ -395,7 +411,7 @@ export class AiBotService implements OnModuleInit {
     const { apiKey, ...safe } = p;
     return {
       ...safe,
-      connectionId: p.connectionId,
+      connectionId: effectiveConnId,
       connectionName: connName,
       apiKeyMasked,
       hasKey,

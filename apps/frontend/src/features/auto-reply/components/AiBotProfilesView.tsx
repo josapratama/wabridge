@@ -17,6 +17,7 @@ import {
   Upload,
   CheckCircle2,
   AlertCircle,
+  Info,
   Eye,
   EyeOff,
   Bot,
@@ -153,6 +154,19 @@ export default function AiBotProfilesView({ sessions }: Props) {
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
+  // Floating Toast Notification state
+  const [toast, setToast] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
+  } | null>(null);
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "info") => {
+    setToast({ type, message });
+    setTimeout(() => {
+      setToast((prev) => (prev?.message === message ? null : prev));
+    }, 4500);
+  };
+
   // Connection Management Modal state
   const [isConnManagerOpen, setIsConnManagerOpen] = useState(false);
   const [editingConn, setEditingConn] = useState<Partial<AiConnection> | null>(null);
@@ -287,7 +301,18 @@ export default function AiBotProfilesView({ sessions }: Props) {
   };
 
   const openEditProfile = (p: AiBotProfile) => {
-    setEditingProfile({ ...p });
+    let initialConnId = p.connectionId;
+    if (!initialConnId) {
+      const match = connections.find((c) => c.provider === p.provider);
+      if (match) initialConnId = match.id;
+    }
+    const matchedConn = connections.find((c) => c.id === initialConnId);
+
+    setEditingProfile({
+      ...p,
+      connectionId: initialConnId,
+      connectionName: matchedConn?.name || p.connectionName,
+    });
     setIsCreatingNew(false);
     setIsCustomProfileModel(!isKnownModel(p.provider, p.model));
     setKeyInput("");
@@ -355,7 +380,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
       let saved: AiConnection | null = null;
       if (isCreatingConn) {
         if (!connKeyInput.trim()) {
-          alert("Silakan masukkan API Key untuk akun AI baru.");
+          showToast("Silakan masukkan API Key untuk akun AI baru.", "error");
           setSavingConn(false);
           return;
         }
@@ -386,9 +411,10 @@ export default function AiBotProfilesView({ sessions }: Props) {
         setEditingConn(null);
         setIsCreatingConn(false);
         setConnKeyInput("");
+        showToast("Akun AI berhasil disimpan!", "success");
       }
     } catch (err: any) {
-      alert(`Gagal menyimpan akun AI: ${err?.message || "Kesalahan server"}`);
+      showToast(`Gagal menyimpan akun AI: ${err?.message || "Kesalahan server"}`, "error");
     } finally {
       setSavingConn(false);
     }
@@ -405,8 +431,9 @@ export default function AiBotProfilesView({ sessions }: Props) {
       if (editingProfile?.connectionId === id) {
         setEditingProfile({ ...editingProfile, connectionId: undefined, connectionName: undefined });
       }
+      showToast("Akun AI berhasil dihapus.", "info");
     } catch (err: any) {
-      alert(`Gagal menghapus akun AI: ${err?.message}`);
+      showToast(`Gagal menghapus akun AI: ${err?.message}`, "error");
     }
   };
 
@@ -593,6 +620,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
 
       if (saved) {
         setSaveSuccessMsg("Profil AI berhasil disimpan!");
+        showToast("Profil AI berhasil disimpan!", "success");
         setKeyInput("");
         await loadData();
         setTimeout(() => setSaveSuccessMsg(""), 3500);
@@ -603,7 +631,7 @@ export default function AiBotProfilesView({ sessions }: Props) {
       }
     } catch (err: any) {
       console.error("Save profile error", err);
-      alert(`Gagal menyimpan profil AI: ${err?.message || "Kesalahan server"}`);
+      showToast(`Gagal menyimpan profil AI: ${err?.message || "Kesalahan server"}`, "error");
     } finally {
       setSaving(false);
     }
@@ -694,9 +722,10 @@ export default function AiBotProfilesView({ sessions }: Props) {
                 }
               : null,
           );
+          showToast(`Dokumen "${file.name}" berhasil dipelajari!`, "success");
         }
       } catch (err: any) {
-        alert(`Gagal memproses dokumen: ${err?.message || "Format berkas tidak didukung"}`);
+        showToast(`Gagal memproses dokumen: ${err?.message || "Format berkas tidak didukung"}`, "error");
       } finally {
         setUploadingDoc(false);
       }
@@ -2239,6 +2268,23 @@ export default function AiBotProfilesView({ sessions }: Props) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+      {/* ── Global Floating Toast Notification ─────────────────────────────────── */}
+      {toast && (
+        <div className="fixed top-5 right-5 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md animate-in slide-in-from-top-3 fade-in duration-200 max-w-md bg-gray-900/95 border-gray-750">
+          {toast.type === "error" && <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />}
+          {toast.type === "success" && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />}
+          {toast.type === "info" && <Info className="w-5 h-5 text-sky-400 shrink-0" />}
+          <div className="text-xs text-gray-200 font-medium flex-1 leading-snug">
+            {toast.message}
+          </div>
+          <button
+            onClick={() => setToast(null)}
+            className="p-1 text-gray-400 hover:text-white rounded-lg transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

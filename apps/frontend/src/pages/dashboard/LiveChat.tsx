@@ -304,7 +304,8 @@ export default function LiveChat() {
       setMediaRecorder(recorder);
       setRecording(true);
     } catch {
-      alert(t("livechat.mic_permission_err", "Izin akses mikrofon diperlukan untuk merekam voice note."));
+      setMicErrorToast(true);
+      setTimeout(() => setMicErrorToast(false), 4000);
     }
   };
 
@@ -581,6 +582,7 @@ export default function LiveChat() {
   const [scheduleContent, setScheduleContent] = useState("");
   const [scheduling, setScheduling] = useState(false);
   const [scheduledToast, setScheduledToast] = useState(false);
+  const [micErrorToast, setMicErrorToast] = useState(false);
 
   const openScheduleModal = () => {
     setScheduleContent(inputText.trim() || "");
@@ -2081,6 +2083,16 @@ export default function LiveChat() {
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>
             {t("livechat.contact_saved_success", "Data kontak berhasil disimpan!")}
+          </span>
+        </div>
+      )}
+
+      {/* Mic Permission Error Toast Notification */}
+      {micErrorToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-rose-600 text-white text-xs px-3.5 py-2 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-bottom duration-200">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>
+            {t("livechat.mic_permission_err", "Izin akses mikrofon diperlukan untuk merekam voice note.")}
           </span>
         </div>
       )}
