@@ -50,6 +50,7 @@ import {
   CornerUpLeft,
   Smile,
   ArrowLeft,
+  MoreVertical,
 } from "lucide-react";
 
 interface Conversation {
@@ -159,6 +160,8 @@ export default function LiveChat() {
   const [recording, setRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMobileTools, setShowMobileTools] = useState(false);
 
   // Chat Filter & Status
   const [chatFilter, setChatFilter] = useState<"all" | "unread" | "resolved">("all");
@@ -1136,14 +1139,14 @@ export default function LiveChat() {
           {activeConv ? (
             <>
               {/* Chat Header */}
-              <div className="h-16 border-b border-gray-800/80 bg-gray-900/80 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between shrink-0 gap-2 overflow-hidden">
-                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <div className="h-16 border-b border-gray-800/80 bg-gray-900/80 backdrop-blur-md px-2.5 sm:px-4 flex items-center justify-between shrink-0 gap-2 relative z-20">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <button
                     onClick={() => setSelectedJid(null)}
-                    className="md:hidden text-gray-400 hover:text-white p-1.5 -ml-1 rounded-lg hover:bg-gray-800 transition-colors shrink-0"
+                    className="md:hidden text-gray-400 hover:text-white p-1 -ml-1 rounded-lg hover:bg-gray-800 transition-colors shrink-0"
                     title={t("actions.back", "Back")}
                   >
-                    <ArrowLeft className="w-4 h-4" />
+                    <ArrowLeft className="w-5 h-5 text-gray-300" />
                   </button>
                   <div className="relative shrink-0">
                     <div
@@ -1165,10 +1168,10 @@ export default function LiveChat() {
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <h2
                         onClick={!activeConv.isGroup ? openContactModal : undefined}
-                        className={`text-xs sm:text-sm font-bold text-white leading-tight truncate max-w-[130px] xs:max-w-[180px] sm:max-w-[240px] md:max-w-[280px] lg:max-w-[340px] ${!activeConv.isGroup ? "cursor-pointer hover:underline hover:text-brand-300" : ""
+                        className={`text-xs sm:text-sm font-bold text-white leading-tight truncate max-w-[110px] xs:max-w-[150px] sm:max-w-[220px] md:max-w-[280px] lg:max-w-[340px] ${!activeConv.isGroup ? "cursor-pointer hover:underline hover:text-brand-300" : ""
                           }`}
                         title={activeConv.name}
                       >
@@ -1192,7 +1195,7 @@ export default function LiveChat() {
                         </button>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 mt-0.5 text-[10px] sm:text-[11px] text-gray-400 truncate">
+                    <div className="flex items-center gap-1 mt-0.5 text-[10px] sm:text-[11px] text-gray-400 truncate">
                       <span className="font-mono truncate">{activeConv.isGroup ? activeConv.jid : `+${activeConv.phone}`}</span>
                       {matchedContact?.tags && matchedContact.tags.length > 0 && (
                         <span className="hidden sm:inline-flex items-center gap-1 shrink-0">
@@ -1209,13 +1212,13 @@ export default function LiveChat() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                   {/* AI Takeover Button */}
                   {!activeConv.isGroup && (
                     <button
                       onClick={handleToggleAiPause}
                       disabled={togglingAi}
-                      className={`text-xs px-2 sm:px-2.5 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 ${aiPaused
+                      className={`text-xs px-2 sm:px-2.5 py-1 rounded-lg border font-medium transition-all flex items-center gap-1 ${aiPaused
                         ? "bg-amber-950/50 border-amber-700/60 text-amber-300 hover:bg-amber-900/60"
                         : "bg-purple-950/50 border-purple-700/60 text-purple-300 hover:bg-purple-900/60"
                         }`}
@@ -1231,7 +1234,7 @@ export default function LiveChat() {
                           <span className="hidden md:inline">
                             {t("livechat.ai_paused_badge", "CS Manusia (AI Dijeda)")}
                           </span>
-                          <span className="md:hidden font-semibold">CS</span>
+                          <span className="md:hidden font-semibold text-[10px]">CS</span>
                         </>
                       ) : (
                         <>
@@ -1239,19 +1242,19 @@ export default function LiveChat() {
                           <span className="hidden md:inline">
                             {t("livechat.ai_active_badge", "AI Aktif")}
                           </span>
-                          <span className="md:hidden font-semibold">AI</span>
+                          <span className="md:hidden font-semibold text-[10px]">AI</span>
                         </>
                       )}
                     </button>
                   )}
 
-                  {/* In-Chat Search Toggle */}
+                  {/* In-Chat Search Toggle (hidden on mobile, in 3-dots menu) */}
                   <button
                     onClick={() => {
                       setShowInChatSearch(!showInChatSearch);
                       if (showInChatSearch) setInChatSearchQuery("");
                     }}
-                    className={`p-1.5 sm:px-2 sm:py-1.5 rounded-lg border text-xs font-medium transition-colors flex items-center gap-1.5 ${showInChatSearch
+                    className={`p-1.5 sm:px-2 sm:py-1 rounded-lg border text-xs font-medium transition-colors hidden sm:flex items-center gap-1.5 ${showInChatSearch
                       ? "bg-brand-950/70 border-brand-700/70 text-brand-300"
                       : "border-gray-800 bg-gray-800/80 text-gray-300 hover:bg-gray-750"
                       }`}
@@ -1261,20 +1264,20 @@ export default function LiveChat() {
                     <span className="hidden 2xl:inline">Cari Pesan</span>
                   </button>
 
-                  {/* Export Chat History */}
+                  {/* Export Chat History (hidden on mobile/tablet, in 3-dots menu) */}
                   <button
                     onClick={handleExportChat}
-                    className="p-1.5 sm:px-2 sm:py-1.5 rounded-lg border border-gray-800 bg-gray-800/80 text-gray-300 hover:bg-gray-750 text-xs font-medium transition-colors hidden sm:flex items-center gap-1.5"
+                    className="p-1.5 sm:px-2 sm:py-1 rounded-lg border border-gray-800 bg-gray-800/80 text-gray-300 hover:bg-gray-750 text-xs font-medium transition-colors hidden md:flex items-center gap-1.5"
                     title={t("livechat.export_chat_title", "Unduh riwayat percakapan ke file teks (.txt)")}
                   >
                     <Download className="w-3.5 h-3.5 text-gray-400" />
                     <span className="hidden 2xl:inline">{t("livechat.export_chat", "Export Chat")}</span>
                   </button>
 
-                  {/* Mark as Resolved Toggle */}
+                  {/* Mark as Resolved Toggle (hidden on mobile, in 3-dots menu) */}
                   <button
                     onClick={() => toggleResolved(activeConv.jid)}
-                    className={`p-1.5 sm:px-2 sm:py-1.5 rounded-lg border text-xs font-medium transition-colors flex items-center gap-1.5 ${resolvedJids.includes(activeConv.jid)
+                    className={`p-1.5 sm:px-2 sm:py-1 rounded-lg border text-xs font-medium transition-colors hidden sm:flex items-center gap-1.5 ${resolvedJids.includes(activeConv.jid)
                       ? "bg-emerald-950/50 border-emerald-700/60 text-emerald-300 hover:bg-emerald-900/50"
                       : "bg-gray-800/80 border-gray-800 text-gray-300 hover:bg-gray-750"
                       }`}
@@ -1301,7 +1304,7 @@ export default function LiveChat() {
                     <select
                       value={selectedSessionId}
                       onChange={(e) => setSelectedSessionId(e.target.value)}
-                      className="bg-gray-800/90 border border-gray-700/80 rounded-lg px-2 sm:px-2.5 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-brand-500 max-w-[100px] xs:max-w-[125px] sm:max-w-[150px] md:max-w-[175px] truncate cursor-pointer shadow-sm"
+                      className="bg-gray-800/90 border border-gray-700/80 rounded-lg px-1.5 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs text-gray-200 focus:outline-none focus:border-brand-500 w-[72px] xs:w-[92px] sm:w-[130px] md:w-[165px] truncate cursor-pointer shadow-sm"
                       title={t("livechat.reply_via", "Balas melalui sesi")}
                     >
                       {sessions.map((s) => (
@@ -1310,6 +1313,61 @@ export default function LiveChat() {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* Mobile 3-Dots Menu Button */}
+                  <div className="relative sm:hidden">
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileMenu(!showMobileMenu)}
+                      className={`p-1.5 rounded-lg border transition-colors ${showMobileMenu
+                        ? "bg-gray-800 text-white border-gray-700"
+                        : "text-gray-400 hover:text-white border-transparent hover:bg-gray-800/60"
+                        }`}
+                      title="Menu Lainnya"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+
+                    {showMobileMenu && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowInChatSearch(true);
+                            setShowMobileMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-gray-200 hover:bg-gray-800 flex items-center gap-2"
+                        >
+                          <Search className="w-3.5 h-3.5 text-gray-400" />
+                          <span>Cari Pesan</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleExportChat();
+                            setShowMobileMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-gray-200 hover:bg-gray-800 flex items-center gap-2"
+                        >
+                          <Download className="w-3.5 h-3.5 text-gray-400" />
+                          <span>Export Chat (.txt)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toggleResolved(activeConv.jid);
+                            setShowMobileMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-gray-200 hover:bg-gray-800 flex items-center gap-2 border-t border-gray-800/80"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>
+                            {resolvedJids.includes(activeConv.jid) ? "Tandai Belum Selesai" : "Tandai Percakapan Selesai"}
+                          </span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1483,7 +1541,7 @@ export default function LiveChat() {
                               <div className="my-2 p-1 bg-black/20 rounded-xl">
                                 <audio
                                   controls
-                                  className="w-56 h-8 rounded"
+                                  className="w-full max-w-[240px] h-8 rounded"
                                   src={resolveMediaUrl(m.mediaUrl)}
                                 />
                               </div>
@@ -1503,10 +1561,33 @@ export default function LiveChat() {
                               </a>
                             )}
 
-                            {/* Text Content */}
-                            <p className="whitespace-pre-wrap leading-relaxed">
-                              {m.content}
-                            </p>
+                            {/* Video Display */}
+                            {m.mediaUrl && m.type === "video" && (
+                              <div className="mb-2 rounded-lg overflow-hidden border border-white/10 max-w-xs">
+                                <video
+                                  controls
+                                  src={resolveMediaUrl(m.mediaUrl)}
+                                  className="max-h-60 w-full rounded-lg"
+                                />
+                              </div>
+                            )}
+
+                            {/* Text Content with Fallback */}
+                            {m.content ? (
+                              <p className="whitespace-pre-wrap leading-relaxed break-words">
+                                {m.content}
+                              </p>
+                            ) : !m.mediaUrl ? (
+                              <p className="italic text-gray-400 text-xs py-0.5 select-none">
+                                {(m.type as string) === "sticker"
+                                  ? "🏷️ [Stiker WhatsApp]"
+                                  : m.type === "location"
+                                  ? "📍 [Lokasi]"
+                                  : (m.type as string) === "contact"
+                                  ? "👤 [Kontak]"
+                                  : "💬 [Pesan Media/Non-Teks]"}
+                              </p>
+                            ) : null}
                           </>
                         )}
 
@@ -1753,6 +1834,46 @@ export default function LiveChat() {
                     </div>
                   </div>
                 )}
+                {/* Mobile Tools Popover */}
+                {showMobileTools && (
+                  <div className="absolute bottom-full mb-2 left-2 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl p-1.5 z-40 sm:hidden animate-in fade-in slide-in-from-bottom-2 text-xs flex flex-col gap-1 w-52">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMobileTools(false);
+                        setShowQuickReplies(true);
+                      }}
+                      className="text-left px-2.5 py-2 rounded-lg hover:bg-gray-800 text-gray-200 flex items-center gap-2"
+                    >
+                      <Zap className="w-4 h-4 text-amber-400" />
+                      <span>{t("livechat.quick_replies", "Quick Replies (/)")}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMobileTools(false);
+                        openScheduleModal();
+                      }}
+                      className="text-left px-2.5 py-2 rounded-lg hover:bg-gray-800 text-gray-200 flex items-center gap-2"
+                    >
+                      <Calendar className="w-4 h-4 text-purple-400" />
+                      <span>{t("livechat.schedule_msg_btn", "Jadwalkan Pesan")}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMobileTools(false);
+                        void handleAiDraftReply();
+                      }}
+                      disabled={aiDrafting || !selectedJid}
+                      className="text-left px-2.5 py-2 rounded-lg hover:bg-gray-800 text-purple-300 flex items-center gap-2 border-t border-gray-800"
+                    >
+                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      <span>{t("livechat.ai_copilot_btn", "AI Copilot Draft")}</span>
+                    </button>
+                  </div>
+                )}
+
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -1764,7 +1885,7 @@ export default function LiveChat() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+                  className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors shrink-0"
                   title={t("livechat.attach_file")}
                 >
                   <Paperclip
@@ -1772,10 +1893,24 @@ export default function LiveChat() {
                   />
                 </button>
 
+                {/* Mobile Tools '+' Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowMobileTools(!showMobileTools)}
+                  className={`p-1.5 rounded-lg transition-colors sm:hidden shrink-0 ${showMobileTools
+                    ? "bg-brand-950/70 text-brand-300 border border-brand-600/50"
+                    : "text-gray-400 hover:text-white hover:bg-gray-800"
+                    }`}
+                  title="Fitur Tambahan (Quick Reply, Jadwal, AI)"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+
+                {/* Desktop Action Buttons */}
                 <button
                   type="button"
                   onClick={() => setShowQuickReplies(!showQuickReplies)}
-                  className={`p-1.5 sm:p-2 rounded-lg transition-colors ${showQuickReplies
+                  className={`p-1.5 sm:p-2 rounded-lg transition-colors hidden sm:flex shrink-0 ${showQuickReplies
                     ? "bg-amber-950/60 text-amber-300 border border-amber-600/40"
                     : "text-gray-400 hover:text-white hover:bg-gray-800"
                     }`}
@@ -1787,7 +1922,7 @@ export default function LiveChat() {
                 <button
                   type="button"
                   onClick={openScheduleModal}
-                  className="p-1.5 sm:p-2 rounded-lg text-purple-400 hover:text-white hover:bg-gray-800 transition-colors"
+                  className="p-1.5 sm:p-2 rounded-lg text-purple-400 hover:text-white hover:bg-gray-800 transition-colors hidden sm:flex shrink-0"
                   title={t("livechat.schedule_msg_btn", "Jadwalkan Pesan Follow-up")}
                 >
                   <Calendar className="w-4 h-4" />
@@ -1796,7 +1931,7 @@ export default function LiveChat() {
                 <button
                   type="button"
                   onClick={recording ? stopVoiceRecording : startVoiceRecording}
-                  className={`p-1.5 sm:p-2 rounded-lg transition-all ${recording
+                  className={`p-1.5 sm:p-2 rounded-lg transition-all shrink-0 ${recording
                     ? "bg-red-600 text-white animate-pulse"
                     : "text-gray-400 hover:text-white hover:bg-gray-800"
                     }`}
@@ -1809,12 +1944,12 @@ export default function LiveChat() {
                   )}
                 </button>
 
-                {/* AI Copilot Draft Button */}
+                {/* AI Copilot Draft Button (Desktop) */}
                 <button
                   type="button"
                   onClick={() => void handleAiDraftReply()}
                   disabled={aiDrafting || !selectedJid}
-                  className={`p-1.5 sm:p-2 rounded-lg transition-colors flex items-center gap-1 ${aiDrafting
+                  className={`p-1.5 sm:p-2 rounded-lg transition-colors hidden sm:flex items-center gap-1 shrink-0 ${aiDrafting
                     ? "bg-purple-950/80 text-purple-300 border border-purple-600/50"
                     : "text-purple-400 hover:text-purple-200 hover:bg-purple-950/40"
                     }`}
