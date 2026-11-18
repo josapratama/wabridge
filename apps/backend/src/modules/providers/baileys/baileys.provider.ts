@@ -630,15 +630,6 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                   );
 
                   if (canAiReply) {
-                    const promptJid = from.includes("@") ? from : `${from}@s.whatsapp.net`;
-                    const currentInst = this.sessions.get(configId);
-                    const activeSock = currentInst?.sock || sock;
-                    if (activeSock) {
-                      try {
-                        await activeSock.sendPresenceUpdate("composing", promptJid);
-                      } catch {}
-                    }
-
                     try {
                       replyContent = await this.aiBotService.generateReply(
                         content,
@@ -647,12 +638,12 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                         effectiveSessionId,
                         mediaUrl,
                       );
-                    } finally {
-                      if (activeSock) {
-                        try {
-                          await activeSock.sendPresenceUpdate("paused", promptJid);
-                        } catch {}
-                      }
+                    } catch (aiErr) {
+                      this.logger.error(
+                        `AI generateReply failed for ${aiTargetJid}: ${aiErr}`,
+                        undefined,
+                        "BaileysWhatsAppProvider",
+                      );
                     }
                   } else {
                     this.logger.log(
@@ -681,9 +672,16 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                       throw new Error("Baileys socket instance not found or closed");
                     }
 
-                    // Turn off composing indicator
+                    // Human typing indicator: only shown right before sending, for 800 - 1400ms
                     try {
-                      await currentSock.sendPresenceUpdate("paused", targetJid);
+                      await currentSock.sendPresenceUpdate("composing", targetJid);
+                      if (from !== targetJid) {
+                        try {
+                          await currentSock.sendPresenceUpdate("composing", from);
+                        } catch {}
+                      }
+                      const typingDelay = Math.floor(800 + Math.random() * 600);
+                      await new Promise((r) => setTimeout(r, typingDelay));
                     } catch {}
 
                     // Send response with quoted: msg for cryptographic session continuity
@@ -716,6 +714,16 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                         // Fallback 2: try sending without quoted header
                         sentMsg = await currentSock.sendMessage(targetJid, { text: replyContent });
                       }
+                    } finally {
+                      // Turn off composing indicator immediately after sending
+                      try {
+                        await currentSock.sendPresenceUpdate("paused", targetJid);
+                        if (from !== targetJid) {
+                          try {
+                            await currentSock.sendPresenceUpdate("paused", from);
+                          } catch {}
+                        }
+                      } catch {}
                     }
 
                     this.logger.log(

@@ -1134,13 +1134,22 @@ export class AiBotService implements OnModuleInit {
       if (!isWorkHours) return false;
     }
 
-    // 3. Human Handover check for this contact
+    // 3. Human Handover check for this contact (check both fromJid and its alt mapping)
     if (fromJid) {
       const userPaused = this.pausedJids.get(userId);
       if (userPaused) {
         const pausedUntil = userPaused.get(fromJid);
         if (pausedUntil && Date.now() < pausedUntil) {
           return false;
+        }
+        if (fromJid.endsWith("@lid")) {
+          const alt = await this.resolveLidToPhone(fromJid);
+          if (alt) {
+            const altPaused = userPaused.get(alt);
+            if (altPaused && Date.now() < altPaused) {
+              return false;
+            }
+          }
         }
       }
     }
@@ -1237,6 +1246,15 @@ export class AiBotService implements OnModuleInit {
       const pausedUntil = userPausedMap.get(fromJid);
       if (pausedUntil && Date.now() < pausedUntil) {
         return null;
+      }
+      if (fromJid.endsWith("@lid")) {
+        const alt = await this.resolveLidToPhone(fromJid);
+        if (alt) {
+          const altPaused = userPausedMap.get(alt);
+          if (altPaused && Date.now() < altPaused) {
+            return null;
+          }
+        }
       }
 
       // Check keywords for handover
