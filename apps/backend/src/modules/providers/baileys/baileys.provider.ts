@@ -517,9 +517,10 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
               mediaMimeType,
             });
 
-            // Auto-reply & AI Bot: ONLY for 1-on-1 chats, ignore groups to prevent spam!
+            // Auto-reply & AI Bot: ONLY for 1-on-1 chats, ignore groups & status stories to prevent spam/cost drain!
             const isGroup = from.endsWith("@g.us");
-            if (!isGroup && content && !content.startsWith("[")) {
+            const isBroadcast = from === "status@broadcast" || from.endsWith("@broadcast");
+            if (!isGroup && !isBroadcast && content && !content.startsWith("[")) {
               // Verify session and provider config are currently ACTIVE before responding
               let isSessionActive = true;
               let sessionUserId: string | undefined;
@@ -554,57 +555,108 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
               const lastTime = this.lastReplyTimeByJid.get(from) || 0;
               // 4 second anti-loop cooldown
               if (now - lastTime > 4000) {
-                const senderPhone = from.split("@")[0].replace(/\D/g, "");
+                // Extract real phone number mapping if message arrives via LID (@lid)
+                const senderPn =
+                  (msg.key as any)?.senderPn ||
+                  (msg.key as any)?.participantPn ||
+                  (msg.key as any)?.remoteJidPn ||
+                  (msg as any)?.senderPn;
+
+                let senderPhone = from.split("@")[0].replace(/\D/g, "");
+                if (from.endsWith("@lid") && senderPn) {
+                  senderPhone = String(senderPn).split("@")[0].replace(/\D/g, "") || senderPhone;
+                }
                 const senderName = msg.pushName || undefined;
+
                 let replyContent = await this.autoReplyService.match(
                   effectiveSessionId,
                   content,
                   senderName,
                   senderPhone,
                 );
+
                 if (!replyContent && this.aiBotService) {
-                  const promptJid = from.includes("@")
-                    ? from
-                    : `${from}@s.whatsapp.net`;
-                  try {
-                    await sock.sendPresenceUpdate("composing", promptJid);
-                  } catch {}
+                  const promptJid = from.includes("@") ? from : `${from}@s.whatsapp.net`;
+                  // Get currently active socket instance
+                  const currentInst = this.sessions.get(configId);
+                  const activeSock = currentInst?.sock || sock;
+                  if (activeSock) {
+                    try {
+                      await activeSock.sendPresenceUpdate("composing", promptJid);
+                    } catch {}
+                  }
 
                   replyContent = await this.aiBotService.generateReply(
                     content,
-                    from,
+                    senderPhone ? `${senderPhone}@s.whatsapp.net` : from,
                     sessionUserId,
                     effectiveSessionId,
                   );
                 }
+
                 if (replyContent) {
                   this.lastReplyTimeByJid.set(from, now);
                   this.logger.log(
-                    `Automated reply sent for session ${effectiveSessionId} to ${from}`,
+                    `Automated reply prepared for session ${effectiveSessionId} to ${from}`,
                     "BaileysWhatsAppProvider",
                   );
-                  const replyJid = from.includes("@")
-                    ? from
-                    : `${from}@s.whatsapp.net`;
+
+                  // Determine best delivery JID (handle modern WhatsApp @lid vs @s.whatsapp.net)
+                  let targetJid = from.includes("@") ? from : `${from}@s.whatsapp.net`;
+                  if (from.endsWith("@lid") && senderPn) {
+                    targetJid = senderPn.includes("@") ? senderPn : `${senderPn}@s.whatsapp.net`;
+                  }
+
                   try {
-                    // 1. Simulate realistic human typing indicator ("composing") & anti-ban delay
+                    // Fetch latest active socket (in case socket reconnected while AI was thinking)
+                    const liveInst = this.sessions.get(configId);
+                    const currentSock = liveInst?.sock || sock;
+
+                    if (!currentSock) {
+                      throw new Error("Baileys socket instance not found or closed");
+                    }
+
+                    // Turn off composing indicator
                     try {
-                      await sock.sendPresenceUpdate("composing", replyJid);
+                      await currentSock.sendPresenceUpdate("paused", targetJid);
                     } catch {}
 
-                    const delayMs = Math.min(
-                      3000,
-                      Math.max(1200, (replyContent.length || 20) * 20),
+                    // Send response with quoted: msg for cryptographic session continuity
+                    let sentMsg: any = null;
+                    try {
+                      sentMsg = await currentSock.sendMessage(
+                        targetJid,
+                        { text: replyContent },
+                        { quoted: msg },
+                      );
+                    } catch (firstErr: any) {
+                      this.logger.warn(
+                        `First send to ${targetJid} failed (${firstErr?.message || firstErr}). Retrying fallback JID...`,
+                        "BaileysWhatsAppProvider",
+                      );
+
+                      // Fallback 1: if sent to phone JID, try direct incoming LID JID
+                      if (targetJid !== from) {
+                        try {
+                          sentMsg = await currentSock.sendMessage(
+                            from,
+                            { text: replyContent },
+                            { quoted: msg },
+                          );
+                        } catch (secondErr: any) {
+                          // Fallback 2: try sending without quoted header
+                          sentMsg = await currentSock.sendMessage(from, { text: replyContent });
+                        }
+                      } else {
+                        // Fallback 2: try sending without quoted header
+                        sentMsg = await currentSock.sendMessage(targetJid, { text: replyContent });
+                      }
+                    }
+
+                    this.logger.log(
+                      `Automated reply successfully delivered for session ${effectiveSessionId} to ${targetJid}`,
+                      "BaileysWhatsAppProvider",
                     );
-                    await new Promise((r) => setTimeout(r, delayMs));
-
-                    try {
-                      await sock.sendPresenceUpdate("paused", replyJid);
-                    } catch {}
-
-                    const sentMsg = await sock.sendMessage(replyJid, {
-                      text: replyContent,
-                    });
 
                     // Save bot reply to DB so it is recorded in Live Chat!
                     await this.messageRepo.save({
@@ -612,8 +664,8 @@ export class BaileysWhatsAppProvider implements WhatsAppProvider {
                       sessionId: effectiveSessionId,
                       externalMessageId: sentMsg?.key?.id || uuidv4(),
                       direction: "outbound",
-                      from: sock.user?.id || "bot",
-                      to: replyJid,
+                      from: currentSock.user?.id || "bot",
+                      to: targetJid,
                       type: "text",
                       content: replyContent,
                       status: MESSAGE_STATUS.SENT,
