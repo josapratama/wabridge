@@ -14,9 +14,9 @@ export class AiBotController {
   }
 
   @Post("config")
-  updateConfig(@Req() req: any, @Body() body: Partial<AiBotConfig>) {
+  async updateConfig(@Req() req: any, @Body() body: Partial<AiBotConfig>) {
     const userId = req.user?.id || "default";
-    this.service.updateConfig(userId, body);
+    await this.service.updateConfig(userId, body);
     return { success: true, message: "AI Bot configuration updated" };
   }
 

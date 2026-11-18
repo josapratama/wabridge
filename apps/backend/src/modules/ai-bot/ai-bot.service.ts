@@ -1,6 +1,11 @@
-import { Injectable, Inject, Optional } from "@nestjs/common";
+import { Injectable, Inject, Optional, OnModuleInit } from "@nestjs/common";
 import { AppLogger } from "../../common/logger/app.logger";
 import { MessageRepository } from "../../repositories/interfaces";
+import { DRIZZLE_CLIENT } from "../../common/database/database.module";
+import * as schema from "../../common/database/drizzle/schema";
+import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { eq } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -60,7 +65,7 @@ const DEFAULT_CONFIG: AiBotConfig = {
 };
 
 @Injectable()
-export class AiBotService {
+export class AiBotService implements OnModuleInit {
   private configsDir = path.join(process.cwd(), "data", "ai_bot_configs");
   private legacyConfigPath = path.join(process.cwd(), "ai_bot_config.json");
   private userConfigs = new Map<string, AiBotConfig>();
@@ -72,8 +77,135 @@ export class AiBotService {
     @Optional()
     @Inject(MessageRepository)
     private readonly messageRepo?: MessageRepository,
+    @Optional()
+    @Inject(DRIZZLE_CLIENT)
+    private readonly db?: NodePgDatabase<typeof schema>,
   ) {
     this.ensureDir();
+  }
+
+  async onModuleInit() {
+    this.ensureDir();
+    if (!this.db) return;
+
+    // 1. Sync from DB table if rows exist
+    try {
+      const rows = await this.db.select().from(schema.aiBotConfigs);
+      for (const row of rows) {
+        const uId = row.userId || "default";
+        const diskCfg = this.loadUserConfig(uId);
+        const merged: AiBotConfig = {
+          ...diskCfg,
+          isEnabled: row.isEnabled,
+          provider: (row.provider as any) || diskCfg.provider,
+          apiKey: row.apiKey || diskCfg.apiKey,
+          model: row.model || diskCfg.model,
+          systemPrompt: row.systemPrompt || diskCfg.systemPrompt,
+          knowledgeBase: row.knowledgeBase ?? diskCfg.knowledgeBase,
+          handoverKeywords:
+            (row.handoverKeywords as string[]) ?? diskCfg.handoverKeywords,
+          handoverMessage:
+            row.handoverMessage ?? diskCfg.handoverMessage,
+        };
+        this.userConfigs.set(uId, merged);
+        this.saveUserConfig(uId);
+      }
+    } catch (err) {
+      this.logger.warn(`Could not preload AiBotConfig from DB: ${err}`, "AiBotService");
+    }
+
+    // 2. Sync any configs already saved on disk to database table AiBotConfig
+    try {
+      if (fs.existsSync(this.configsDir)) {
+        const files = fs.readdirSync(this.configsDir);
+        for (const file of files) {
+          if (file.endsWith(".json")) {
+            const uId = file.replace(/\.json$/, "");
+            const cfg = this.loadUserConfig(uId);
+            await this.saveUserConfigToDb(uId, cfg);
+          }
+        }
+      }
+      if (fs.existsSync(this.legacyConfigPath)) {
+        const cfg = this.loadUserConfig("default");
+        await this.saveUserConfigToDb("default", cfg);
+      }
+    } catch (err) {
+      this.logger.warn(`Could not sync initial disk configs to DB: ${err}`, "AiBotService");
+    }
+  }
+
+  private async saveUserConfigToDb(userId: string, cfg: AiBotConfig): Promise<void> {
+    if (!this.db) return;
+    try {
+      let targetUserId: string | null = null;
+      if (userId && userId !== "default") {
+        const userExists = await this.db
+          .select({ id: schema.users.id })
+          .from(schema.users)
+          .where(eq(schema.users.id, userId))
+          .limit(1);
+        if (userExists.length > 0) {
+          targetUserId = userExists[0].id;
+        }
+      }
+
+      // If no targetUserId found but users table has users, attach to first admin/user
+      if (!targetUserId) {
+        const anyUser = await this.db
+          .select({ id: schema.users.id })
+          .from(schema.users)
+          .limit(1);
+        if (anyUser.length > 0) {
+          targetUserId = anyUser[0].id;
+        }
+      }
+
+      const existing = targetUserId
+        ? await this.db
+            .select()
+            .from(schema.aiBotConfigs)
+            .where(eq(schema.aiBotConfigs.userId, targetUserId))
+            .limit(1)
+        : await this.db
+            .select()
+            .from(schema.aiBotConfigs)
+            .limit(1);
+
+      if (existing.length > 0) {
+        await this.db
+          .update(schema.aiBotConfigs)
+          .set({
+            isEnabled: cfg.isEnabled,
+            provider: cfg.provider,
+            apiKey: cfg.apiKey,
+            model: cfg.model,
+            systemPrompt: cfg.systemPrompt,
+            knowledgeBase: cfg.knowledgeBase ?? null,
+            handoverKeywords: cfg.handoverKeywords ?? [],
+            handoverMessage: cfg.handoverMessage ?? null,
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.aiBotConfigs.id, existing[0].id));
+      } else {
+        await this.db.insert(schema.aiBotConfigs).values({
+          id: uuidv4(),
+          userId: targetUserId,
+          isEnabled: cfg.isEnabled,
+          provider: cfg.provider,
+          apiKey: cfg.apiKey,
+          model: cfg.model,
+          systemPrompt: cfg.systemPrompt,
+          knowledgeBase: cfg.knowledgeBase ?? null,
+          handoverKeywords: cfg.handoverKeywords ?? [],
+          handoverMessage: cfg.handoverMessage ?? null,
+          updatedAt: new Date(),
+        });
+      }
+      this.logger.log(`Synced AI bot config to database table AiBotConfig for user ${userId}`, "AiBotService");
+    } catch (e) {
+      this.logger.warn(`Could not sync AI bot config to database: ${e}`, "AiBotService");
+    }
   }
 
   private ensureDir() {
@@ -169,7 +301,10 @@ export class AiBotService {
     };
   }
 
-  updateConfig(userId: string = "default", update: Partial<AiBotConfig>): void {
+  async updateConfig(
+    userId: string = "default",
+    update: Partial<AiBotConfig>,
+  ): Promise<void> {
     const cfg = this.loadUserConfig(userId);
 
     if (update.isEnabled !== undefined) cfg.isEnabled = update.isEnabled;
@@ -199,6 +334,7 @@ export class AiBotService {
 
     this.userConfigs.set(userId, cfg);
     this.saveUserConfig(userId);
+    await this.saveUserConfigToDb(userId, cfg);
   }
 
   async draftReply(
